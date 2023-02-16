@@ -233,7 +233,7 @@
                     <argLine>-Dfile.encoding=UTF-8</argLine>
                     <argLine>${surefireArgLine}</argLine>
                     <excludes>
-                        <exclude>**/uk.gov.companieshouse.account.validator.Runner.java</exclude>
+                        <exclude>**/uk.gov.companieshouse.file.transfer.service.Runner.java</exclude>
                     </excludes>
                     <skipTests>${skip.unit.tests}</skipTests>
                 </configuration>
@@ -303,7 +303,7 @@
                     <classesDirectory>${project.build.outputDirectory}</classesDirectory>
                     <skipITs>${skip.integration.tests}</skipITs>
                     <includes>
-                        <include>**/uk.gov.companieshouse.account.validator.Runner.java</include>
+                        <include>**/uk.gov.companieshouse.file.transfer.service.java</include>
                     </includes>
                 </configuration>
             </plugin>
