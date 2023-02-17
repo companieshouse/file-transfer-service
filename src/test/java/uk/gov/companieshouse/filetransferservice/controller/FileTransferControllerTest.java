@@ -18,9 +18,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
+import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 public class FileTransferControllerTest {
@@ -90,6 +92,32 @@ public class FileTransferControllerTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(fileStorageStrategy, times(1)).delete(fileId);
+    }
+
+    @Test
+    @DisplayName("Test successful retrieval of file details")
+    public void testGetFileDetailsSuccess() {
+        String fileId = "123";
+        FileDetailsApi expectedFileDetails = new FileDetailsApi();
+        when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(expectedFileDetails));
+
+        ResponseEntity<FileDetailsApi> response = fileTransferController.getFileDetails(fileId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(expectedFileDetails, response.getBody());
+        verify(fileStorageStrategy, times(1)).getFileDetails(fileId);
+    }
+
+    @Test
+    @DisplayName("Test retrieval of non-existent file details")
+    public void testGetFileDetailsNotFound() {
+        String fileId = "123";
+        when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.empty());
+
+        ResponseEntity<FileDetailsApi> response = fileTransferController.getFileDetails(fileId);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        verify(fileStorageStrategy, times(1)).getFileDetails(fileId);
     }
 
 }

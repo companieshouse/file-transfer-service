@@ -109,12 +109,21 @@ public class FileTransferController {
      * Handles the request to retrieve a file's details from S3
      *
      * @param fileId of remote file
-     * @return file details data
+     * @return file details data or 404 if the file is not found
      */
     @GetMapping(path = "/{fileId}")
-    public FileDetailsApi getFileDetails(@PathVariable String fileId) {
-        return new FileDetailsApi();
+    public ResponseEntity<FileDetailsApi> getFileDetails(@PathVariable String fileId) {
+        Optional<FileDetailsApi> fileDetails = fileStorageStrategy.getFileDetails(fileId);
+
+        // Multiline is more readable than single line
+        //noinspection OptionalIsPresent
+        if (fileDetails.isPresent()) {
+            return ResponseEntity.ok(fileDetails.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
+
 
     /**
      * Handles the request to delete a file from S3
