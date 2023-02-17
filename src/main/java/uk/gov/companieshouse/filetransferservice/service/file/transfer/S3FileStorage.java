@@ -1,5 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.service.file.transfer;
 
+import org.springframework.stereotype.Component;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 
@@ -8,6 +9,7 @@ import java.util.Optional;
 /**
  * An implementation of the FileStorageStrategy for S3
  */
+@Component
 public class S3FileStorage implements FileStorageStrategy {
     /**
      * Upload a file to S3
