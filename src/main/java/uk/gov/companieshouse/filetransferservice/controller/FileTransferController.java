@@ -78,9 +78,11 @@ public class FileTransferController {
                 logger.infoContext(fileId, "Created file", Map.of("id", fileId));
                 return ResponseEntity.status(HttpStatus.CREATED).body(fileId);
             } else {
-                //noinspection ConstantConditions
                 logger.error("Unable to upload file as it has an invalid mime type",
-                        Map.of("mime type", mimeType, "file name", fileName));
+                        Map.of("mime type",
+                                mimeType != null ? mimeType : "No Mime type",
+                                "file name",
+                                fileName));
                 return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Unsupported file type");
             }
         } catch (IOException e) {
