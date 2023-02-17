@@ -122,6 +122,9 @@ public class FileTransferController {
      * @param fileId of remote file
      */
     @DeleteMapping(path = "/{fileId}")
-    public void delete(@PathVariable String fileId) {
+    public ResponseEntity<Void> delete(@PathVariable String fileId) {
+        fileStorageStrategy.delete(fileId);
+        return ResponseEntity.ok().build();
     }
+
 }

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -35,6 +36,7 @@ public class FileTransferControllerTest {
     }
 
     @Test
+    @DisplayName("Test uploading a file with allowed MIME type")
     public void testUploadFileWithAllowedMimeType() {
         MultipartFile mockFile = new MockMultipartFile("test.pdf",
                 "test.pdf",
@@ -55,6 +57,7 @@ public class FileTransferControllerTest {
     }
 
     @Test
+    @DisplayName("Test uploading a file with unsupported MIME type")
     public void testUploadFileWithUnsupportedMimeType() {
         MultipartFile mockFile = new MockMultipartFile("test.txt", "test".getBytes());
 
@@ -66,6 +69,7 @@ public class FileTransferControllerTest {
     }
 
     @Test
+    @DisplayName("Test uploading a file with IOException")
     public void testUploadFileWithIOException() throws IOException {
         MultipartFile mockFile = mock(MultipartFile.class);
         when(mockFile.getBytes()).thenThrow(new IOException());
@@ -75,6 +79,17 @@ public class FileTransferControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals("Unable to upload file", response.getBody());
         verify(fileStorageStrategy, times(0)).save(any());
+    }
+
+    @Test
+    @DisplayName("Test successful file deletion")
+    public void testDeleteFileSuccess() {
+        String fileId = "123";
+
+        ResponseEntity<Void> response = fileTransferController.delete(fileId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(fileStorageStrategy, times(1)).delete(fileId);
     }
 
 }
