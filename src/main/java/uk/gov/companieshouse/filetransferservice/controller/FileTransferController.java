@@ -18,10 +18,12 @@ import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
+import uk.gov.companieshouse.logging.Logger;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -47,10 +49,12 @@ public class FileTransferController {
     );
 
     private final FileStorageStrategy fileStorageStrategy;
+    private final Logger logger;
 
     @Autowired
-    public FileTransferController(FileStorageStrategy fileStorageStrategy) {
+    public FileTransferController(FileStorageStrategy fileStorageStrategy, Logger logger) {
         this.fileStorageStrategy = fileStorageStrategy;
+        this.logger = logger;
     }
 
     /**
@@ -71,11 +75,16 @@ public class FileTransferController {
             if (ALLOWED_MIME_TYPES.contains(mimeType)) {
                 FileApi fileApi = new FileApi(fileName, data, mimeType, size, extension);
                 String fileId = fileStorageStrategy.save(fileApi);
+                logger.infoContext(fileId, "Created file", Map.of("id", fileId));
                 return ResponseEntity.status(HttpStatus.CREATED).body(fileId);
             } else {
+                //noinspection ConstantConditions
+                logger.error("Unable to upload file as it has an invalid mime type",
+                        Map.of("mime type", mimeType, "file name", fileName));
                 return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Unsupported file type");
             }
         } catch (IOException e) {
+            logger.error("Error uploading file", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unable to upload file");
         }
     }
@@ -109,12 +118,19 @@ public class FileTransferController {
         Optional<FileDetailsApi> fileDetailsOptional = fileStorageStrategy.getFileDetails(fileId);
 
         if (fileDetailsOptional.isEmpty()) {
+            logger.errorContext(fileId,
+                    "No file with id found",
+                    null,
+                    Map.of("fileId", fileId));
             return ResponseEntity.notFound().build();
         }
 
         FileDetailsApi fileDetails = fileDetailsOptional.get();
 
         if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+            logger.infoContext(fileId,
+                    "Request for file denied as AV status is not clean",
+                    Map.of("fileId", fileId));
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -166,6 +182,7 @@ public class FileTransferController {
     @DeleteMapping(path = "/{fileId}")
     public ResponseEntity<Void> delete(@PathVariable String fileId) {
         fileStorageStrategy.delete(fileId);
+        logger.infoContext(fileId, "Deleted file", Map.of("fileId", fileId));
         return ResponseEntity.ok().build();
     }
 

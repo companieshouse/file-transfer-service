@@ -8,10 +8,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -23,6 +23,7 @@ import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
+import uk.gov.companieshouse.logging.Logger;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -32,14 +33,13 @@ import java.util.Optional;
 public class FileTransferControllerTest {
 
     @Mock
+    private Logger logger;
+
+    @Mock
     private FileStorageStrategy fileStorageStrategy;
 
+    @InjectMocks
     private FileTransferController fileTransferController;
-
-    @BeforeEach
-    public void setup() {
-        fileTransferController = new FileTransferController(fileStorageStrategy);
-    }
 
     @Test
     @DisplayName("Test uploading a file with allowed MIME type")
