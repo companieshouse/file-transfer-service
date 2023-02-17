@@ -1,7 +1,10 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
@@ -97,12 +101,41 @@ public class FileTransferController {
     /**
      * Handles the request to retrieve a file from S3
      *
-     * @param id of remote file
+     * @param fileId of remote file
      * @return file data
      */
     @GetMapping(path = "/{fileId}/download")
-    public FileApi download(@PathVariable String id) {
-        return new FileApi();
+    public ResponseEntity<byte[]> download(@PathVariable String fileId) {
+        Optional<FileDetailsApi> fileDetailsOptional = fileStorageStrategy.getFileDetails(fileId);
+
+        if (fileDetailsOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        FileDetailsApi fileDetails = fileDetailsOptional.get();
+
+        if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        var maybeFile = fileStorageStrategy.load(fileId);
+        if (maybeFile.isEmpty()) {
+            // This should be impossible as file details must be present to reach this point.
+            // It's just here for completeness
+            return ResponseEntity.notFound().build();
+        }
+
+        var file = maybeFile.get();
+        var data = file.getBody();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
+        headers.setContentDisposition(ContentDisposition.builder("attachment")
+                .filename(file.getFileName())
+                .build());
+        headers.setContentLength(data.length);
+
+        return new ResponseEntity<>(data, headers, HttpStatus.OK);
     }
 
     /**
