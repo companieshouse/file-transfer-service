@@ -13,4 +13,6 @@ public interface AmazonFileTransfer {
     ObjectMetadata getFileMetaData(String s3Location);
 
     Map<String, String> getFileTags(String s3Location);
+
+    void deleteFile(String id);
 }

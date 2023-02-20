@@ -77,5 +77,6 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public void delete(String id) {
+        amazonFileTransfer.deleteFile(id);
     }
 }

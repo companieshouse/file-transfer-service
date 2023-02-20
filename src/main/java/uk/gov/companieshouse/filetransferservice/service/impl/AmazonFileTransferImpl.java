@@ -7,6 +7,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingResult;
@@ -88,20 +89,8 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public ObjectMetadata getFileMetaData(String s3Location) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
-//            HeadObjectResponse headObjectResponse = s3Client..headObject(headObjectRequest);
-//            GetObjectTaggingRequest request = new GetObjectTaggingRequest("s3av-cidev", "0002e92d-d3c8-498c-9c38-b4f1985f4897");
-//              GetObjectTaggingResult result =  s3Client.getObjectTagging(request);
-//            GetObjectMetadataRequest objectMetadataRequest = new GetObjectMetad1ataRequest("s3av-cidev", id);
             ObjectMetadata metadata = s3Client.getObjectMetadata("s3av-cidev", "0002e92d-d3c8-498c-9c38-b4f1985f4897");
             return metadata;
-//            HashMap<String, String> tags = (HashMap<String, String>) result.getTagSet().stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
-//            return tags;
-//            byte[] byteArray = IOUtils.toByteArray(metadata.get.getObjectContent());
-//            return new String(byteArray);
-//
-//            S3Object s3Object = getObjectInS3(s3Location, s3Client);
-//            byte[] byteArray = IOUtils.toByteArray(s3Object.getObjectContent());
-//            return new String(byteArray);
         } catch (Exception e) {
             //todo logging
 //            Map<String, Object> logMap = new HashMap<>();
@@ -130,6 +119,21 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 //            logMap.put("error", "Unable to fetch ixbrl from S3");
 //            LOG.error(e, logMap);
             return null;
+        }
+    }
+
+    /**
+     * Delete an object in S3
+     *
+     * @throws SdkClientException
+     */
+    @Override
+    public void deleteFile(String id) {
+        AmazonS3 s3Client = getAmazonS3Client();
+        if (validatePathExists(s3Client)) {
+            s3Client.deleteObject(new DeleteObjectRequest(getAWSBucketName(), getKey(id)));
+        } else {
+            throw new SdkClientException(FOLDER_ERROR_MESSAGE);
         }
     }
 

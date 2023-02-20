@@ -184,7 +184,7 @@ public class FileTransferController {
     @DeleteMapping(path = "/{fileId}")
     public ResponseEntity<Void> delete(@PathVariable String fileId) {
         fileStorageStrategy.delete(fileId);
-        logger.infoContext(fileId, "Deleted file", Map.of("fileId", fileId));
+//todo        logger.infoContext(fileId, "Deleted file", Map.of("fileId", fileId));
         return ResponseEntity.ok().build();
     }
 
