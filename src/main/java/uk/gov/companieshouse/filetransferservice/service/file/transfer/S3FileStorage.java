@@ -1,9 +1,12 @@
 package uk.gov.companieshouse.filetransferservice.service.file.transfer;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 
+import java.io.ByteArrayInputStream;
 import java.util.Optional;
 
 /**
@@ -11,6 +14,14 @@ import java.util.Optional;
  */
 @Component
 public class S3FileStorage implements FileStorageStrategy {
+
+    private AmazonFileTransfer amazonFileTransfer;
+
+    @Autowired
+    public S3FileStorage(AmazonFileTransfer amazonFileTransfer) {
+        this.amazonFileTransfer = amazonFileTransfer;
+    }
+
     /**
      * Upload a file to S3
      *
@@ -19,7 +30,9 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public String save(FileApi file) {
-        return null;
+        amazonFileTransfer.uploadFileInS3(file.getFileName(), new ByteArrayInputStream(file.getBody()), null);
+
+        return file.getFileName();
     }
 
     /**
