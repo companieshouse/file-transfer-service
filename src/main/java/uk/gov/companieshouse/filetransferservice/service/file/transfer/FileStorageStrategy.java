@@ -21,10 +21,11 @@ public interface FileStorageStrategy {
     /**
      * Loads a file from a remote repository
      *
-     * @param id of the file to retrieve
+     * @param id          of the file to retrieve
+     * @param fileDetails
      * @return Empty, if there is no such file, otherwise the File wrapped in an optional
      */
-    Optional<FileApi> load(String id);
+    Optional<FileApi> load(String id, FileDetailsApi fileDetails);
 
     /**
      * Retrieve a file's details from a remote repository

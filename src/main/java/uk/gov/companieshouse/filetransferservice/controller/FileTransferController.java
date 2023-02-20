@@ -136,7 +136,7 @@ public class FileTransferController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        var maybeFile = fileStorageStrategy.load(fileId);
+        var maybeFile = fileStorageStrategy.load(fileId, fileDetails);
         if (maybeFile.isEmpty()) {
             // This should be impossible as file details must be present to reach this point.
             // It's just here for completeness
