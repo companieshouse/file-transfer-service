@@ -1,18 +1,21 @@
 package uk.gov.companieshouse.filetransferservice.service;
 
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import java.io.InputStream;
-import java.util.Map;
 
 public interface AmazonFileTransfer {
-    void uploadFile(String fileId, InputStream inputStream, ObjectMetadata omd);
+    BasicAWSCredentials getAWSCredentials();
+
+    void uploadFile(String fileId, InputStream inputStream);
 
     String downloadFile(String fileId);
 
     ObjectMetadata getFileMetaData(String fileId);
 
-    Map<String, String> getFileTags(String fileId);
+    GetObjectTaggingResult getFileTaggingResult(String fileId);
 
     void deleteFile(String fileId);
 }

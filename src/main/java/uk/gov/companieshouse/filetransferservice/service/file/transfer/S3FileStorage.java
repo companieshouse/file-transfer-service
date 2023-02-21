@@ -1,6 +1,8 @@
 package uk.gov.companieshouse.filetransferservice.service.file.transfer;
 
+import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.Tag;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -10,7 +12,6 @@ import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 
 import java.io.ByteArrayInputStream;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -19,7 +20,7 @@ import java.util.Optional;
 @Component
 public class S3FileStorage implements FileStorageStrategy {
 
-    private static final String AV_TIMESTAMP_KEY = "av-Timestamp";
+    private static final String AV_TIMESTAMP_KEY = "av-timestamp";
     private static final String AV_STATUS_KEY = "av-status";
 
     private final AmazonFileTransfer amazonFileTransfer;
@@ -37,7 +38,7 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public String save(FileApi file) {
-        amazonFileTransfer.uploadFile(file.getFileName(), new ByteArrayInputStream(file.getBody()), null);
+        amazonFileTransfer.uploadFile(file.getFileName(), new ByteArrayInputStream(file.getBody()));
 
         return file.getFileName();
     }
@@ -73,19 +74,20 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public Optional<FileDetailsApi> getFileDetails(String fileId) {
+        //todo Can these be done in a single call?
         ObjectMetadata metaData = amazonFileTransfer.getFileMetaData(fileId);
         if (metaData == null) {
             return Optional.empty();
         }
 
-        Map<String, String> tags = amazonFileTransfer.getFileTags(fileId);
-        if (tags == null) {
+        GetObjectTaggingResult taggingResult = amazonFileTransfer.getFileTaggingResult(fileId);
+        if (taggingResult == null) {
             return Optional.empty();
         }
 
         FileDetailsApi fileDetailsApi = new FileDetailsApi(fileId,
-                tags.get(AV_TIMESTAMP_KEY),
-                AvStatusApi.valueOf(tags.get(AV_STATUS_KEY).toUpperCase()),
+                extractTag(taggingResult, AV_TIMESTAMP_KEY),
+                AvStatusApi.valueOf(extractTag(taggingResult, AV_STATUS_KEY).toUpperCase()),
                 metaData.getContentType(),
                 metaData.getContentLength(),
                 fileId,
@@ -103,5 +105,13 @@ public class S3FileStorage implements FileStorageStrategy {
     @Override
     public void delete(String fileId) {
         amazonFileTransfer.deleteFile(fileId);
+    }
+
+    private String extractTag(GetObjectTaggingResult result, String key) {
+        Tag tag = result.getTagSet().stream()
+                .filter(t -> t.getKey().equals(key))
+                .findFirst().orElse(null);
+
+        return tag.getValue();
     }
 }

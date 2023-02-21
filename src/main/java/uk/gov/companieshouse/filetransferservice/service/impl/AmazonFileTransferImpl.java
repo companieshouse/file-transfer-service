@@ -14,7 +14,6 @@ import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.Tag;
 import com.amazonaws.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,8 +24,6 @@ import uk.gov.companieshouse.logging.LoggerFactory;
 
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
@@ -34,7 +31,6 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     private static final String SUFFIX = "/";
     private static final String S3_PATH_PREFIX = "s3://";
     private static final String FOLDER_ERROR_MESSAGE = "Subfolder path does not exist";
-    private static final String FILE_ERROR_MESSAGE = "File does not exist";
     private static final String PROXY_HOST_PROPERTY = "IMAGE_CLOUD_PROXY_HOST";
     private static final String PROXY_PORT_PROPERTY = "IMAGE_CLOUD_PROXY_PORT";
 
@@ -51,14 +47,22 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     /**
+     * Get the AWS credentials
+     */
+    @Override
+    public BasicAWSCredentials getAWSCredentials() {
+        return new BasicAWSCredentials(configuration.getAccessKeyId(), configuration.getSecretAccessKey());
+    }
+
+    /**
      * Upload the file to S3
      */
     @Override
-    public void uploadFile(String fileId, InputStream inputStream, ObjectMetadata omd) {
+    public void uploadFile(String fileId, InputStream inputStream) {
         AmazonS3 s3Client = getAmazonS3Client();
         validateS3Details(s3Client);
         if (validatePathExists(s3Client)) {
-            s3Client.putObject(new PutObjectRequest(getAWSBucketName(), fileId, inputStream, omd));
+            s3Client.putObject(new PutObjectRequest(getAWSBucketName(), fileId, inputStream, null));
         } else {
             throw new SdkClientException(FOLDER_ERROR_MESSAGE);
         }
@@ -73,6 +77,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public String downloadFile(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
+            validateS3Details(s3Client);
             S3Object s3Object = getObjectInS3(getLocation(fileId), s3Client);
             byte[] byteArray = IOUtils.toByteArray(s3Object.getObjectContent());
             return new String(byteArray);
@@ -93,6 +98,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public ObjectMetadata getFileMetaData(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
+            validateS3Details(s3Client);
             return s3Client.getObjectMetadata(getAWSBucketName(), fileId);
         } catch (Exception e) {
             LOG.error(e, new HashMap<>() {{
@@ -105,15 +111,14 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     /**
      * Get file meta tags
      *
-     * @return Map of Tags
+     * @return Object containing Map of Tags
      */
     @Override
-    public Map<String, String> getFileTags(String fileId) {
+    public GetObjectTaggingResult getFileTaggingResult(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
-            GetObjectTaggingRequest request = new GetObjectTaggingRequest(getAWSBucketName(), fileId);
-            GetObjectTaggingResult result = s3Client.getObjectTagging(request);
-            return result.getTagSet().stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
+            validateS3Details(s3Client);
+            return s3Client.getObjectTagging(new GetObjectTaggingRequest(getAWSBucketName(), fileId));
         } catch (Exception e) {
             LOG.error(e, new HashMap<>() {{
                 put("error", "Unable to fetch ixbrl from S3");
@@ -130,14 +135,14 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     @Override
     public void deleteFile(String fileId) {
         AmazonS3 s3Client = getAmazonS3Client();
+        validateS3Details(s3Client);
 
-        if (!validatePathExists(s3Client)) {
+        if (validatePathExists(s3Client)) {
+            s3Client.deleteObject(new DeleteObjectRequest(getAWSBucketName(), fileId));
+        } else {
             throw new SdkClientException(FOLDER_ERROR_MESSAGE);
-        } else if (!s3Client.doesObjectExist(getAWSBucketName(), fileId)) {
-            throw new SdkClientException(FILE_ERROR_MESSAGE);
         }
 
-        s3Client.deleteObject(new DeleteObjectRequest(getAWSBucketName(), fileId));
     }
 
     /**
@@ -201,6 +206,19 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         String s3Path = configuration.getS3Path();
         String path = s3Path.substring(SPLIT_S3_PATH_SUBSTRING);
         return path.split("/", GET_S3_PATH_FROM_SPLIT);
+    }
+
+    /**
+     * Configure the S3 client
+     *
+     * @param credentials
+     * @return An {@link AmazonS3}
+     */
+    private AmazonS3 getAmazonS3(AWSCredentials credentials) {
+        ClientConfiguration clientConfiguration = getClientConfiguration(getProxyHost(),
+                getProxyPort(),
+                configuration.getProtocol());
+        return new AmazonS3Client(credentials, clientConfiguration);
     }
 
     /**
@@ -289,7 +307,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             throw new SdkClientException("bucket does not exist");
     }
 
-    private boolean validatePathExists(AmazonS3 s3Client) {
+    public boolean validatePathExists(AmazonS3 s3Client) {
         return getPathIfExists().isEmpty() || s3Client.doesObjectExist(getAWSBucketName(), getPathIfExists().trim());
     }
 }

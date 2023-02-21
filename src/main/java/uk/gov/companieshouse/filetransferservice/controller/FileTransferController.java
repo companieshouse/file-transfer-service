@@ -66,6 +66,7 @@ public class FileTransferController {
      */
     @PostMapping("/upload")
     public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file) {
+        //todo move mime type check logic to S3FileStorage service?
         try {
             byte[] data = file.getBytes();
             String fileName = Optional.ofNullable(file.getOriginalFilename()).orElse("");
