@@ -22,6 +22,7 @@ import uk.gov.companieshouse.logging.Logger;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,14 +76,14 @@ public class FileTransferController {
             if (ALLOWED_MIME_TYPES.contains(mimeType)) {
                 FileApi fileApi = new FileApi(fileName, data, mimeType, size, extension);
                 String fileId = fileStorageStrategy.save(fileApi);
-                logger.infoContext(fileId, "Created file", Map.of("id", fileId));
+                logger.infoContext(fileId, "Created file", new HashMap<>(Map.of("id", fileId)));
                 return ResponseEntity.status(HttpStatus.CREATED).body(fileId);
             } else {
                 logger.error("Unable to upload file as it has an invalid mime type",
-                        Map.of("mime type",
+                        new HashMap<>(Map.of("mime type",
                                 mimeType != null ? mimeType : "No Mime type",
                                 "file name",
-                                fileName));
+                                fileName)));
                 return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Unsupported file type");
             }
         } catch (IOException e) {
@@ -184,7 +185,7 @@ public class FileTransferController {
     @DeleteMapping(path = "/{fileId}")
     public ResponseEntity<Void> delete(@PathVariable String fileId) {
         fileStorageStrategy.delete(fileId);
-        logger.infoContext(fileId, "Deleted file", Map.of("fileId", fileId));
+        logger.infoContext(fileId, "Deleted file", new HashMap<>(Map.of("fileId", fileId)));
         return ResponseEntity.ok().build();
     }
 

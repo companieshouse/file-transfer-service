@@ -19,7 +19,7 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public String save(FileApi file) {
-        return null;
+        return "";
     }
 
     /**
