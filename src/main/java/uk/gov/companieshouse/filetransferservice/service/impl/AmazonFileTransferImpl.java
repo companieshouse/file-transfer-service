@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
+import uk.gov.companieshouse.logging.Logger;
+import uk.gov.companieshouse.logging.LoggerFactory;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -32,13 +34,16 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     private static final String SUFFIX = "/";
     private static final String S3_PATH_PREFIX = "s3://";
     private static final String FOLDER_ERROR_MESSAGE = "Subfolder path does not exist";
+    private static final String FILE_ERROR_MESSAGE = "File does not exist";
     private static final String PROXY_HOST_PROPERTY = "IMAGE_CLOUD_PROXY_HOST";
     private static final String PROXY_PORT_PROPERTY = "IMAGE_CLOUD_PROXY_PORT";
 
     private static final int SPLIT_S3_PATH_SUBSTRING = 5;
     private static final int GET_S3_PATH_FROM_SPLIT = 2;
 
-    private AWSServiceProperties configuration;
+    private static final Logger LOG = LoggerFactory.getLogger("file-transfer-service");
+
+    private final AWSServiceProperties configuration;
 
     @Autowired
     public AmazonFileTransferImpl(AWSServiceProperties configuration) {
@@ -49,11 +54,11 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * Upload the file to S3
      */
     @Override
-    public void uploadFile(String fileName, InputStream inputStream, ObjectMetadata omd) {
+    public void uploadFile(String fileId, InputStream inputStream, ObjectMetadata omd) {
         AmazonS3 s3Client = getAmazonS3Client();
         validateS3Details(s3Client);
         if (validatePathExists(s3Client)) {
-            s3Client.putObject(new PutObjectRequest(getAWSBucketName(), getKey(fileName), inputStream, omd));
+            s3Client.putObject(new PutObjectRequest(getAWSBucketName(), fileId, inputStream, omd));
         } else {
             throw new SdkClientException(FOLDER_ERROR_MESSAGE);
         }
@@ -65,17 +70,16 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * @return String
      */
     @Override
-    public String downloadFile(String s3Location) {
+    public String downloadFile(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
-            S3Object s3Object = getObjectInS3(s3Location, s3Client);
+            S3Object s3Object = getObjectInS3(getLocation(fileId), s3Client);
             byte[] byteArray = IOUtils.toByteArray(s3Object.getObjectContent());
             return new String(byteArray);
         } catch (Exception e) {
-            //todo logging
-//            Map<String, Object> logMap = new HashMap<>();
-//            logMap.put("error", "Unable to fetch ixbrl from S3");
-//            LOG.error(e, logMap);
+            LOG.error(e, new HashMap<>() {{
+                put("error", "Unable to fetch ixbrl from S3");
+            }});
             return null;
         }
     }
@@ -86,16 +90,14 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * @return String
      */
     @Override
-    public ObjectMetadata getFileMetaData(String s3Location) {
+    public ObjectMetadata getFileMetaData(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
-            ObjectMetadata metadata = s3Client.getObjectMetadata("s3av-cidev", "0002e92d-d3c8-498c-9c38-b4f1985f4897");
-            return metadata;
+            return s3Client.getObjectMetadata(getAWSBucketName(), fileId);
         } catch (Exception e) {
-            //todo logging
-//            Map<String, Object> logMap = new HashMap<>();
-//            logMap.put("error", "Unable to fetch ixbrl from S3");
-//            LOG.error(e, logMap);
+            LOG.error(e, new HashMap<>() {{
+                put("error", "Unable to fetch ixbrl from S3");
+            }});
             return null;
         }
     }
@@ -106,18 +108,16 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * @return Map of Tags
      */
     @Override
-    public Map<String, String> getFileTags(String s3Location) {
+    public Map<String, String> getFileTags(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
-            GetObjectTaggingRequest request = new GetObjectTaggingRequest("s3av-cidev", "0002e92d-d3c8-498c-9c38-b4f1985f4897");
+            GetObjectTaggingRequest request = new GetObjectTaggingRequest(getAWSBucketName(), fileId);
             GetObjectTaggingResult result = s3Client.getObjectTagging(request);
-            HashMap<String, String> tags = (HashMap<String, String>) result.getTagSet().stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
-            return tags;
+            return result.getTagSet().stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
         } catch (Exception e) {
-            //todo logging
-//            Map<String, Object> logMap = new HashMap<>();
-//            logMap.put("error", "Unable to fetch ixbrl from S3");
-//            LOG.error(e, logMap);
+            LOG.error(e, new HashMap<>() {{
+                put("error", "Unable to fetch ixbrl from S3");
+            }});
             return null;
         }
     }
@@ -128,13 +128,16 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * @throws SdkClientException
      */
     @Override
-    public void deleteFile(String id) {
+    public void deleteFile(String fileId) {
         AmazonS3 s3Client = getAmazonS3Client();
-        if (validatePathExists(s3Client)) {
-            s3Client.deleteObject(new DeleteObjectRequest(getAWSBucketName(), getKey(id)));
-        } else {
+
+        if (!validatePathExists(s3Client)) {
             throw new SdkClientException(FOLDER_ERROR_MESSAGE);
+        } else if (!s3Client.doesObjectExist(getAWSBucketName(), fileId)) {
+            throw new SdkClientException(FILE_ERROR_MESSAGE);
         }
+
+        s3Client.deleteObject(new DeleteObjectRequest(getAWSBucketName(), fileId));
     }
 
     /**
@@ -145,12 +148,12 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     protected S3Object getObjectInS3(String location, AmazonS3 s3Client) {
 
         String bucket = getBucketFromS3Location(location);
-        String key = getKeyFromS3Location(location);
+        String fileId = getKeyFromS3Location(location);
 
-        if (!s3Client.doesObjectExist(bucket, key))
+        if (!s3Client.doesObjectExist(bucket, fileId))
             throw new SdkClientException("S3 path does not exist: " + location);
 
-        return s3Client.getObject(new GetObjectRequest(bucket, key));
+        return s3Client.getObject(new GetObjectRequest(bucket, fileId));
     }
 
 
@@ -160,13 +163,13 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     /**
-     * Get the key from the S3 location
+     * Get the fileId from the S3 location
      */
     protected String getKeyFromS3Location(String location) {
         String path = location.substring(SPLIT_S3_PATH_SUBSTRING);
         String[] pathSegments = path.split("/");
 
-        StringBuffer stringBuffer = new StringBuffer();
+        StringBuilder stringBuffer = new StringBuilder();
         for (int i = 1; i < pathSegments.length - 1; i++) {
             stringBuffer.append(pathSegments[i]);
             stringBuffer.append('/');
@@ -265,14 +268,8 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         return clientConfiguration;
     }
 
-    private String getKey(String fileName) {
-        String key;
-        if (getSplitS3path().length > 1) {
-            key = getPathIfExists() + fileName;
-        } else {
-            key = fileName;
-        }
-        return key;
+    private String getLocation(String fileId) {
+        return String.format("%s/%s", configuration.getS3Path(), fileId);
     }
 
     private boolean validateS3Path() {

@@ -1,12 +1,13 @@
 package uk.gov.companieshouse.filetransferservice.service.file.transfer;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
-import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 
 import java.io.ByteArrayInputStream;
 import java.util.Map;
@@ -18,7 +19,10 @@ import java.util.Optional;
 @Component
 public class S3FileStorage implements FileStorageStrategy {
 
-    private AmazonFileTransfer amazonFileTransfer;
+    private static final String AV_TIMESTAMP_KEY = "av-Timestamp";
+    private static final String AV_STATUS_KEY = "av-status";
+
+    private final AmazonFileTransfer amazonFileTransfer;
 
     @Autowired
     public S3FileStorage(AmazonFileTransfer amazonFileTransfer) {
@@ -29,7 +33,7 @@ public class S3FileStorage implements FileStorageStrategy {
      * Upload a file to S3
      *
      * @param file to upload
-     * @return id used in subsequent calls on the S3 file resource
+     * @return file id used in subsequent calls on the S3 file resource
      */
     @Override
     public String save(FileApi file) {
@@ -41,31 +45,52 @@ public class S3FileStorage implements FileStorageStrategy {
     /**
      * Download a file from S3
      *
-     * @param id          of the file to retrieve
-     * @param fileDetails
+     * @param fileId      of the file to retrieve
+     * @param fileDetails file meta data
      * @return Empty, if there is no such file, otherwise the File wrapped in an optional
      */
     @Override
-    public Optional<FileApi> load(String id, FileDetailsApi fileDetails) {
-        String contents =amazonFileTransfer.downloadFile("s3://s3av-cidev/2a089d94-785e-42a9-97cf-c85c26ee83ca");
+    public Optional<FileApi> load(String fileId, FileDetailsApi fileDetails) {
+        String contents = amazonFileTransfer.downloadFile(fileId);
 
-        FileApi fileApi = new FileApi(id, contents.getBytes(), fileDetails.getContentType(), (int)fileDetails.getSize(), null);
-
-        return Optional.of(fileApi);
+        if (StringUtils.isNotEmpty(contents)) {
+            return Optional.of(new FileApi(
+                    fileId,
+                    contents.getBytes(),
+                    fileDetails.getContentType(),
+                    (int) fileDetails.getSize(),
+                    null));
+        } else {
+            return Optional.empty();
+        }
     }
 
     /**
      * Retrieve a file's details from S3
      *
-     * @param id of the file details to retrieve
+     * @param fileId of the file details to retrieve
      * @return Empty, if there is no such file, otherwise the File wrapped in an optional
      */
     @Override
-    public Optional<FileDetailsApi> getFileDetails(String id) {
-        ObjectMetadata metaData =amazonFileTransfer.getFileMetaData("s3://s3av-cidev/0002e92d-d3c8-498c-9c38-b4f1985f4897");
-        Map<String, String> tags =amazonFileTransfer.getFileTags("s3://s3av-cidev/0002e92d-d3c8-498c-9c38-b4f1985f4897");
+    public Optional<FileDetailsApi> getFileDetails(String fileId) {
+        ObjectMetadata metaData = amazonFileTransfer.getFileMetaData(fileId);
+        if (metaData == null) {
+            return Optional.empty();
+        }
 
-        FileDetailsApi fileDetailsApi = new FileDetailsApi(id, tags.get("av-Timestamp"), AvStatusApi.valueOf(tags.get("av-status").toUpperCase()), metaData.getContentType(), metaData.getContentLength(), id, metaData.getLastModified().toString(), null);
+        Map<String, String> tags = amazonFileTransfer.getFileTags(fileId);
+        if (tags == null) {
+            return Optional.empty();
+        }
+
+        FileDetailsApi fileDetailsApi = new FileDetailsApi(fileId,
+                tags.get(AV_TIMESTAMP_KEY),
+                AvStatusApi.valueOf(tags.get(AV_STATUS_KEY).toUpperCase()),
+                metaData.getContentType(),
+                metaData.getContentLength(),
+                fileId,
+                metaData.getLastModified().toString(),
+                null);
 
         return Optional.of(fileDetailsApi);
     }
@@ -73,10 +98,10 @@ public class S3FileStorage implements FileStorageStrategy {
     /**
      * Deletes the file from S3
      *
-     * @param id of the file to delete
+     * @param fileId of the file to delete
      */
     @Override
-    public void delete(String id) {
-        amazonFileTransfer.deleteFile(id);
+    public void delete(String fileId) {
+        amazonFileTransfer.deleteFile(fileId);
     }
 }

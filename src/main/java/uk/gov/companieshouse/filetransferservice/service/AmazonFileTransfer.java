@@ -6,13 +6,13 @@ import java.io.InputStream;
 import java.util.Map;
 
 public interface AmazonFileTransfer {
-    void uploadFile(String key, InputStream inputStream, ObjectMetadata omd);
+    void uploadFile(String fileId, InputStream inputStream, ObjectMetadata omd);
 
-    String downloadFile(String s3Location);
+    String downloadFile(String fileId);
 
-    ObjectMetadata getFileMetaData(String s3Location);
+    ObjectMetadata getFileMetaData(String fileId);
 
-    Map<String, String> getFileTags(String s3Location);
+    Map<String, String> getFileTags(String fileId);
 
-    void deleteFile(String id);
+    void deleteFile(String fileId);
 }
