@@ -18,6 +18,8 @@ import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileApiConverter;
+import uk.gov.companieshouse.filetransferservice.exception.FileNotCleanException;
+import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
 import uk.gov.companieshouse.logging.Logger;
@@ -26,6 +28,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @Controller
 @RequestMapping(path = "/files")
@@ -74,45 +77,43 @@ public class FileTransferController {
      */
     @GetMapping(path = "/{fileId}/download")
     public ResponseEntity<byte[]> download(@PathVariable String fileId) {
-        Optional<FileDetailsApi> fileDetailsOptional = fileStorageStrategy.getFileDetails(fileId);
+        try {
+            Supplier<FileNotFoundException> notFoundException = () ->
+                    new FileNotFoundException(fileId);
+            FileDetailsApi fileDetails = fileStorageStrategy
+                    .getFileDetails(fileId)
+                    .orElseThrow(notFoundException);
 
-        if (fileDetailsOptional.isEmpty()) {
-            logger.errorContext(fileId,
-                    "No file with id found",
-                    null,
-                    new HashMap<>(Map.of("fileId", fileId)));
+            if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+                throw new FileNotCleanException(fileDetails.getAvStatusApi());
+            }
+
+            var file = fileStorageStrategy.load(fileId).orElseThrow(notFoundException);
+            var data = file.getBody();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
+            headers.setContentDisposition(ContentDisposition.builder("attachment")
+                    .filename(file.getFileName())
+                    .build());
+            headers.setContentLength(data.length);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(data);
+        } catch (FileNotFoundException exception) {
+            Map<String, Object> loggedVars = new HashMap<>();
+            loggedVars.put("fileId", fileId);
+            logger.errorContext(fileId, "Unable to find file with ID", exception, loggedVars);
             return ResponseEntity.notFound().build();
-        }
-
-        FileDetailsApi fileDetails = fileDetailsOptional.get();
-
-        if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+        } catch (FileNotCleanException exception) {
+            Map<String, Object> loggedVars = new HashMap<>();
+            loggedVars.put("fileId", fileId);
             logger.infoContext(fileId,
                     "Request for file denied as AV status is not clean",
-                    new HashMap<>(Map.of("fileId", fileId)));
+                    loggedVars);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-
-        var maybeFile = fileStorageStrategy.load(fileId);
-        if (maybeFile.isEmpty()) {
-            // This should be impossible as file details must be present to reach this point.
-            // It's just here for completeness
-            return ResponseEntity.notFound().build();
-        }
-
-        var file = maybeFile.get();
-        var data = file.getBody();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
-        headers.setContentDisposition(ContentDisposition.builder("attachment")
-                .filename(file.getFileName())
-                .build());
-        headers.setContentLength(data.length);
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(data);
     }
 
     /**
