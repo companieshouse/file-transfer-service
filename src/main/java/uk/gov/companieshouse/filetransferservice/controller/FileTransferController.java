@@ -89,6 +89,9 @@ public class FileTransferController {
         } catch (IOException e) {
             logger.error("Error uploading file", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unable to upload file");
+        } catch (InvalidMimeTypeException e) {
+            logger.error("File was uploaded with an invalid mime type", e);
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(e.getMessage());
         }
     }
 
