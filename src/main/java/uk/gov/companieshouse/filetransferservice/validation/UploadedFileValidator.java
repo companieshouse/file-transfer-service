@@ -2,6 +2,7 @@ package uk.gov.companieshouse.filetransferservice.validation;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 
 import java.util.Arrays;
 import java.util.List;

@@ -1,4 +1,4 @@
-package uk.gov.companieshouse.filetransferservice.validation;
+package uk.gov.companieshouse.filetransferservice.exception;
 
 public class InvalidMimeTypeException extends Exception {
     private final String mimeType;

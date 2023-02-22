@@ -18,8 +18,8 @@ import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileApiConverter;
+import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
-import uk.gov.companieshouse.filetransferservice.validation.InvalidMimeTypeException;
 import uk.gov.companieshouse.logging.Logger;
 
 import java.io.IOException;
