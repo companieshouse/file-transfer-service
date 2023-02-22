@@ -65,23 +65,6 @@ public class FileTransferController {
         }
     }
 
-    /**
-     * Gets the file extension of the specified file name. For example, if the file name is "document.pdf",
-     * the file extension returned is "pdf". If the file name does not contain a file extension, an empty string
-     * is returned.
-     *
-     * @param fileName the name of the file
-     * @return the file extension
-     */
-    private String getFileExtension(String fileName) {
-        String[] parts = fileName.split("\\.");
-        if (parts.length > 1) {
-            return parts[parts.length - 1];
-        } else {
-            return "";
-        }
-    }
-
 
     /**
      * Handles the request to retrieve a file from S3
@@ -97,7 +80,7 @@ public class FileTransferController {
             logger.errorContext(fileId,
                     "No file with id found",
                     null,
-                    Map.of("fileId", fileId));
+                    new HashMap<>(Map.of("fileId", fileId)));
             return ResponseEntity.notFound().build();
         }
 
@@ -106,7 +89,7 @@ public class FileTransferController {
         if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
             logger.infoContext(fileId,
                     "Request for file denied as AV status is not clean",
-                    Map.of("fileId", fileId));
+                    new HashMap<>(Map.of("fileId", fileId)));
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -127,7 +110,9 @@ public class FileTransferController {
                 .build());
         headers.setContentLength(data.length);
 
-        return new ResponseEntity<>(data, headers, HttpStatus.OK);
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 
     /**
