@@ -17,75 +17,45 @@ import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileApiConverter;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
+import uk.gov.companieshouse.filetransferservice.validation.InvalidMimeTypeException;
 import uk.gov.companieshouse.logging.Logger;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @Controller
 @RequestMapping(path = "/files")
 public class FileTransferController {
-    public static final List<String> ALLOWED_MIME_TYPES = Arrays.asList(
-            "text/plain",
-            "image/png",
-            "image/jpeg",
-            "image/jpg",
-            "application/pdf",
-            "text/csv",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/vnd.ms-excel",
-            "image/gif",
-            "application/x-rar-compressed",
-            "application/x-tar",
-            "application/x-7z-compressed",
-            "application/xhtml+xml",
-            "application/zip"
-    );
-
     private final FileStorageStrategy fileStorageStrategy;
     private final Logger logger;
+    private final MultipartFileToFileApiConverter fileConverter;
 
     @Autowired
-    public FileTransferController(FileStorageStrategy fileStorageStrategy, Logger logger) {
+    public FileTransferController(FileStorageStrategy fileStorageStrategy,
+                                  Logger logger,
+                                  MultipartFileToFileApiConverter fileConverter) {
         this.fileStorageStrategy = fileStorageStrategy;
         this.logger = logger;
+        this.fileConverter = fileConverter;
     }
 
     /**
      * Uploads the specified file to the file transfer service. The file is checked for valid MIME type and size
      * limits, and an appropriate response is returned containing the ID of the uploaded file or an error message.
      *
-     * @param file the file to upload
+     * @param uploadedFile the file to upload
      * @return a ResponseEntity containing the ID of the uploaded file or an error message
      */
     @PostMapping("/upload")
-    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile uploadedFile) {
         try {
-            byte[] data = file.getBytes();
-            String fileName = Optional.ofNullable(file.getOriginalFilename()).orElse("");
-            String mimeType = file.getContentType();
-            int size = (int) file.getSize();
-            String extension = getFileExtension(fileName);
-            if (ALLOWED_MIME_TYPES.contains(mimeType)) {
-                FileApi fileApi = new FileApi(fileName, data, mimeType, size, extension);
-                String fileId = fileStorageStrategy.save(fileApi);
-                logger.infoContext(fileId, "Created file", new HashMap<>(Map.of("id", fileId)));
-                return ResponseEntity.status(HttpStatus.CREATED).body(fileId);
-            } else {
-                logger.error("Unable to upload file as it has an invalid mime type",
-                        new HashMap<>(Map.of("mime type",
-                                mimeType != null ? mimeType : "No Mime type",
-                                "file name",
-                                fileName)));
-                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Unsupported file type");
-            }
+            FileApi file = fileConverter.convert(uploadedFile);
+            String fileId = fileStorageStrategy.save(file);
+            return ResponseEntity.ok(fileId);
         } catch (IOException e) {
             logger.error("Error uploading file", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unable to upload file");
