@@ -3,6 +3,7 @@ package uk.gov.companieshouse.filetransferservice.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import uk.gov.companieshouse.api.interceptor.InternalUserInterceptor;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.logging.LoggerFactory;
 
@@ -21,5 +22,11 @@ public class ApplicationConfiguration {
     public Logger logger() {
         return LoggerFactory.getLogger(applicationNameSpace);
     }
+
+    @Bean
+    public InternalUserInterceptor userInterceptor() {
+        return new InternalUserInterceptor(applicationNameSpace);
+    }
+
 }
 

@@ -1,8 +1,11 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,6 +25,8 @@ import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileApiConverter;
+import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
 import uk.gov.companieshouse.logging.Logger;
 
@@ -31,6 +36,8 @@ import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 public class FileTransferControllerTest {
+    @Mock
+    private MultipartFileToFileApiConverter converter;
 
     @Mock
     private Logger logger;
@@ -43,7 +50,7 @@ public class FileTransferControllerTest {
 
     @Test
     @DisplayName("Test uploading a file with allowed MIME type")
-    public void testUploadFileWithAllowedMimeType() {
+    public void testUploadFileWithAllowedMimeType() throws IOException, InvalidMimeTypeException {
         MultipartFile mockFile = new MockMultipartFile("test.pdf",
                 "test.pdf",
                 "application/pdf",
@@ -53,32 +60,39 @@ public class FileTransferControllerTest {
                 "application/pdf",
                 4,
                 "pdf");
+
+        when(converter.convert(mockFile)).thenReturn(mockFileApi);
         when(fileStorageStrategy.save(mockFileApi)).thenReturn("123");
 
         ResponseEntity<String> response = fileTransferController.upload(mockFile);
 
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("123", response.getBody());
         verify(fileStorageStrategy, times(1)).save(mockFileApi);
     }
 
     @Test
     @DisplayName("Test uploading a file with unsupported MIME type")
-    public void testUploadFileWithUnsupportedMimeType() {
-        MultipartFile mockFile = new MockMultipartFile("test.txt", "test".getBytes());
+    public void testUploadFileWithUnsupportedMimeType() throws InvalidMimeTypeException, IOException {
+        MultipartFile mockFile = new MockMultipartFile("file",
+                "test.txt",
+                "invalid",
+                "test".getBytes());
+
+        doThrow(new InvalidMimeTypeException(mockFile.getContentType())).when(converter).convert(mockFile);
 
         ResponseEntity<String> response = fileTransferController.upload(mockFile);
 
         assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, response.getStatusCode());
-        assertEquals("Unsupported file type", response.getBody());
+        assertThat(response.getBody(), containsString("is not a valid mime type"));
         verify(fileStorageStrategy, times(0)).save(any());
     }
 
     @Test
     @DisplayName("Test uploading a file with IOException")
-    public void testUploadFileWithIOException() throws IOException {
+    public void testUploadFileWithIOException() throws IOException, InvalidMimeTypeException {
         MultipartFile mockFile = mock(MultipartFile.class);
-        when(mockFile.getBytes()).thenThrow(new IOException());
+        when(converter.convert(mockFile)).thenThrow(new IOException());
 
         ResponseEntity<String> response = fileTransferController.upload(mockFile);
 

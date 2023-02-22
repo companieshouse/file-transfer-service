@@ -17,94 +17,54 @@ import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileApiConverter;
+import uk.gov.companieshouse.filetransferservice.exception.FileNotCleanException;
+import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException;
+import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
 import uk.gov.companieshouse.logging.Logger;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @Controller
 @RequestMapping(path = "/files")
 public class FileTransferController {
-    public static final List<String> ALLOWED_MIME_TYPES = Arrays.asList(
-            "text/plain",
-            "image/png",
-            "image/jpeg",
-            "image/jpg",
-            "application/pdf",
-            "text/csv",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/vnd.ms-excel",
-            "image/gif",
-            "application/x-rar-compressed",
-            "application/x-tar",
-            "application/x-7z-compressed",
-            "application/xhtml+xml",
-            "application/zip"
-    );
-
     private final FileStorageStrategy fileStorageStrategy;
     private final Logger logger;
+    private final MultipartFileToFileApiConverter fileConverter;
 
     @Autowired
-    public FileTransferController(FileStorageStrategy fileStorageStrategy, Logger logger) {
+    public FileTransferController(FileStorageStrategy fileStorageStrategy,
+                                  Logger logger,
+                                  MultipartFileToFileApiConverter fileConverter) {
         this.fileStorageStrategy = fileStorageStrategy;
         this.logger = logger;
+        this.fileConverter = fileConverter;
     }
 
     /**
      * Uploads the specified file to the file transfer service. The file is checked for valid MIME type and size
      * limits, and an appropriate response is returned containing the ID of the uploaded file or an error message.
      *
-     * @param file the file to upload
+     * @param uploadedFile the file to upload
      * @return a ResponseEntity containing the ID of the uploaded file or an error message
      */
     @PostMapping("/upload")
-    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile uploadedFile) {
         try {
-            byte[] data = file.getBytes();
-            String fileName = Optional.ofNullable(file.getOriginalFilename()).orElse("");
-            String mimeType = file.getContentType();
-            int size = (int) file.getSize();
-            String extension = getFileExtension(fileName);
-            if (ALLOWED_MIME_TYPES.contains(mimeType)) {
-                FileApi fileApi = new FileApi(fileName, data, mimeType, size, extension);
-                String fileId = fileStorageStrategy.save(fileApi);
-                logger.infoContext(fileId, "Created file", Map.of("id", fileId));
-                return ResponseEntity.status(HttpStatus.CREATED).body(fileId);
-            } else {
-                logger.error("Unable to upload file as it has an invalid mime type",
-                        Map.of("mime type",
-                                mimeType != null ? mimeType : "No Mime type",
-                                "file name",
-                                fileName));
-                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Unsupported file type");
-            }
+            FileApi file = fileConverter.convert(uploadedFile);
+            String fileId = fileStorageStrategy.save(file);
+            return ResponseEntity.ok(fileId);
         } catch (IOException e) {
             logger.error("Error uploading file", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unable to upload file");
-        }
-    }
-
-    /**
-     * Gets the file extension of the specified file name. For example, if the file name is "document.pdf",
-     * the file extension returned is "pdf". If the file name does not contain a file extension, an empty string
-     * is returned.
-     *
-     * @param fileName the name of the file
-     * @return the file extension
-     */
-    private String getFileExtension(String fileName) {
-        String[] parts = fileName.split("\\.");
-        if (parts.length > 1) {
-            return parts[parts.length - 1];
-        } else {
-            return "";
+        } catch (InvalidMimeTypeException e) {
+            logger.error("File was uploaded with an invalid mime type", e);
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(e.getMessage());
         }
     }
 
@@ -117,43 +77,43 @@ public class FileTransferController {
      */
     @GetMapping(path = "/{fileId}/download")
     public ResponseEntity<byte[]> download(@PathVariable String fileId) {
-        Optional<FileDetailsApi> fileDetailsOptional = fileStorageStrategy.getFileDetails(fileId);
+        try {
+            Supplier<FileNotFoundException> notFoundException = () ->
+                    new FileNotFoundException(fileId);
+            FileDetailsApi fileDetails = fileStorageStrategy
+                    .getFileDetails(fileId)
+                    .orElseThrow(notFoundException);
 
-        if (fileDetailsOptional.isEmpty()) {
-            logger.errorContext(fileId,
-                    "No file with id found",
-                    null,
-                    Map.of("fileId", fileId));
+            if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+                throw new FileNotCleanException(fileDetails.getAvStatusApi());
+            }
+
+            var file = fileStorageStrategy.load(fileId).orElseThrow(notFoundException);
+            var data = file.getBody();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
+            headers.setContentDisposition(ContentDisposition.builder("attachment")
+                    .filename(file.getFileName())
+                    .build());
+            headers.setContentLength(data.length);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(data);
+        } catch (FileNotFoundException exception) {
+            Map<String, Object> loggedVars = new HashMap<>();
+            loggedVars.put("fileId", fileId);
+            logger.errorContext(fileId, "Unable to find file with ID", exception, loggedVars);
             return ResponseEntity.notFound().build();
-        }
-
-        FileDetailsApi fileDetails = fileDetailsOptional.get();
-
-        if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+        } catch (FileNotCleanException exception) {
+            Map<String, Object> loggedVars = new HashMap<>();
+            loggedVars.put("fileId", fileId);
             logger.infoContext(fileId,
                     "Request for file denied as AV status is not clean",
-                    Map.of("fileId", fileId));
+                    loggedVars);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-
-        var maybeFile = fileStorageStrategy.load(fileId);
-        if (maybeFile.isEmpty()) {
-            // This should be impossible as file details must be present to reach this point.
-            // It's just here for completeness
-            return ResponseEntity.notFound().build();
-        }
-
-        var file = maybeFile.get();
-        var data = file.getBody();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
-        headers.setContentDisposition(ContentDisposition.builder("attachment")
-                .filename(file.getFileName())
-                .build());
-        headers.setContentLength(data.length);
-
-        return new ResponseEntity<>(data, headers, HttpStatus.OK);
     }
 
     /**
@@ -184,7 +144,7 @@ public class FileTransferController {
     @DeleteMapping(path = "/{fileId}")
     public ResponseEntity<Void> delete(@PathVariable String fileId) {
         fileStorageStrategy.delete(fileId);
-        logger.infoContext(fileId, "Deleted file", Map.of("fileId", fileId));
+        logger.infoContext(fileId, "Deleted file", new HashMap<>(Map.of("fileId", fileId)));
         return ResponseEntity.ok().build();
     }
 
