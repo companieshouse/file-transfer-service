@@ -7,6 +7,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -65,7 +66,7 @@ class AmazonFileTransferImplTest {
         omd = mock(ObjectMetadata.class);
         taggingResult = mock(GetObjectTaggingResult.class);
 
-        s3Object = mock(S3Object.class);
+        s3Object = createTestS3Object();
         configuration = mock(AWSServiceProperties.class);
         s3ObjectInputStream = mock(S3ObjectInputStream.class);
 
@@ -196,53 +197,53 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void getFileMetaDataWhenLocationExists() {
+    void testGetS3ObjectWhenLocationExists() {
         mockConfigurationDetails();
-        when(client.getObjectMetadata(anyString(), anyString())).thenReturn(omd);
+        when(client.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
 
-        ObjectMetadata actual = amazonFileTransfer.getFileMetaData("123");
+        S3Object actual = amazonFileTransfer.getS3Object("123");
 
         Assert.assertNotNull(actual);
-        verify(client).getObjectMetadata(anyString(), anyString());
+        verify(client).getObject(any(GetObjectRequest.class));
     }
 
     @Test
-    void testGetFileMetaDataWhenInvalidS3Path() {
+    void testGetS3ObjectWhenInvalidS3Path() {
         when(configuration.getS3Path()).thenReturn(INVALID_PATH);
 
-        ObjectMetadata actual = amazonFileTransfer.getFileMetaData("123");
+        S3Object actual = amazonFileTransfer.getS3Object("123");
 
         assertNull(actual);
         verify(configuration, atLeastOnce()).getS3Path();
     }
 
     @Test
-    void testGetFileMetaDataWhenEmptyBucketName() {
+    void testGetS3ObjectWhenEmptyBucketName() {
         when(configuration.getS3Path()).thenReturn(S3_PATH_WITHOUT_BUCKET_NAME);
 
-        ObjectMetadata actual = amazonFileTransfer.getFileMetaData("123");
+        S3Object actual = amazonFileTransfer.getS3Object("123");
 
         assertNull(actual);
         verify(configuration, atLeastOnce()).getS3Path();
     }
 
     @Test
-    void testGetFileMetaDataWhenBucketDoesNotExist() {
+    void testGetS3ObjectWhenBucketDoesNotExist() {
         mockConfigurationDetails();
         when(client.doesBucketExist(BUCKET_NAME)).thenReturn(false);
 
-        ObjectMetadata actual = amazonFileTransfer.getFileMetaData("123");
+        S3Object actual = amazonFileTransfer.getS3Object("123");
 
         assertNull(actual);
         verify(client, atLeastOnce()).doesBucketExist(BUCKET_NAME);
     }
 
     @Test
-    void testGetFileMetaDataWhenLocationNotFound() {
+    void testGetS3ObjectWhenLocationNotFound() {
         mockConfigurationDetails();
         when(client.getObjectMetadata(anyString(), anyString())).thenThrow(SdkClientException.class);
 
-        ObjectMetadata actual = amazonFileTransfer.getFileMetaData("123");
+        S3Object actual = amazonFileTransfer.getS3Object("123");
 
         assertNull(actual);
         verify(client).getObjectMetadata(anyString(), anyString());
@@ -391,5 +392,15 @@ class AmazonFileTransferImplTest {
 
     private InputStream getInputStream() {
         return new ByteArrayInputStream("anything".getBytes());
+    }
+
+    private S3Object createTestS3Object() {
+        S3Object s3Object = new S3Object();
+//        objectMetadata.setContentType("anything");
+//        objectMetadata.setContentLength(123L);
+//
+//        objectMetadata.setLastModified(new Date());
+
+        return s3Object;
     }
 }

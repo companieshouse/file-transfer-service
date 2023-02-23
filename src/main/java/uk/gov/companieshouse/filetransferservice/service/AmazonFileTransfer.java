@@ -2,7 +2,7 @@ package uk.gov.companieshouse.filetransferservice.service;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.model.GetObjectTaggingResult;
-import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
 
 import java.io.InputStream;
 
@@ -13,7 +13,7 @@ public interface AmazonFileTransfer {
 
     String downloadFile(String fileId);
 
-    ObjectMetadata getFileMetaData(String fileId);
+    S3Object getS3Object(String fileId);
 
     GetObjectTaggingResult getFileTaggingResult(String fileId);
 

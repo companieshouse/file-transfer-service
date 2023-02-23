@@ -11,7 +11,6 @@ import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingResult;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.util.IOUtils;
@@ -95,11 +94,12 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * @return String
      */
     @Override
-    public ObjectMetadata getFileMetaData(String fileId) {
+    public S3Object getS3Object(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
             validateS3Details(s3Client);
-            return s3Client.getObjectMetadata(getAWSBucketName(), fileId);
+
+            return s3Client.getObject(new GetObjectRequest(getAWSBucketName(), fileId));
         } catch (Exception e) {
             LOG.error(e, new HashMap<>() {{
                 put("error", "Unable to fetch ixbrl from S3");
