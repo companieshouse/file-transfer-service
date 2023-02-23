@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.filetransferservice.service.impl.AmazonFileTransferImpl;
+import uk.gov.companieshouse.api.interceptor.InternalUserInterceptor;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.logging.LoggerFactory;
 
@@ -34,5 +35,11 @@ public class ApplicationConfiguration {
     public Logger logger() {
         return LoggerFactory.getLogger(applicationNameSpace);
     }
+
+    @Bean
+    public InternalUserInterceptor userInterceptor() {
+        return new InternalUserInterceptor(applicationNameSpace);
+    }
+
 }
 
