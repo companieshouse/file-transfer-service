@@ -32,7 +32,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -139,6 +138,8 @@ class AmazonFileTransferImplTest {
 
     @Test
     void testDownloadWhenLocationExists() throws IOException {
+        S3Object s3Object = mock(S3Object.class);
+
         mockConfigurationDetails();
         when(client.doesObjectExist(anyString(), anyString())).thenReturn(true);
         when(client.getObject(any())).thenReturn(s3Object);
@@ -241,12 +242,12 @@ class AmazonFileTransferImplTest {
     @Test
     void testGetS3ObjectWhenLocationNotFound() {
         mockConfigurationDetails();
-        when(client.getObjectMetadata(anyString(), anyString())).thenThrow(SdkClientException.class);
+        when(client.getObject(any(GetObjectRequest.class))).thenThrow(SdkClientException.class);
 
         S3Object actual = amazonFileTransfer.getS3Object("123");
 
         assertNull(actual);
-        verify(client).getObjectMetadata(anyString(), anyString());
+        verify(client).getObject(any(GetObjectRequest.class));
     }
 
     @Test
@@ -294,6 +295,7 @@ class AmazonFileTransferImplTest {
     @Test
     void testGetFileTagsWhenLocationNotFound() {
         mockConfigurationDetails();
+        when(client.doesObjectExist(anyString(), anyString())).thenReturn(false);
         when(client.getObjectTagging(any(GetObjectTaggingRequest.class))).thenThrow(SdkClientException.class);
 
         GetObjectTaggingResult actual = amazonFileTransfer.getFileTaggingResult("123");
@@ -337,7 +339,7 @@ class AmazonFileTransferImplTest {
     @Test
     void testDeleteFileWhenLocationNotFound() {
         mockConfigurationDetails();
-        doThrow(SdkClientException.class).when(client).deleteObject(any(DeleteObjectRequest.class));
+        when(client.doesObjectExist(anyString(), anyString())).thenReturn(false);
 
         assertThrows(SdkClientException.class, () -> amazonFileTransfer.deleteFile("123"));
     }

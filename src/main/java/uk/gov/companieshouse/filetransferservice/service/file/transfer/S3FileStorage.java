@@ -12,6 +12,7 @@ import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 
 import java.io.ByteArrayInputStream;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -118,9 +119,13 @@ public class S3FileStorage implements FileStorageStrategy {
         amazonFileTransfer.deleteFile(fileId);
     }
 
-    private Map<String, String> extractAVTags(GetObjectTaggingResult taggingResult) {
-        return taggingResult.getTagSet().stream()
-                .filter(tag -> AV_TIMESTAMP_KEY.equals(tag.getKey()) || AV_STATUS_KEY.equals(tag.getKey()))
-                .collect((Collectors.toMap(Tag::getKey, Tag::getValue)));
+    private Map<String, String> extractAVTags(GetObjectTaggingResult tags) {
+        if (tags == null) {
+            return new HashMap<>();
+        } else {
+            return tags.getTagSet().stream()
+                    .filter(tag -> AV_TIMESTAMP_KEY.equals(tag.getKey()) || AV_STATUS_KEY.equals(tag.getKey()))
+                    .collect((Collectors.toMap(Tag::getKey, Tag::getValue)));
+        }
     }
 }

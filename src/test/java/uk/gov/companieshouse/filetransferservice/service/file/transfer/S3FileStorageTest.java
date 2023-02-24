@@ -101,7 +101,7 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test FileDetailsApi object returned without any tags on successful get file details")
+    @DisplayName("Test FileDetailsApi object returned with empty tags object on successful get file details")
     void testGetFileDetailsSuccessWithNullTags() {
         when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(createTestS3ObjectBasic());
 
@@ -125,6 +125,19 @@ public class S3FileStorageTest {
     }
 
     @Test
+    @DisplayName("Test FileDetailsApi object not returned when tags but no AV tagswith zero tags on successful get file details")
+    void testGetFileDetailsSuccessWithNoAVTags() {
+        when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(createTestS3ObjectTags(2));
+        when(amazonFileTransfer.getFileTaggingResult(any(String.class))).thenReturn(createNonAvTags());
+
+        Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
+
+        assertTrue(actual.isEmpty());
+        verify(amazonFileTransfer).getS3Object(any(String.class));
+        verify(amazonFileTransfer).getFileTaggingResult(any(String.class));
+    }
+
+    @Test
     @DisplayName("Test no FileDetailsApi object returned when s3 object not found")
     void testGetFileDetailsFailsWhenS3ObjectNotFound() {
         when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(null);
@@ -133,12 +146,13 @@ public class S3FileStorageTest {
 
         assertTrue(actual.isEmpty());
         verify(amazonFileTransfer).getS3Object(any(String.class));
+        verify(amazonFileTransfer, times(0)).getFileTaggingResult(any(String.class));
     }
 
     @Test
     @DisplayName("Test no FileDetailsApi object returned when retrieving Tags fails during getting file details")
     void testGetFileDetailsFailsOnRetrievingTags() {
-        when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(createTestS3ObjectBasic());
+        when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(createTestS3ObjectTags(1));
         when(amazonFileTransfer.getFileTaggingResult(any(String.class))).thenReturn(null);
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
@@ -146,7 +160,6 @@ public class S3FileStorageTest {
         assertTrue(actual.isEmpty());
         verify(amazonFileTransfer).getS3Object(any(String.class));
         verify(amazonFileTransfer).getFileTaggingResult(any(String.class));
-        verify(amazonFileTransfer, times(0)).getFileTaggingResult(any(String.class));
     }
 
     @Test
