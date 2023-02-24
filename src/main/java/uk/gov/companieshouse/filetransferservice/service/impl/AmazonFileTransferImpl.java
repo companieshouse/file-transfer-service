@@ -209,19 +209,6 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     /**
-     * Configure the S3 client
-     *
-     * @param credentials
-     * @return An {@link AmazonS3}
-     */
-    private AmazonS3 getAmazonS3(AWSCredentials credentials) {
-        ClientConfiguration clientConfiguration = getClientConfiguration(getProxyHost(),
-                getProxyPort(),
-                configuration.getProtocol());
-        return new AmazonS3Client(credentials, clientConfiguration);
-    }
-
-    /**
      * Get the proxy host if it has been defined
      *
      * @return A {@link String} or null
@@ -241,7 +228,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     /**
-     * Get the AWS credentials
+     * Create a S3 client
      */
     protected AmazonS3 getAmazonS3Client() {
         AWSCredentials credentials = new BasicAWSCredentials(configuration.getAccessKeyId(),
@@ -250,7 +237,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     /**
-     * Configure the S3 client
+     * Create a S3 client
      *
      * @param credentials
      * @return An {@link AmazonS3}

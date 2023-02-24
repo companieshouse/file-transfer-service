@@ -43,7 +43,7 @@ public class S3FileStorageTest {
     private S3FileStorage underTest;
 
     @Test
-    @DisplayName("Test file Id returned on successful file save")
+    @DisplayName("Test successful File Save")
     void testSaveFileSuccess() {
         doNothing().when(amazonFileTransfer).uploadFile(any(String.class), any(InputStream.class));
 
@@ -54,7 +54,7 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test SdkClientException thrown when unsuccessful file save")
+    @DisplayName("Test SdkClientException thrown on unsuccessful File Save")
     void testSdkClientExceptionThrownFromFileSaveFailure() {
         doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(any(String.class), any(InputStream.class));
 
@@ -64,7 +64,7 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test FileApi object returned on successful file load")
+    @DisplayName("Test successful File Load")
     void testLoadFileSuccess() {
         when(amazonFileTransfer.downloadFile(any(String.class))).thenReturn("sdf");
 
@@ -75,7 +75,7 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test no FileApi object returned on failed file load")
+    @DisplayName("Test SdkClientException thrown on unsuccessful File Load")
     void testLoadFileFailureReturnsEmptyObject() {
         when(amazonFileTransfer.downloadFile(any(String.class))).thenReturn(null);
 
@@ -86,7 +86,7 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test FileDetailsApi object returned with both AV tags on successful get file details")
+    @DisplayName("Test successful Get File Details with AV tags")
     void testGetFileDetailsSuccessWithAvTags() {
         when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectTags(4));
         when(amazonFileTransfer.getFileTags(any(String.class))).thenReturn(createAvTags());
@@ -101,9 +101,9 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test FileDetailsApi object returned with empty tags object on successful get file details")
+    @DisplayName("Test successful Get File Details with empty tags")
     void testGetFileDetailsSuccessWithNullTags() {
-        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectBasic());
+        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectWithNullTags());
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
 
@@ -113,19 +113,20 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test FileDetailsApi object returned with zero tags on successful get file details")
+    @DisplayName("Test successful Get File Details with zero tags")
     void testGetFileDetailsSuccessWithZeroTags() {
-        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectWithZeroTags());
+        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectTags(0));
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
 
         assertTrue(actual.isPresent());
         verify(amazonFileTransfer).getFileObject(any(String.class));
+
         verify(amazonFileTransfer, times(0)).getFileTags(any(String.class));
     }
 
     @Test
-    @DisplayName("Test FileDetailsApi object not returned when tags but no AV tagswith zero tags on successful get file details")
+    @DisplayName("Test failure Get File Details with no AV tags")
     void testGetFileDetailsSuccessWithNoAVTags() {
         when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectTags(2));
         when(amazonFileTransfer.getFileTags(any(String.class))).thenReturn(createNonAvTags());
@@ -138,7 +139,7 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test no FileDetailsApi object returned when s3 object not found")
+    @DisplayName("Test failure Get File Details when s3 object not found")
     void testGetFileDetailsFailsWhenS3ObjectNotFound() {
         when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(null);
 
@@ -150,7 +151,7 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test no FileDetailsApi object returned when retrieving Tags fails during getting file details")
+    @DisplayName("Test failure no Get File Details when Get File Tags fails")
     void testGetFileDetailsFailsOnRetrievingTags() {
         when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectTags(1));
         when(amazonFileTransfer.getFileTags(any(String.class))).thenReturn(null);
@@ -163,7 +164,7 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test successful file delete")
+    @DisplayName("Test successful File Delete")
     void testDeleteFileSuccess() {
         doNothing().when(amazonFileTransfer).deleteFile(any(String.class));
 
@@ -173,7 +174,7 @@ public class S3FileStorageTest {
     }
 
     @Test
-    @DisplayName("Test SdkClientException thrown when unsuccessful file delete")
+    @DisplayName("Test SdkClientException thrown on unsuccessful File Delete")
     void testSdkClientExceptionThrownFromFileDeleteFailure() {
         doThrow(SdkClientException.class).when(amazonFileTransfer).deleteFile(any(String.class));
 
@@ -202,7 +203,7 @@ public class S3FileStorageTest {
                 null);
     }
 
-    private S3Object createTestS3ObjectBasic() {
+    private S3Object createTestS3ObjectWithNullTags() {
         S3Object s3Object = new S3Object();
         ObjectMetadata objectMetadata = new ObjectMetadata();
 
@@ -215,16 +216,8 @@ public class S3FileStorageTest {
         return s3Object;
     }
 
-    private S3Object createTestS3ObjectWithZeroTags() {
-        S3Object s3Object = createTestS3ObjectBasic();
-
-        s3Object.setTaggingCount(0);
-
-        return s3Object;
-    }
-
     private S3Object createTestS3ObjectTags(int tagCount) {
-        S3Object s3Object = createTestS3ObjectBasic();
+        S3Object s3Object = createTestS3ObjectWithNullTags();
 
         s3Object.setTaggingCount(tagCount);
 

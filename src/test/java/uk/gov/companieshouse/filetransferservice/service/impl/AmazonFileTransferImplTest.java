@@ -10,13 +10,13 @@ import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingResult;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 
@@ -40,7 +40,6 @@ import static org.mockito.Mockito.when;
 class AmazonFileTransferImplTest {
     private AmazonFileTransferImpl amazonFileTransfer;
     private AWSServiceProperties configuration;
-    private ObjectMetadata omd;
     private GetObjectTaggingResult taggingResult;
     private AmazonS3Client client;
     private S3Object s3Object;
@@ -62,7 +61,6 @@ class AmazonFileTransferImplTest {
         deleteObjectRequest = mock(DeleteObjectRequest.class);
         putObjectResult = mock(PutObjectResult.class);
         client = mock(AmazonS3Client.class);
-        omd = mock(ObjectMetadata.class);
         taggingResult = mock(GetObjectTaggingResult.class);
 
         s3Object = createTestS3Object();
@@ -87,6 +85,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test successful AWS credentials returned")
     void testGetAWSCredentials() {
         mockConfigurationDetails();
         BasicAWSCredentials awsCredentials = amazonFileTransfer.getAWSCredentials();
@@ -97,7 +96,8 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void testUploadFileWhenLocationExists() {
+    @DisplayName("Test successful File Upload")
+    void testUploadFileIsSuccessful() {
         mockConfigurationDetails();
         when(client.putObject(putObjectRequest)).thenReturn(putObjectResult);
 
@@ -107,6 +107,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when S3 Path is invalid on File Upload")
     void testUploadFileWhenInvalidS3Path() {
         when(configuration.getS3Path()).thenReturn(INVALID_PATH);
 
@@ -114,6 +115,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when empty Bucket name on File Upload")
     void testUploadFileWhenEmptyBucketName() {
         when(configuration.getS3Path()).thenReturn(S3_PATH_WITHOUT_BUCKET_NAME);
 
@@ -121,6 +123,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when Bucket does not exist on File Upload")
     void testUploadFileWhenBucketDoesNotExist() {
         mockConfigurationDetails();
         when(client.doesBucketExist(BUCKET_NAME)).thenReturn(false);
@@ -129,6 +132,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when S3 location not found on File Upload")
     void testUploadFileWhenLocationNotFound() {
         mockConfigurationDetails();
         when(client.doesObjectExist(BUCKET_NAME, PATH_DIRECTORY)).thenReturn(false);
@@ -137,7 +141,8 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void testDownloadWhenLocationExists() throws IOException {
+    @DisplayName("Test successful File Download")
+    void testDownloadIsSuccessful() throws IOException {
         S3Object s3Object = mock(S3Object.class);
 
         mockConfigurationDetails();
@@ -156,6 +161,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when S3 Path is invalid on File Download")
     void testDownloadFileWhenInvalidS3Path() {
         when(configuration.getS3Path()).thenReturn(INVALID_PATH);
 
@@ -166,6 +172,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when empty Bucket name on File Download")
     void testDownloadFileWhenEmptyBucketName() {
         when(configuration.getS3Path()).thenReturn(S3_PATH_WITHOUT_BUCKET_NAME);
 
@@ -176,6 +183,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when Bucket does not exist on File Download")
     void testDownloadFileWhenBucketDoesNotExist() {
         mockConfigurationDetails();
         when(client.doesBucketExist(BUCKET_NAME)).thenReturn(false);
@@ -187,6 +195,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when S3 location not found on File Download")
     void testDownloadWhenLocationNotFound() {
         mockConfigurationDetails();
         when(client.doesObjectExist(anyString(), anyString())).thenReturn(false);
@@ -198,7 +207,8 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void testGetS3ObjectWhenLocationExists() {
+    @DisplayName("Test successful Get File Object")
+    void testGetFileObjectIsSuccessful() {
         mockConfigurationDetails();
         when(client.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
 
@@ -209,7 +219,8 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void testGetS3ObjectWhenInvalidS3Path() {
+    @DisplayName("Test SdkClientException thrown when S3 Path is invalid on Get File Object")
+    void testGetFileObjectWhenInvalidS3Path() {
         when(configuration.getS3Path()).thenReturn(INVALID_PATH);
 
         S3Object actual = amazonFileTransfer.getFileObject("123");
@@ -219,7 +230,8 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void testGetS3ObjectWhenEmptyBucketName() {
+    @DisplayName("Test SdkClientException thrown when empty Bucket name on Get File Object")
+    void testGetFileObjectWhenEmptyBucketName() {
         when(configuration.getS3Path()).thenReturn(S3_PATH_WITHOUT_BUCKET_NAME);
 
         S3Object actual = amazonFileTransfer.getFileObject("123");
@@ -229,7 +241,8 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void testGetS3ObjectWhenBucketDoesNotExist() {
+    @DisplayName("Test SdkClientException thrown when Bucket does not exist on Get File Object")
+    void testGetFileObjectWhenBucketDoesNotExist() {
         mockConfigurationDetails();
         when(client.doesBucketExist(BUCKET_NAME)).thenReturn(false);
 
@@ -240,7 +253,8 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void testGetS3ObjectWhenLocationNotFound() {
+    @DisplayName("Test SdkClientException thrown when S3 location not found on Get File Object")
+    void testGetFileObjectWhenLocationNotFound() {
         mockConfigurationDetails();
         when(client.getObject(any(GetObjectRequest.class))).thenThrow(SdkClientException.class);
 
@@ -251,7 +265,8 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void getGetFileTagsWhenLocationExists() {
+    @DisplayName("Test successful Get File Tags")
+    void getGetFileTagsIsSuccessful() {
         mockConfigurationDetails();
         when(client.getObjectTagging(any(GetObjectTaggingRequest.class))).thenReturn(taggingResult);
 
@@ -262,6 +277,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when S3 Path is invalid on Get File Tags")
     void testGetFileTagsWhenInvalidS3Path() {
         when(configuration.getS3Path()).thenReturn(INVALID_PATH);
 
@@ -272,6 +288,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when empty Bucket name on Get File Tags")
     void testGetFileTagsWhenEmptyBucketName() {
         when(configuration.getS3Path()).thenReturn(S3_PATH_WITHOUT_BUCKET_NAME);
 
@@ -282,6 +299,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when Bucket does not exist on Get File Tags")
     void testGetFileTagsWhenBucketDoesNotExist() {
         mockConfigurationDetails();
         when(client.doesBucketExist(BUCKET_NAME)).thenReturn(false);
@@ -293,6 +311,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when S3 location not found on Get File Tags")
     void testGetFileTagsWhenLocationNotFound() {
         mockConfigurationDetails();
         when(client.doesObjectExist(anyString(), anyString())).thenReturn(false);
@@ -305,7 +324,8 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
-    void testDeleteFileWhenLocationExists() {
+    @DisplayName("Test successful Delete File")
+    void testDeleteFileIsSuccessful() {
         mockConfigurationDetails();
         doNothing().when(client).deleteObject(deleteObjectRequest);
 
@@ -315,6 +335,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when S3 Path is invalid on Delete File")
     void testDeleteFileWhenInvalidS3Path() {
         when(configuration.getS3Path()).thenReturn(INVALID_PATH);
 
@@ -322,6 +343,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when empty Bucket name on Delete File")
     void testDeleteFileWhenEmptyBucketName() {
         when(configuration.getS3Path()).thenReturn(S3_PATH_WITHOUT_BUCKET_NAME);
 
@@ -329,6 +351,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when Bucket does not exist on Delete File")
     void testDeleteFileWhenBucketDoesNotExist() {
         mockConfigurationDetails();
         when(client.doesBucketExist(BUCKET_NAME)).thenReturn(false);
@@ -337,6 +360,7 @@ class AmazonFileTransferImplTest {
     }
 
     @Test
+    @DisplayName("Test SdkClientException thrown when S3 location not found on Delete File")
     void testDeleteFileWhenLocationNotFound() {
         mockConfigurationDetails();
         when(client.doesObjectExist(anyString(), anyString())).thenReturn(false);
@@ -397,12 +421,6 @@ class AmazonFileTransferImplTest {
     }
 
     private S3Object createTestS3Object() {
-        S3Object s3Object = new S3Object();
-//        objectMetadata.setContentType("anything");
-//        objectMetadata.setContentLength(123L);
-//
-//        objectMetadata.setLastModified(new Date());
-
-        return s3Object;
+        return new S3Object();
     }
 }
