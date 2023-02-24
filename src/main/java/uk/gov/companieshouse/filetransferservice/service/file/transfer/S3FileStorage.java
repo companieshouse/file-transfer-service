@@ -1,6 +1,5 @@
 package uk.gov.companieshouse.filetransferservice.service.file.transfer;
 
-import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.Tag;
 import org.apache.commons.lang.StringUtils;
@@ -13,6 +12,7 @@ import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -119,11 +119,11 @@ public class S3FileStorage implements FileStorageStrategy {
         amazonFileTransfer.deleteFile(fileId);
     }
 
-    private Map<String, String> extractAVTags(GetObjectTaggingResult tags) {
+    private Map<String, String> extractAVTags(List<Tag> tags) {
         if (tags == null) {
             return new HashMap<>();
         } else {
-            return tags.getTagSet().stream()
+            return tags.stream()
                     .filter(tag -> AV_TIMESTAMP_KEY.equals(tag.getKey()) || AV_STATUS_KEY.equals(tag.getKey()))
                     .collect((Collectors.toMap(Tag::getKey, Tag::getValue)));
         }

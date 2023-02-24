@@ -1,7 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.service.file.transfer;
 
 import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.Tag;
@@ -21,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
@@ -89,7 +90,7 @@ public class S3FileStorageTest {
     @DisplayName("Test successful Get File Details with AV tags")
     void testGetFileDetailsSuccessWithAvTags() {
         when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectTags(4));
-        when(amazonFileTransfer.getFileTags(any(String.class))).thenReturn(createAvTags());
+        when(amazonFileTransfer.getFileTags(any(String.class))).thenReturn(createMixedTags());
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
 
@@ -224,21 +225,22 @@ public class S3FileStorageTest {
         return s3Object;
     }
 
-    private GetObjectTaggingResult createAvTags() {
-        GetObjectTaggingResult taggingResult = createNonAvTags();
-
-        taggingResult.getTagSet().add(new Tag("av-timestamp", new Date().toString()));
-        taggingResult.getTagSet().add(new Tag("av-status", "clean"));
-
-        return taggingResult;
+    private List<Tag> createAvTags() {
+        return new ArrayList<>() {{
+            add(new Tag("av-timestamp", new Date().toString()));
+            add(new Tag("av-status", "clean"));
+        }};
     }
 
-    private GetObjectTaggingResult createNonAvTags() {
-        List<Tag> tags = new ArrayList<>() {{
+    private List<Tag> createNonAvTags() {
+        return new ArrayList<>() {{
             add(new Tag("anything", "anything"));
             add(new Tag("anything2", "anything2"));
         }};
+    }
 
-        return new GetObjectTaggingResult(tags);
+    private List<Tag> createMixedTags() {
+        return Stream.concat(createAvTags().stream(), createNonAvTags().stream())
+                .collect(Collectors.toList());
     }
 }

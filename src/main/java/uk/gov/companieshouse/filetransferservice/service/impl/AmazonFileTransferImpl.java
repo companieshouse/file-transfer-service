@@ -10,9 +10,9 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
-import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.Tag;
 import com.amazonaws.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,6 +23,7 @@ import uk.gov.companieshouse.logging.LoggerFactory;
 
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
 
 @Component
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
@@ -114,11 +115,11 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * @return Object containing Map of Tags
      */
     @Override
-    public GetObjectTaggingResult getFileTags(String fileId) {
+    public List<Tag> getFileTags(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
             validateS3Details(s3Client);
-            return s3Client.getObjectTagging(new GetObjectTaggingRequest(getAWSBucketName(), fileId));
+            return s3Client.getObjectTagging(new GetObjectTaggingRequest(getAWSBucketName(), fileId)).getTagSet();
         } catch (Exception e) {
             LOG.error(e, new HashMap<>() {{
                 put("error", "Unable to fetch ixbrl from S3");
