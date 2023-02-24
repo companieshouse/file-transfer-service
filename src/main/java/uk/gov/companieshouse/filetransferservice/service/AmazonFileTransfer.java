@@ -13,9 +13,9 @@ public interface AmazonFileTransfer {
 
     String downloadFile(String fileId);
 
-    S3Object getS3Object(String fileId);
+    S3Object getFileObject(String fileId);
 
-    GetObjectTaggingResult getFileTaggingResult(String fileId);
+    GetObjectTaggingResult getFileTags(String fileId);
 
     void deleteFile(String fileId);
 }

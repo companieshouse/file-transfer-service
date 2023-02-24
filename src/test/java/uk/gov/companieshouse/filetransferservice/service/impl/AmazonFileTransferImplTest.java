@@ -202,7 +202,7 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(client.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
 
-        S3Object actual = amazonFileTransfer.getS3Object("123");
+        S3Object actual = amazonFileTransfer.getFileObject("123");
 
         Assert.assertNotNull(actual);
         verify(client).getObject(any(GetObjectRequest.class));
@@ -212,7 +212,7 @@ class AmazonFileTransferImplTest {
     void testGetS3ObjectWhenInvalidS3Path() {
         when(configuration.getS3Path()).thenReturn(INVALID_PATH);
 
-        S3Object actual = amazonFileTransfer.getS3Object("123");
+        S3Object actual = amazonFileTransfer.getFileObject("123");
 
         assertNull(actual);
         verify(configuration, atLeastOnce()).getS3Path();
@@ -222,7 +222,7 @@ class AmazonFileTransferImplTest {
     void testGetS3ObjectWhenEmptyBucketName() {
         when(configuration.getS3Path()).thenReturn(S3_PATH_WITHOUT_BUCKET_NAME);
 
-        S3Object actual = amazonFileTransfer.getS3Object("123");
+        S3Object actual = amazonFileTransfer.getFileObject("123");
 
         assertNull(actual);
         verify(configuration, atLeastOnce()).getS3Path();
@@ -233,7 +233,7 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(client.doesBucketExist(BUCKET_NAME)).thenReturn(false);
 
-        S3Object actual = amazonFileTransfer.getS3Object("123");
+        S3Object actual = amazonFileTransfer.getFileObject("123");
 
         assertNull(actual);
         verify(client, atLeastOnce()).doesBucketExist(BUCKET_NAME);
@@ -244,7 +244,7 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(client.getObject(any(GetObjectRequest.class))).thenThrow(SdkClientException.class);
 
-        S3Object actual = amazonFileTransfer.getS3Object("123");
+        S3Object actual = amazonFileTransfer.getFileObject("123");
 
         assertNull(actual);
         verify(client).getObject(any(GetObjectRequest.class));
@@ -255,7 +255,7 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(client.getObjectTagging(any(GetObjectTaggingRequest.class))).thenReturn(taggingResult);
 
-        GetObjectTaggingResult actual = amazonFileTransfer.getFileTaggingResult("123");
+        GetObjectTaggingResult actual = amazonFileTransfer.getFileTags("123");
 
         Assert.assertNotNull(actual);
         verify(client).getObjectTagging(any(GetObjectTaggingRequest.class));
@@ -265,7 +265,7 @@ class AmazonFileTransferImplTest {
     void testGetFileTagsWhenInvalidS3Path() {
         when(configuration.getS3Path()).thenReturn(INVALID_PATH);
 
-        GetObjectTaggingResult actual = amazonFileTransfer.getFileTaggingResult("123");
+        GetObjectTaggingResult actual = amazonFileTransfer.getFileTags("123");
 
         assertNull(actual);
         verify(configuration, atLeastOnce()).getS3Path();
@@ -275,7 +275,7 @@ class AmazonFileTransferImplTest {
     void testGetFileTagsWhenEmptyBucketName() {
         when(configuration.getS3Path()).thenReturn(S3_PATH_WITHOUT_BUCKET_NAME);
 
-        GetObjectTaggingResult actual = amazonFileTransfer.getFileTaggingResult("123");
+        GetObjectTaggingResult actual = amazonFileTransfer.getFileTags("123");
 
         assertNull(actual);
         verify(configuration, atLeastOnce()).getS3Path();
@@ -286,7 +286,7 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(client.doesBucketExist(BUCKET_NAME)).thenReturn(false);
 
-        GetObjectTaggingResult actual = amazonFileTransfer.getFileTaggingResult("123");
+        GetObjectTaggingResult actual = amazonFileTransfer.getFileTags("123");
 
         assertNull(actual);
         verify(client, atLeastOnce()).doesBucketExist(BUCKET_NAME);
@@ -298,7 +298,7 @@ class AmazonFileTransferImplTest {
         when(client.doesObjectExist(anyString(), anyString())).thenReturn(false);
         when(client.getObjectTagging(any(GetObjectTaggingRequest.class))).thenThrow(SdkClientException.class);
 
-        GetObjectTaggingResult actual = amazonFileTransfer.getFileTaggingResult("123");
+        GetObjectTaggingResult actual = amazonFileTransfer.getFileTags("123");
 
         assertNull(actual);
         verify(client).getObjectTagging(any(GetObjectTaggingRequest.class));

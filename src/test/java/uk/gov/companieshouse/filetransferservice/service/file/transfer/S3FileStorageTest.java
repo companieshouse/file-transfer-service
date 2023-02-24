@@ -88,78 +88,78 @@ public class S3FileStorageTest {
     @Test
     @DisplayName("Test FileDetailsApi object returned with both AV tags on successful get file details")
     void testGetFileDetailsSuccessWithAvTags() {
-        when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(createTestS3ObjectTags(4));
-        when(amazonFileTransfer.getFileTaggingResult(any(String.class))).thenReturn(createAvTags());
+        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectTags(4));
+        when(amazonFileTransfer.getFileTags(any(String.class))).thenReturn(createAvTags());
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
 
         assertTrue(actual.isPresent());
         assertNotNull(actual.get().getAvTimestamp());
         assertNotNull(actual.get().getAvStatusApi());
-        verify(amazonFileTransfer).getS3Object(any(String.class));
-        verify(amazonFileTransfer).getFileTaggingResult(any(String.class));
+        verify(amazonFileTransfer).getFileObject(any(String.class));
+        verify(amazonFileTransfer).getFileTags(any(String.class));
     }
 
     @Test
     @DisplayName("Test FileDetailsApi object returned with empty tags object on successful get file details")
     void testGetFileDetailsSuccessWithNullTags() {
-        when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(createTestS3ObjectBasic());
+        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectBasic());
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
 
         assertTrue(actual.isPresent());
-        verify(amazonFileTransfer).getS3Object(any(String.class));
-        verify(amazonFileTransfer, times(0)).getFileTaggingResult(any(String.class));
+        verify(amazonFileTransfer).getFileObject(any(String.class));
+        verify(amazonFileTransfer, times(0)).getFileTags(any(String.class));
     }
 
     @Test
     @DisplayName("Test FileDetailsApi object returned with zero tags on successful get file details")
     void testGetFileDetailsSuccessWithZeroTags() {
-        when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(createTestS3ObjectWithZeroTags());
+        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectWithZeroTags());
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
 
         assertTrue(actual.isPresent());
-        verify(amazonFileTransfer).getS3Object(any(String.class));
-        verify(amazonFileTransfer, times(0)).getFileTaggingResult(any(String.class));
+        verify(amazonFileTransfer).getFileObject(any(String.class));
+        verify(amazonFileTransfer, times(0)).getFileTags(any(String.class));
     }
 
     @Test
     @DisplayName("Test FileDetailsApi object not returned when tags but no AV tagswith zero tags on successful get file details")
     void testGetFileDetailsSuccessWithNoAVTags() {
-        when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(createTestS3ObjectTags(2));
-        when(amazonFileTransfer.getFileTaggingResult(any(String.class))).thenReturn(createNonAvTags());
+        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectTags(2));
+        when(amazonFileTransfer.getFileTags(any(String.class))).thenReturn(createNonAvTags());
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
 
         assertTrue(actual.isEmpty());
-        verify(amazonFileTransfer).getS3Object(any(String.class));
-        verify(amazonFileTransfer).getFileTaggingResult(any(String.class));
+        verify(amazonFileTransfer).getFileObject(any(String.class));
+        verify(amazonFileTransfer).getFileTags(any(String.class));
     }
 
     @Test
     @DisplayName("Test no FileDetailsApi object returned when s3 object not found")
     void testGetFileDetailsFailsWhenS3ObjectNotFound() {
-        when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(null);
+        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(null);
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
 
         assertTrue(actual.isEmpty());
-        verify(amazonFileTransfer).getS3Object(any(String.class));
-        verify(amazonFileTransfer, times(0)).getFileTaggingResult(any(String.class));
+        verify(amazonFileTransfer).getFileObject(any(String.class));
+        verify(amazonFileTransfer, times(0)).getFileTags(any(String.class));
     }
 
     @Test
     @DisplayName("Test no FileDetailsApi object returned when retrieving Tags fails during getting file details")
     void testGetFileDetailsFailsOnRetrievingTags() {
-        when(amazonFileTransfer.getS3Object(any(String.class))).thenReturn(createTestS3ObjectTags(1));
-        when(amazonFileTransfer.getFileTaggingResult(any(String.class))).thenReturn(null);
+        when(amazonFileTransfer.getFileObject(any(String.class))).thenReturn(createTestS3ObjectTags(1));
+        when(amazonFileTransfer.getFileTags(any(String.class))).thenReturn(null);
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails("test.pdf");
 
         assertTrue(actual.isEmpty());
-        verify(amazonFileTransfer).getS3Object(any(String.class));
-        verify(amazonFileTransfer).getFileTaggingResult(any(String.class));
+        verify(amazonFileTransfer).getFileObject(any(String.class));
+        verify(amazonFileTransfer).getFileTags(any(String.class));
     }
 
     @Test

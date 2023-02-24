@@ -78,7 +78,7 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public Optional<FileDetailsApi> getFileDetails(String fileId) {
-        S3Object s3Object = amazonFileTransfer.getS3Object(fileId);
+        S3Object s3Object = amazonFileTransfer.getFileObject(fileId);
         if (s3Object == null) {
             return Optional.empty();
         }
@@ -87,7 +87,7 @@ public class S3FileStorage implements FileStorageStrategy {
         String avCreatedOn = "";
 
         if (s3Object.getTaggingCount() != null && s3Object.getTaggingCount() > 0) {
-            Map<String, String> avTags = extractAVTags(amazonFileTransfer.getFileTaggingResult(fileId));
+            Map<String, String> avTags = extractAVTags(amazonFileTransfer.getFileTags(fileId));
 
             if (avTags.size() != AV_KEY_COUNT) {
                 return Optional.empty();

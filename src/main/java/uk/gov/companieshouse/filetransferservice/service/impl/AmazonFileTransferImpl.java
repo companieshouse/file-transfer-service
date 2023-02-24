@@ -94,7 +94,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * @return String
      */
     @Override
-    public S3Object getS3Object(String fileId) {
+    public S3Object getFileObject(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
             validateS3Details(s3Client);
@@ -114,7 +114,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * @return Object containing Map of Tags
      */
     @Override
-    public GetObjectTaggingResult getFileTaggingResult(String fileId) {
+    public GetObjectTaggingResult getFileTags(String fileId) {
         try {
             AmazonS3 s3Client = getAmazonS3Client();
             validateS3Details(s3Client);
