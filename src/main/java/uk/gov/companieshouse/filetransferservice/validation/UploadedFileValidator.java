@@ -1,7 +1,7 @@
 package uk.gov.companieshouse.filetransferservice.validation;
 
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
+import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 
 import java.util.Arrays;
@@ -32,8 +32,8 @@ public class UploadedFileValidator {
         return ALLOWED_MIME_TYPES.contains(mimeType);
     }
 
-    public void validate(MultipartFile file) throws InvalidMimeTypeException {
-        var contentType = file.getContentType();
+    public void validate(FileApi file) throws InvalidMimeTypeException {
+        var contentType = file.getMimeType();
         if (!isValidMimeType(contentType)) {
             throw new InvalidMimeTypeException(contentType);
         }
