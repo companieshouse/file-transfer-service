@@ -42,7 +42,7 @@ public class ErrorResponseBuilder {
         return withError(new ApiError(error, location, locationType, type));
     }
 
-    public ResponseEntity<?> build() {
+    public ResponseEntity<ApiErrorResponse> build() {
         var errResponse = new ApiErrorResponse();
         errResponse.setErrors(errors);
         return ResponseEntity.status(this.status).body(errResponse);

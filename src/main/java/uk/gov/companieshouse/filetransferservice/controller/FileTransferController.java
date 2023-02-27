@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import uk.gov.companieshouse.api.error.ApiError;
+import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
@@ -64,26 +65,24 @@ public class FileTransferController {
      * @return a ResponseEntity containing the ID of the uploaded file or an error message
      */
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<?> upload(
-            @RequestParam(value = "file") MultipartFile uploadedFile) {
-        try {
-            FileApi file = fileConverter.convert(uploadedFile);
-            return uploadJson(file);
-        } catch (IOException e) {
-            logger.error("Error uploading file", e);
-            ApiError error = new ApiError("Unable to upload file",
-                    "getBytes",
-                    "method",
-                    "upload");
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(error);
-        }
+    public ResponseEntity<IdApi> upload(
+            @RequestParam(value = "file") MultipartFile uploadedFile) throws IOException, InvalidMimeTypeException {
+
+        FileApi file = fileConverter.convert(uploadedFile);
+        return uploadJson(file);
     }
 
+    @ExceptionHandler({IOException.class})
+    ResponseEntity<ApiErrorResponse> handleIOException(IOException e) {
+        logger.error("Error uploading file IOException when reading file contents.", e);
 
-    // TODO: implement exception handlers so we can correctly type the generic parameters on the
-    //  ResponseEntities
+        return ErrorResponseBuilder
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .withError("Unable to upload file",
+                        "getBytes",
+                        "method",
+                        "upload").build();
+    }
 
     /**
      * Uploads a file represented as a JSON object to the file transfer service. The uploaded file must be of a valid
@@ -94,25 +93,26 @@ public class FileTransferController {
      * @return a ResponseEntity containing the ID of the uploaded file or an error message
      */
     @PostMapping(value = "/upload", consumes = "application/json")
-    public ResponseEntity<?> uploadJson(
-            @RequestBody FileApi file) {
-        try {
-            fileValidator.validate(file);
-            String fileId = fileStorageStrategy.save(file);
-            return ResponseEntity.ok(new IdApi(fileId));
-        } catch (InvalidMimeTypeException e) {
-            logger.error("File was uploaded with an invalid mime type", e);
-            return ErrorResponseBuilder
-                    .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                    .withError("Invalid MIME type",
-                            "file",
-                            "body_parameter",
-                            "validation"
-                    )
-                    .build();
-        }
+    public ResponseEntity<IdApi> uploadJson(
+            @RequestBody FileApi file) throws InvalidMimeTypeException {
+
+        fileValidator.validate(file);
+        String fileId = fileStorageStrategy.save(file);
+        return ResponseEntity.ok(new IdApi(fileId));
     }
 
+    @ExceptionHandler({InvalidMimeTypeException.class})
+    ResponseEntity<ApiErrorResponse> handleInvalidMimeType(InvalidMimeTypeException e) {
+        logger.error("File was uploaded with an invalid mime type", e);
+        return ErrorResponseBuilder
+                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .withError("Invalid MIME type",
+                        "file",
+                        "body_parameter",
+                        "validation"
+                )
+                .build();
+    }
 
     /**
      * Handles the request to retrieve a file from S3
@@ -121,57 +121,67 @@ public class FileTransferController {
      * @return file data
      */
     @GetMapping(path = "/{fileId}/download")
-    public ResponseEntity<?> download(@PathVariable String fileId) {
-        try {
-            Supplier<FileNotFoundException> notFoundException = () ->
-                    new FileNotFoundException(fileId);
-            FileDetailsApi fileDetails = fileStorageStrategy
-                    .getFileDetails(fileId)
-                    .orElseThrow(notFoundException);
+    public ResponseEntity<byte[]> download(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
 
-            if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
-                throw new FileNotCleanException(fileDetails.getAvStatusApi());
-            }
+        Supplier<FileNotFoundException> notFoundException = () ->
+                new FileNotFoundException(fileId);
+        FileDetailsApi fileDetails = fileStorageStrategy
+                .getFileDetails(fileId)
+                .orElseThrow(notFoundException);
 
-            var file = fileStorageStrategy.load(fileId).orElseThrow(notFoundException);
-            var data = file.getBody();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
-            headers.setContentDisposition(ContentDisposition.builder("attachment")
-                    .filename(file.getFileName())
-                    .build());
-            headers.setContentLength(data.length);
-
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(data);
-        } catch (FileNotFoundException exception) {
-            Map<String, Object> loggedVars = new HashMap<>();
-            loggedVars.put("fileId", fileId);
-            logger.errorContext(fileId, "Unable to find file with ID", exception, loggedVars);
-            return ErrorResponseBuilder
-                    .status(HttpStatus.NOT_FOUND)
-                    .withError(String.format("Unable to find file with id [%s]", fileId),
-                            fileId,
-                            "jsonPath",
-                            "")
-                    .build();
-        } catch (FileNotCleanException exception) {
-            Map<String, Object> loggedVars = new HashMap<>();
-            loggedVars.put("fileId", fileId);
-            logger.infoContext(fileId,
-                    "Request for file denied as AV status is not clean",
-                    loggedVars);
-            return ErrorResponseBuilder
-                    .status(HttpStatus.FORBIDDEN)
-                    .withError("File retrieval denied due to unclean antivirus status",
-                            fileId,
-                            "fileId",
-                            "retrieval")
-                    .build();
+        if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+            throw new FileNotCleanException(fileDetails.getAvStatusApi(), fileId);
         }
+
+        var file = fileStorageStrategy.load(fileId).orElseThrow(notFoundException);
+        var data = file.getBody();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
+        headers.setContentDisposition(ContentDisposition.builder("attachment")
+                .filename(file.getFileName())
+                .build());
+        headers.setContentLength(data.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
+
     }
+
+    @ExceptionHandler({FileNotCleanException.class})
+    ResponseEntity<ApiErrorResponse> handleFileNotCleanException(FileNotCleanException e) {
+        String fileId = e.getFileId();
+        Map<String, Object> loggedVars = new HashMap<>();
+        loggedVars.put("fileId", fileId);
+        logger.infoContext(fileId,
+                "Request for file denied as AV status is not clean",
+                loggedVars);
+        return ErrorResponseBuilder
+                .status(HttpStatus.FORBIDDEN)
+                .withError("File retrieval denied due to unclean antivirus status",
+                        fileId,
+                        "fileId",
+                        "retrieval")
+                .build();
+    }
+
+    @ExceptionHandler({FileNotFoundException.class})
+    ResponseEntity<ApiErrorResponse> handleFileNotFoundException(FileNotFoundException e) {
+        String fileId = e.getFileId();
+
+        Map<String, Object> loggedVars = new HashMap<>();
+        loggedVars.put("fileId", fileId);
+        logger.errorContext(fileId, "Unable to find file with ID", e, loggedVars);
+        return ErrorResponseBuilder
+                .status(HttpStatus.NOT_FOUND)
+                .withError(String.format("Unable to find file with id [%s]", fileId),
+                        fileId,
+                        "jsonPath",
+                        "retrieval")
+                .build();
+    }
+
 
     /**
      * Handles the request to retrieve a file's details from S3
@@ -180,22 +190,13 @@ public class FileTransferController {
      * @return file details data or 404 if the file is not found
      */
     @GetMapping(path = "/{fileId}")
-    public ResponseEntity<?> getFileDetails(@PathVariable String fileId) {
+    public ResponseEntity<FileDetailsApi> getFileDetails(@PathVariable String fileId) throws FileNotFoundException {
         Optional<FileDetailsApi> fileDetails = fileStorageStrategy.getFileDetails(fileId);
 
         if (fileDetails.isPresent()) {
             return ResponseEntity.ok(fileDetails.get());
         } else {
-            Map<String, Object> loggedVars = new HashMap<>();
-            loggedVars.put("fileId", fileId);
-            logger.errorContext(fileId, "Unable to find file with ID", null, loggedVars);
-            return ErrorResponseBuilder
-                    .status(HttpStatus.NOT_FOUND)
-                    .withError(String.format("Unable to find file with id [%s]", fileId),
-                            fileId,
-                            "jsonPath",
-                            "")
-                    .build();
+            throw new FileNotFoundException(fileId);
         }
     }
 
