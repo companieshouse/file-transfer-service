@@ -16,10 +16,17 @@ public class AWSServiceProperties {
     private String accessKeyId;
 
     @NotBlank
-    private String s3Path;
+    private String bucketName;
 
     @NotBlank
     private String protocol;
+
+    @NotBlank
+    private String s3PathPrefix;
+
+    private String proxyHost;
+
+    private Integer proxyPort;
 
     public String getSecretAccessKey() {
         return secretAccessKey;
@@ -37,6 +44,14 @@ public class AWSServiceProperties {
         this.accessKeyId = accessKeyId;
     }
 
+    public String getBucketName() {
+        return bucketName;
+    }
+
+    public void setBucketName(String bucketName) {
+        this.bucketName = bucketName;
+    }
+
     public String getProtocol() {
         return protocol;
     }
@@ -45,12 +60,27 @@ public class AWSServiceProperties {
         this.protocol = protocol;
     }
 
-    public String getS3Path() {
-        return s3Path;
+    public String getS3PathPrefix() {
+        return s3PathPrefix;
     }
 
-    public void setS3Path(String s3Path) {
-        this.s3Path = s3Path;
+    public void setS3PathPrefix(String s3PathPrefix) {
+        this.s3PathPrefix = s3PathPrefix;
     }
 
+    public String getProxyHost() {
+        return proxyHost;
+    }
+
+    public void setProxyHost(String proxyHost) {
+        this.proxyHost = proxyHost;
+    }
+
+    public Integer getProxyPort() {
+        return proxyPort;
+    }
+
+    public void setProxyPort(Integer proxyPort) {
+        this.proxyPort = proxyPort;
+    }
 }
