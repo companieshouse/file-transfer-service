@@ -10,6 +10,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.Tag;
@@ -24,6 +25,9 @@ import uk.gov.companieshouse.logging.LoggerFactory;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
 @Component
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
@@ -58,11 +62,11 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * Upload the file to S3
      */
     @Override
-    public void uploadFile(String fileId, InputStream inputStream) {
+    public void uploadFile(String fileId, Map<String, String> metaData, InputStream inputStream) {
         AmazonS3 s3Client = getAmazonS3Client();
         validateS3Details(s3Client);
         if (validatePathExists(s3Client)) {
-            s3Client.putObject(new PutObjectRequest(getAWSBucketName(), fileId, inputStream, null));
+            s3Client.putObject(new PutObjectRequest(getAWSBucketName(), fileId, inputStream, createObjectMetaData(metaData)));
         } else {
             throw new SdkClientException(FOLDER_ERROR_MESSAGE);
         }
@@ -297,5 +301,17 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
     public boolean validatePathExists(AmazonS3 s3Client) {
         return getPathIfExists().isEmpty() || s3Client.doesObjectExist(getAWSBucketName(), getPathIfExists().trim());
+    }
+
+    private ObjectMetadata createObjectMetaData(Map<String, String> metaData) {
+        ObjectMetadata omd = new ObjectMetadata();
+
+        if (metaData.containsKey(CONTENT_TYPE)) {
+            omd.setContentType(metaData.get(CONTENT_TYPE));
+        } else {
+            throw new SdkClientException("meta data does not contain Content-Type");
+        }
+
+        return omd;
     }
 }

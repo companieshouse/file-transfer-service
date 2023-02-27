@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+
 /**
  * An implementation of the FileStorageStrategy for S3
  */
@@ -42,7 +44,11 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public String save(FileApi file) {
-        amazonFileTransfer.uploadFile(file.getFileName(), new ByteArrayInputStream(file.getBody()));
+        Map<String, String> metaData = new HashMap<>() {{
+            put(CONTENT_TYPE, file.getMimeType());
+        }};
+
+        amazonFileTransfer.uploadFile(file.getFileName(), metaData, new ByteArrayInputStream(file.getBody()));
 
         return file.getFileName();
     }

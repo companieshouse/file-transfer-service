@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,18 +47,18 @@ public class S3FileStorageTest {
     @Test
     @DisplayName("Test successful File Save")
     void testSaveFileSuccess() {
-        doNothing().when(amazonFileTransfer).uploadFile(any(String.class), any(InputStream.class));
+        doNothing().when(amazonFileTransfer).uploadFile(any(String.class), any(Map.class), any(InputStream.class));
 
         String actual = underTest.save(createTestFileApi());
 
         assertEquals("test.pdf", actual);
-        verify(amazonFileTransfer).uploadFile(any(String.class), any(InputStream.class));
+        verify(amazonFileTransfer).uploadFile(any(String.class), any(Map.class), any(InputStream.class));
     }
 
     @Test
     @DisplayName("Test SdkClientException thrown on unsuccessful File Save")
     void testSdkClientExceptionThrownFromFileSaveFailure() {
-        doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(any(String.class), any(InputStream.class));
+        doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(any(String.class), any(Map.class), any(InputStream.class));
 
         assertThrows(SdkClientException.class, () -> {
             underTest.save(createTestFileApi());

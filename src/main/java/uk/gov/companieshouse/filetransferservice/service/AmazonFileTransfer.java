@@ -6,11 +6,12 @@ import com.amazonaws.services.s3.model.Tag;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 public interface AmazonFileTransfer {
     BasicAWSCredentials getAWSCredentials();
 
-    void uploadFile(String fileId, InputStream inputStream);
+    void uploadFile(String fileId, Map<String, String> metaData, InputStream inputStream);
 
     String downloadFile(String fileId);
 

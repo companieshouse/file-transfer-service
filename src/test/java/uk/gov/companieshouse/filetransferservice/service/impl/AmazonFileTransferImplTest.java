@@ -24,7 +24,9 @@ import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -103,9 +105,16 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(client.putObject(putObjectRequest)).thenReturn(putObjectResult);
 
-        amazonFileTransfer.uploadFile("123", getInputStream());
+        amazonFileTransfer.uploadFile("123", createValidMetaData(), getInputStream());
 
         verify(client).putObject(any(PutObjectRequest.class));
+    }
+
+    @Test
+    @DisplayName("Test SdkClientException thrown when invalid meta data on File Upload")
+    void testUploadFileWhenInvalidMetaData() {
+        mockConfigurationDetails();
+        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createInvalidMetaData(), getInputStream()));
     }
 
     @Test
@@ -113,7 +122,7 @@ class AmazonFileTransferImplTest {
     void testUploadFileWhenInvalidS3Path() {
         when(configuration.getS3Path()).thenReturn(INVALID_PATH);
 
-        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", getInputStream()));
+        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), getInputStream()));
     }
 
     @Test
@@ -121,7 +130,7 @@ class AmazonFileTransferImplTest {
     void testUploadFileWhenEmptyBucketName() {
         when(configuration.getS3Path()).thenReturn(S3_PATH_WITHOUT_BUCKET_NAME);
 
-        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", getInputStream()));
+        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), getInputStream()));
     }
 
     @Test
@@ -130,7 +139,7 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(client.doesBucketExist(BUCKET_NAME)).thenReturn(false);
 
-        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", getInputStream()));
+        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), getInputStream()));
     }
 
     @Test
@@ -139,7 +148,7 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(client.doesObjectExist(BUCKET_NAME, PATH_DIRECTORY)).thenReturn(false);
 
-        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", getInputStream()));
+        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), getInputStream()));
     }
 
     @Test
@@ -425,4 +434,18 @@ class AmazonFileTransferImplTest {
     private S3Object createTestS3Object() {
         return new S3Object();
     }
+
+    private Map<String, String> createValidMetaData() {
+        return new HashMap<>() {{
+            put("Content-Type", "application/pdf");
+        }};
+    }
+
+
+    private Map<String, String> createInvalidMetaData() {
+        return new HashMap<>() {{
+            put("anything", "anything");
+        }};
+    }
 }
+
