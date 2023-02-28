@@ -1,11 +1,11 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -16,18 +16,24 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
+import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.api.model.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileApiConverter;
+import uk.gov.companieshouse.filetransferservice.exception.FileNotCleanException;
+import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
+import uk.gov.companieshouse.filetransferservice.validation.UploadedFileValidator;
 import uk.gov.companieshouse.logging.Logger;
 
 import java.io.IOException;
@@ -36,7 +42,10 @@ import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 public class FileTransferControllerTest {
-    @Mock
+    @Spy
+    UploadedFileValidator uploadedFileValidator;
+
+    @Spy
     private MultipartFileToFileApiConverter converter;
 
     @Mock
@@ -55,50 +64,34 @@ public class FileTransferControllerTest {
                 "test.pdf",
                 "application/pdf",
                 "test".getBytes());
-        FileApi mockFileApi = new FileApi("test.pdf",
-                "test".getBytes(),
-                "application/pdf",
-                4,
-                "pdf");
 
-        when(converter.convert(mockFile)).thenReturn(mockFileApi);
-        when(fileStorageStrategy.save(mockFileApi)).thenReturn("123");
+        when(fileStorageStrategy.save(any(FileApi.class))).thenReturn("123");
 
-        ResponseEntity<String> response = fileTransferController.upload(mockFile);
+        ResponseEntity<?> response = fileTransferController.upload(mockFile);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("123", response.getBody());
-        verify(fileStorageStrategy, times(1)).save(mockFileApi);
+        assertEquals(new IdApi("123"), response.getBody());
+        verify(fileStorageStrategy, times(1)).save(any(FileApi.class));
     }
 
     @Test
     @DisplayName("Test uploading a file with unsupported MIME type")
-    public void testUploadFileWithUnsupportedMimeType() throws InvalidMimeTypeException, IOException {
+    public void testUploadFileWithUnsupportedMimeType() {
         MultipartFile mockFile = new MockMultipartFile("file",
                 "test.txt",
                 "invalid",
                 "test".getBytes());
 
-        doThrow(new InvalidMimeTypeException(mockFile.getContentType())).when(converter).convert(mockFile);
-
-        ResponseEntity<String> response = fileTransferController.upload(mockFile);
-
-        assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, response.getStatusCode());
-        assertThat(response.getBody(), containsString("is not a valid mime type"));
-        verify(fileStorageStrategy, times(0)).save(any());
+        assertThrows(InvalidMimeTypeException.class, () -> fileTransferController.upload(mockFile));
     }
 
     @Test
     @DisplayName("Test uploading a file with IOException")
-    public void testUploadFileWithIOException() throws IOException, InvalidMimeTypeException {
+    public void testUploadFileWithIOException() throws IOException {
         MultipartFile mockFile = mock(MultipartFile.class);
-        when(converter.convert(mockFile)).thenThrow(new IOException());
+        when(mockFile.getBytes()).thenThrow(new IOException());
 
-        ResponseEntity<String> response = fileTransferController.upload(mockFile);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals("Unable to upload file", response.getBody());
-        verify(fileStorageStrategy, times(0)).save(any());
+        assertThrows(IOException.class, () -> fileTransferController.upload(mockFile));
     }
 
     @Test
@@ -108,13 +101,13 @@ public class FileTransferControllerTest {
 
         ResponseEntity<Void> response = fileTransferController.delete(fileId);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(fileStorageStrategy, times(1)).delete(fileId);
     }
 
     @Test
     @DisplayName("Test successful retrieval of file details")
-    public void testGetFileDetailsSuccess() {
+    public void testGetFileDetailsSuccess() throws FileNotFoundException {
         String fileId = "123";
         FileDetailsApi expectedFileDetails = new FileDetailsApi();
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(expectedFileDetails));
@@ -132,15 +125,12 @@ public class FileTransferControllerTest {
         String fileId = "123";
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.empty());
 
-        ResponseEntity<FileDetailsApi> response = fileTransferController.getFileDetails(fileId);
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        verify(fileStorageStrategy, times(1)).getFileDetails(fileId);
+        assertThrows(FileNotFoundException.class, () -> fileTransferController.getFileDetails(fileId));
     }
 
     @Test
     @DisplayName("Test successful file download")
-    public void testDownloadSuccess() {
+    public void testDownloadSuccess() throws FileNotFoundException, FileNotCleanException {
         String fileId = "123";
         byte[] content = {0x01, 0x02, 0x03};
         String mimeType = "text/plain";
@@ -176,9 +166,7 @@ public class FileTransferControllerTest {
         when(fileStorageStrategy.getFileDetails(fileId))
                 .thenReturn(Optional.empty());
 
-        ResponseEntity<byte[]> response = fileTransferController.download(fileId);
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertThrows(FileNotFoundException.class, () -> fileTransferController.download(fileId));
     }
 
     @Test
@@ -192,8 +180,65 @@ public class FileTransferControllerTest {
         when(fileStorageStrategy.getFileDetails(fileId))
                 .thenReturn(Optional.of(fileDetailsApi));
 
-        ResponseEntity<byte[]> response = fileTransferController.download(fileId);
-
-        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertThrows(FileNotCleanException.class, () -> fileTransferController.download(fileId));
     }
+
+
+    @Test
+    @DisplayName("IOException should result in an internal server error")
+    void testIOException() {
+        // Given
+        IOException e = new IOException();
+
+        // When
+        ResponseEntity<ApiErrorResponse> response = fileTransferController.handleIOException(e);
+
+        // Then
+        assertThat(response.getStatusCode(), equalTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @Test
+    @DisplayName("FileNotFound exception should result in a not found response")
+    void testFileNotFoundException() {
+        // Given
+        String fileId = "fileId";
+        FileNotFoundException e = new FileNotFoundException(fileId);
+
+        // When
+        ResponseEntity<ApiErrorResponse> response = fileTransferController
+                .handleFileNotFoundException(e);
+
+        // Then
+        assertThat(response.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("A FileNotCleanException should result in a forbidden response")
+    void handleFileNotCleanException() {
+        // Given
+        String fileId = "fileId";
+        FileNotCleanException e = new FileNotCleanException(AvStatusApi.INFECTED, fileId);
+
+        // When
+        ResponseEntity<ApiErrorResponse> response = fileTransferController
+                .handleFileNotCleanException(e);
+
+        // Then
+        assertThat(response.getStatusCode(), equalTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    @DisplayName("InvalidMimeType exception should result an unsupported media type exception")
+    void testInvalidMimeTypeExceotionHandler() {
+        // Given
+        String mimeType = "mimeType";
+        InvalidMimeTypeException e = new InvalidMimeTypeException(mimeType);
+
+        // When
+        ResponseEntity<ApiErrorResponse> response = fileTransferController.handleInvalidMimeType(e);
+
+        // Then
+        assertThat(response.getStatusCode(), equalTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE));
+    }
+
 }
