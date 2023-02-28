@@ -9,8 +9,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.multipart.MultipartFile;
+import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 
 import java.util.Arrays;
@@ -81,11 +80,9 @@ public class UploadedFileValidatorTest {
                 .map(Arguments::of);
     }
 
-    private static MockMultipartFile createMockMultipartFile(final String mimeType) {
-        return new MockMultipartFile("file",
-                "filename.jpg",
-                mimeType,
-                "file content".getBytes());
+    private static FileApi createMockMultipartFile(final String mimeType) {
+        byte[] content = "file content".getBytes();
+        return new FileApi("filename.jpg", content, mimeType, content.length, "jpg");
     }
 
     @ParameterizedTest(name = "{index} {0}")
@@ -93,7 +90,7 @@ public class UploadedFileValidatorTest {
     @DisplayName("Given a MultipartFile with a valid mime type, when validated by the validator, then no exception should be thrown")
     void testAllowedMimeTypePassesValidation(String mimeType) throws InvalidMimeTypeException {
         // Create a mock MultipartFile object with the given mime type
-        MultipartFile file = createMockMultipartFile(mimeType);
+        FileApi file = createMockMultipartFile(mimeType);
 
         validator.validate(file);
     }
@@ -103,7 +100,7 @@ public class UploadedFileValidatorTest {
     @DisplayName("Given a MultipartFile with an in-valid mime type, when validated by the validator, an exception should be thrown")
     void testDisallowedMimeTypeThrowsException(String mimeType) {
         // Create a mock MultipartFile object with the given mime type
-        MultipartFile file = createMockMultipartFile(mimeType);
+        FileApi file = createMockMultipartFile(mimeType);
 
         // Verify that an exception is thrown when the validator is used to validate the file
         assertThrows(InvalidMimeTypeException.class, () -> validator.validate(file));
