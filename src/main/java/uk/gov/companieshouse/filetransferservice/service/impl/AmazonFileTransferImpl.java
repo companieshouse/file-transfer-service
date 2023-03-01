@@ -135,7 +135,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             throw new SdkClientException("S3 path is invalid");
         if (!validateBucketName())
             throw new SdkClientException("bucket name is invalid");
-        if (!s3Client.doesBucketExist(properties.getBucketName()))
+        if (!s3Client.doesBucketExistV2(properties.getBucketName()))
             throw new SdkClientException("bucket does not exist");
     }
 
