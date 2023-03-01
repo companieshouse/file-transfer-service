@@ -21,23 +21,24 @@ public interface FileStorageStrategy {
     /**
      * Loads a file from a remote repository
      *
-     * @param id of the file to retrieve
+     * @param fileId      of the file to retrieve
+     * @param fileDetails file meta data
      * @return Empty, if there is no such file, otherwise the File wrapped in an optional
      */
-    Optional<FileApi> load(String id);
+    Optional<FileApi> load(String fileId, FileDetailsApi fileDetails);
 
     /**
      * Retrieve a file's details from a remote repository
      *
-     * @param id of file details to retrieve
+     * @param fileId of file details to retrieve
      * @return Empty, if there is no such file, otherwise the File wrapped in an optional
      */
-    Optional<FileDetailsApi> getFileDetails(String id);
+    Optional<FileDetailsApi> getFileDetails(String fileId);
 
     /**
-     * Delete a file with the given id from a remote repository
+     * Delete a file with the given file id from a remote repository
      *
-     * @param id of the file to delete
+     * @param fileId of the file to delete
      */
-    void delete(String id);
+    void delete(String fileId);
 }

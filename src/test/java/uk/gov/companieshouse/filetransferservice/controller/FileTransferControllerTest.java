@@ -145,7 +145,7 @@ public class FileTransferControllerTest {
 
         var file = new FileApi(fileName, content, mimeType, content.length, "txt");
 
-        when(fileStorageStrategy.load(fileId))
+        when(fileStorageStrategy.load(fileId, fileDetails))
                 .thenReturn(Optional.of(file));
 
         ResponseEntity<byte[]> response = fileTransferController.download(fileId);
