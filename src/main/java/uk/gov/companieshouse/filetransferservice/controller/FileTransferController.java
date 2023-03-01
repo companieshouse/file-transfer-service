@@ -133,7 +133,7 @@ public class FileTransferController {
             throw new FileNotCleanException(fileDetails.getAvStatusApi(), fileId);
         }
 
-        var file = fileStorageStrategy.load(fileId, fileDetails).orElseThrow(notFoundException);
+        var file = fileStorageStrategy.load(fileId).orElseThrow(notFoundException);
         var data = file.getBody();
 
         HttpHeaders headers = new HttpHeaders();
