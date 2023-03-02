@@ -40,36 +40,36 @@ class ApplicationConfigurationTest {
     @Test
     @DisplayName("Test logging Bean creates correct type")
     void testLoggerCreation() {
-        Logger actual = undertest.getLogger();
-        assertTrue(actual != null && undertest.getLogger() instanceof Logger);
+        Logger actual = undertest.logger();
+        assertTrue(actual != null && undertest.logger() instanceof Logger);
     }
 
     @Test
     @DisplayName("Test AmazonS3ClientBuilder Bean creates correct type")
     void testAmazonS3ClientBuilderCreation() {
-        AmazonS3ClientBuilder actual = undertest.getAmazonS3ClientBuilder();
-        assertTrue(actual != null && undertest.getAmazonS3ClientBuilder() instanceof AmazonS3ClientBuilder);
+        AmazonS3ClientBuilder actual = undertest.amazonS3ClientBuilder();
+        assertTrue(actual != null && undertest.amazonS3ClientBuilder() instanceof AmazonS3ClientBuilder);
     }
 
     @Test
     @DisplayName("Test interceptor Bean creates correct type")
     void testClientConfigurationCreation() {
-        ClientConfiguration actual = undertest.getClientConfiguration();
-        assertTrue(actual != null && undertest.getClientConfiguration() instanceof ClientConfiguration);
+        ClientConfiguration actual = undertest.clientConfiguration();
+        assertTrue(actual != null && undertest.clientConfiguration() instanceof ClientConfiguration);
     }
 
     @Test
     @DisplayName("Test interceptor Bean creates correct type")
     void testInterceptorCreation() {
-        InternalUserInterceptor actual = undertest.getUserInterceptor();
-        assertTrue(actual != null && undertest.getUserInterceptor() instanceof InternalUserInterceptor);
+        InternalUserInterceptor actual = undertest.userInterceptor();
+        assertTrue(actual != null && undertest.userInterceptor() instanceof InternalUserInterceptor);
     }
 
     @Test
     @DisplayName("Test AmazonS3 bean creates correct type without proxy properties set")
     void testAmazonS3ClientIsSuccessfulNoProxy() {
         createAmazonS3ClientMocks();
-        createPropertyReturns(null, null);
+        createPropertyValueMocks(null, null);
 
         AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
@@ -87,7 +87,7 @@ class ApplicationConfigurationTest {
     @DisplayName("Test AmazonS3 bean creates correct type with proxy properties set")
     void testAmazonS3ClientIsSuccessfulWithProxy() {
         createAmazonS3ClientMocks();
-        createPropertyReturns("anything", 9999);
+        createPropertyValueMocks("anything", 9999);
 
         AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
@@ -107,7 +107,7 @@ class ApplicationConfigurationTest {
         builder = mock(AmazonS3ClientBuilder.class, RETURNS_DEEP_STUBS);
     }
 
-    private void createPropertyReturns(String proxyHost, Integer proxyPort) {
+    private void createPropertyValueMocks(String proxyHost, Integer proxyPort) {
         when(properties.getAccessKeyId()).thenReturn("anything");
         when(properties.getSecretAccessKey()).thenReturn("anything");
         when(properties.getProxyHost()).thenReturn(proxyHost);

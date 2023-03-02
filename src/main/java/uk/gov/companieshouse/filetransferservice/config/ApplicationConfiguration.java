@@ -29,25 +29,48 @@ public class ApplicationConfiguration {
      * @return the logger
      */
     @Bean
-    public Logger getLogger() {
+    public Logger logger() {
         return LoggerFactory.getLogger(applicationNameSpace);
     }
 
+    /**
+     * Creates the user interceptor used by the application.
+     *
+     * @return user interceptor
+     */
     @Bean
-    public InternalUserInterceptor getUserInterceptor() {
+    public InternalUserInterceptor userInterceptor() {
         return new InternalUserInterceptor(applicationNameSpace);
     }
 
+    /**
+     * Creates the client configuration used by the amazon s3 client builder.
+     *
+     * @return client configuration
+     */
     @Bean
-    public ClientConfiguration getClientConfiguration() {
+    public ClientConfiguration clientConfiguration() {
         return new ClientConfiguration();
     }
 
+    /**
+     * Creates the amazon s3 client builder.
+     *
+     * @return amazon s3 client builder
+     */
     @Bean
-    public AmazonS3ClientBuilder getAmazonS3ClientBuilder() {
+    public AmazonS3ClientBuilder amazonS3ClientBuilder() {
         return AmazonS3ClientBuilder.standard();
     }
 
+    /**
+     * Creates the s3 client.
+     *
+     * @param properties
+     * @param clientConfiguration
+     * @param amazonS3ClientBuilder
+     * @return s3 client
+     */
     @Bean
     public AmazonS3 getAmazonS3Client(AWSServiceProperties properties, ClientConfiguration clientConfiguration, AmazonS3ClientBuilder amazonS3ClientBuilder) {
         String httpProxyHostName = properties.getProxyHost();
