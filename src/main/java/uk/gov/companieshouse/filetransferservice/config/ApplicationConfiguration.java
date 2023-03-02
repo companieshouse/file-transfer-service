@@ -29,27 +29,27 @@ public class ApplicationConfiguration {
      * @return the logger
      */
     @Bean
-    public Logger logger() {
+    public Logger getLogger() {
         return LoggerFactory.getLogger(applicationNameSpace);
     }
 
     @Bean
-    public InternalUserInterceptor userInterceptor() {
+    public InternalUserInterceptor getUserInterceptor() {
         return new InternalUserInterceptor(applicationNameSpace);
     }
 
     @Bean
-    public ClientConfiguration clientConfiguration() {
+    public ClientConfiguration getClientConfiguration() {
         return new ClientConfiguration();
     }
 
     @Bean
-    public AmazonS3ClientBuilder amazonS3ClientBuilder() {
+    public AmazonS3ClientBuilder getAmazonS3ClientBuilder() {
         return AmazonS3ClientBuilder.standard();
     }
 
     @Bean
-    public AmazonS3 amazonS3Client(AWSServiceProperties properties, ClientConfiguration clientConfiguration, AmazonS3ClientBuilder amazonS3ClientBuilder) {
+    public AmazonS3 getAmazonS3Client(AWSServiceProperties properties, ClientConfiguration clientConfiguration, AmazonS3ClientBuilder amazonS3ClientBuilder) {
         String httpProxyHostName = properties.getProxyHost();
         if (!isNullOrEmpty(httpProxyHostName)) {
             clientConfiguration.setProxyHost(httpProxyHostName);

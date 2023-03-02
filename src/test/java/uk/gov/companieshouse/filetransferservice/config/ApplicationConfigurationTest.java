@@ -12,7 +12,6 @@ import uk.gov.companieshouse.api.interceptor.InternalUserInterceptor;
 import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 import uk.gov.companieshouse.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -41,36 +40,40 @@ class ApplicationConfigurationTest {
     @Test
     @DisplayName("Test logging Bean creates correct type")
     void testLoggerCreation() {
-        assertTrue(undertest.logger() instanceof Logger);
+        Logger actual = undertest.getLogger();
+        assertTrue(actual != null && undertest.getLogger() instanceof Logger);
     }
 
     @Test
     @DisplayName("Test AmazonS3ClientBuilder Bean creates correct type")
     void testAmazonS3ClientBuilderCreation() {
-        assertTrue(undertest.amazonS3ClientBuilder() instanceof AmazonS3ClientBuilder);
+        AmazonS3ClientBuilder actual = undertest.getAmazonS3ClientBuilder();
+        assertTrue(actual != null && undertest.getAmazonS3ClientBuilder() instanceof AmazonS3ClientBuilder);
     }
 
     @Test
     @DisplayName("Test interceptor Bean creates correct type")
     void testClientConfigurationCreation() {
-        assertTrue(undertest.clientConfiguration() instanceof ClientConfiguration);
+        ClientConfiguration actual = undertest.getClientConfiguration();
+        assertTrue(actual != null && undertest.getClientConfiguration() instanceof ClientConfiguration);
     }
 
     @Test
     @DisplayName("Test interceptor Bean creates correct type")
     void testInterceptorCreation() {
-        assertNotNull(undertest.userInterceptor() instanceof InternalUserInterceptor);
+        InternalUserInterceptor actual = undertest.getUserInterceptor();
+        assertTrue(actual != null && undertest.getUserInterceptor() instanceof InternalUserInterceptor);
     }
 
     @Test
     @DisplayName("Test AmazonS3 bean creates correct type without proxy properties set")
     void testAmazonS3ClientIsSuccessfulNoProxy() {
         createAmazonS3ClientMocks();
-        createPropertyReturns("anything", "anything", null, null, "anything");
+        createPropertyReturns(null, null);
 
-        AmazonS3 actual = undertest.amazonS3Client(properties, clientConfiguration, builder);
+        AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
-        assertNotNull(actual instanceof AmazonS3);
+        assertTrue(actual != null && actual instanceof AmazonS3);
         verify(properties).getAccessKeyId();
         verify(properties).getSecretAccessKey();
         verify(properties).getProxyPort();
@@ -84,11 +87,11 @@ class ApplicationConfigurationTest {
     @DisplayName("Test AmazonS3 bean creates correct type with proxy properties set")
     void testAmazonS3ClientIsSuccessfulWithProxy() {
         createAmazonS3ClientMocks();
-        createPropertyReturns("anything", "anything", "anything", 9999, "anything");
+        createPropertyReturns("anything", 9999);
 
-        AmazonS3 actual = undertest.amazonS3Client(properties, clientConfiguration, builder);
+        AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
-        assertNotNull(actual instanceof AmazonS3);
+        assertTrue(actual != null && actual instanceof AmazonS3);
         verify(properties).getAccessKeyId();
         verify(properties).getSecretAccessKey();
         verify(properties).getProxyPort();
@@ -104,11 +107,11 @@ class ApplicationConfigurationTest {
         builder = mock(AmazonS3ClientBuilder.class, RETURNS_DEEP_STUBS);
     }
 
-    private void createPropertyReturns(String accessKeyId, String secretAccessKey, String proxyHost, Integer proxyPort, String region) {
-        when(properties.getAccessKeyId()).thenReturn(accessKeyId);
-        when(properties.getSecretAccessKey()).thenReturn(secretAccessKey);
+    private void createPropertyReturns(String proxyHost, Integer proxyPort) {
+        when(properties.getAccessKeyId()).thenReturn("anything");
+        when(properties.getSecretAccessKey()).thenReturn("anything");
         when(properties.getProxyHost()).thenReturn(proxyHost);
         when(properties.getProxyPort()).thenReturn(proxyPort);
-        when(properties.getRegion()).thenReturn(region);
+        when(properties.getRegion()).thenReturn("anything");
     }
 }

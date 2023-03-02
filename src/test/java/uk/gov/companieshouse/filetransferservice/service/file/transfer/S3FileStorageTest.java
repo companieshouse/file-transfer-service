@@ -19,15 +19,15 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doNothing;
@@ -50,22 +50,20 @@ public class S3FileStorageTest {
     @Test
     @DisplayName("Test successful File Save")
     void testSaveFileSuccess() {
-        doNothing().when(amazonFileTransfer).uploadFile(anyString(), any(Map.class), any(InputStream.class));
+        doNothing().when(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
 
         String actual = underTest.save(createTestFileApi());
 
         assertNotNull(UUID.fromString(actual));
-        verify(amazonFileTransfer).uploadFile(anyString(), any(Map.class), any(InputStream.class));
+        verify(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
     }
 
     @Test
     @DisplayName("Test SdkClientException thrown on unsuccessful File Save")
     void testSdkClientExceptionThrownFromFileSaveFailure() {
-        doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(anyString(), any(Map.class), any(InputStream.class));
+        doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
 
-        assertThrows(SdkClientException.class, () -> {
-            underTest.save(createTestFileApi());
-        });
+        assertThrows(SdkClientException.class, () -> underTest.save(createTestFileApi()));
     }
 
     @Test
@@ -183,9 +181,7 @@ public class S3FileStorageTest {
     void testSdkClientExceptionThrownFromFileDeleteFailure() {
         doThrow(SdkClientException.class).when(amazonFileTransfer).deleteFile(anyString());
 
-        assertThrows(SdkClientException.class, () -> {
-            underTest.delete(TEST_FILE_NAME);
-        });
+        assertThrows(SdkClientException.class, () -> underTest.delete(TEST_FILE_NAME));
     }
 
     private FileApi createTestFileApi() {
