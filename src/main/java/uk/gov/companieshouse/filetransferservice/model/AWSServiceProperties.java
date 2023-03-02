@@ -10,6 +10,9 @@ import javax.validation.constraints.NotBlank;
 public class AWSServiceProperties {
 
     @NotBlank
+    private String region;
+
+    @NotBlank
     private String secretAccessKey;
 
     @NotBlank
@@ -27,6 +30,14 @@ public class AWSServiceProperties {
     private String proxyHost;
 
     private Integer proxyPort;
+
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
+    }
 
     public String getSecretAccessKey() {
         return secretAccessKey;
