@@ -2,9 +2,10 @@ package uk.gov.companieshouse.filetransferservice.config;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,29 +33,63 @@ public class ApplicationConfiguration {
         return LoggerFactory.getLogger(applicationNameSpace);
     }
 
+    /**
+     * Creates the user interceptor used by the application.
+     *
+     * @return user interceptor
+     */
     @Bean
     public InternalUserInterceptor userInterceptor() {
         return new InternalUserInterceptor(applicationNameSpace);
     }
 
+    /**
+     * Creates the client configuration used by the amazon s3 client builder.
+     *
+     * @return client configuration
+     */
     @Bean
-    protected AmazonS3 getAmazonS3Client(AWSServiceProperties properties) {
-        AWSCredentials credentials = new BasicAWSCredentials(properties.getAccessKeyId(), properties.getSecretAccessKey());
+    public ClientConfiguration clientConfiguration() {
+        return new ClientConfiguration();
+    }
 
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
+    /**
+     * Creates the amazon s3 client builder.
+     *
+     * @return amazon s3 client builder
+     */
+    @Bean
+    public AmazonS3ClientBuilder amazonS3ClientBuilder() {
+        return AmazonS3ClientBuilder.standard();
+    }
 
+    /**
+     * Creates the s3 client.
+     *
+     * @param properties
+     * @param clientConfiguration
+     * @param amazonS3ClientBuilder
+     * @return s3 client
+     */
+    @Bean
+    public AmazonS3 getAmazonS3Client(AWSServiceProperties properties, ClientConfiguration clientConfiguration, AmazonS3ClientBuilder amazonS3ClientBuilder) {
         String httpProxyHostName = properties.getProxyHost();
-        Integer httpProxyPort = properties.getProxyPort();
-
         if (!isNullOrEmpty(httpProxyHostName)) {
             clientConfiguration.setProxyHost(httpProxyHostName);
         }
 
+        Integer httpProxyPort = properties.getProxyPort();
         if (httpProxyPort != null) {
             clientConfiguration.setProxyPort(httpProxyPort);
         }
 
-        return new AmazonS3Client(credentials, clientConfiguration);
+        AWSCredentials credentials = new BasicAWSCredentials(properties.getAccessKeyId(), properties.getSecretAccessKey());
+
+        return amazonS3ClientBuilder
+                .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                .withClientConfiguration(clientConfiguration)
+                .withRegion(properties.getRegion())
+                .build();
     }
 }
 

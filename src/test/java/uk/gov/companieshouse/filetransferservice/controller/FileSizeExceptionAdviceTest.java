@@ -36,7 +36,7 @@ public class FileSizeExceptionAdviceTest {
         verify(mockLogger).error(
                 "Uploaded file was too large",
                 exception,
-                new HashMap<String, Object>() {{
+                new HashMap<>() {{
                     put("maxFileSize", 1024L);
                 }}
         );
