@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.MimeType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -120,20 +121,23 @@ public class FileTransferController {
      * @param fileId of remote file
      * @return file data
      */
+    @GetMapping(path = "/{fileId}/download", produces = "application/json")
+    public ResponseEntity<FileApi> downloadAsJson(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
+        FileApi file = getFileApi(fileId);
+        return ResponseEntity.ok(file);
+    }
+
+    /**
+     * Handles the request to retrieve a file from S3
+     *
+     * @param fileId of remote file
+     * @return file data
+     */
     @GetMapping(path = "/{fileId}/download")
     public ResponseEntity<byte[]> download(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
 
-        Supplier<FileNotFoundException> notFoundException = () ->
-                new FileNotFoundException(fileId);
-        FileDetailsApi fileDetails = fileStorageStrategy
-                .getFileDetails(fileId)
-                .orElseThrow(notFoundException);
+        FileApi file = getFileApi(fileId);
 
-        if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
-            throw new FileNotCleanException(fileDetails.getAvStatusApi(), fileId);
-        }
-
-        var file = fileStorageStrategy.load(fileId, fileDetails).orElseThrow(notFoundException);
         var data = file.getBody();
 
         HttpHeaders headers = new HttpHeaders();
@@ -147,6 +151,21 @@ public class FileTransferController {
                 .headers(headers)
                 .body(data);
 
+    }
+
+    private FileApi getFileApi(String fileId) throws FileNotFoundException, FileNotCleanException {
+        Supplier<FileNotFoundException> notFoundException = () ->
+                new FileNotFoundException(fileId);
+        FileDetailsApi fileDetails = fileStorageStrategy
+                .getFileDetails(fileId)
+                .orElseThrow(notFoundException);
+
+        if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+            throw new FileNotCleanException(fileDetails.getAvStatusApi(), fileId);
+        }
+
+        var file = fileStorageStrategy.load(fileId, fileDetails).orElseThrow(notFoundException);
+        return file;
     }
 
     @ExceptionHandler({FileNotCleanException.class})
