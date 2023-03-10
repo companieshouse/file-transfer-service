@@ -7,7 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.MimeType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,9 +36,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 @Controller
 @RequestMapping(path = "/file-transfer-service")
 public class FileTransferController {
+    public static final String FILE_ID_KEY = "fileId";
+
     private final FileStorageStrategy fileStorageStrategy;
     private final Logger logger;
     private final MultipartFileToFileApiConverter fileConverter;
@@ -116,15 +119,14 @@ public class FileTransferController {
     }
 
     /**
-     * Handles the request to retrieve a file from S3
+     * Handles the request to retrieve a file from S3 in Json format
      *
      * @param fileId of remote file
      * @return file data
      */
-    @GetMapping(path = "/{fileId}/download", produces = "application/json")
+    @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<FileApi> downloadAsJson(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
-        FileApi file = getFileApi(fileId);
-        return ResponseEntity.ok(file);
+        return ResponseEntity.ok(getFileApi(fileId));
     }
 
     /**
@@ -150,29 +152,13 @@ public class FileTransferController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(data);
-
-    }
-
-    private FileApi getFileApi(String fileId) throws FileNotFoundException, FileNotCleanException {
-        Supplier<FileNotFoundException> notFoundException = () ->
-                new FileNotFoundException(fileId);
-        FileDetailsApi fileDetails = fileStorageStrategy
-                .getFileDetails(fileId)
-                .orElseThrow(notFoundException);
-
-        if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
-            throw new FileNotCleanException(fileDetails.getAvStatusApi(), fileId);
-        }
-
-        var file = fileStorageStrategy.load(fileId, fileDetails).orElseThrow(notFoundException);
-        return file;
     }
 
     @ExceptionHandler({FileNotCleanException.class})
     ResponseEntity<ApiErrorResponse> handleFileNotCleanException(FileNotCleanException e) {
         String fileId = e.getFileId();
         Map<String, Object> loggedVars = new HashMap<>();
-        loggedVars.put("fileId", fileId);
+        loggedVars.put(FILE_ID_KEY, fileId);
         logger.infoContext(fileId,
                 "Request for file denied as AV status is not clean",
                 loggedVars);
@@ -180,7 +166,7 @@ public class FileTransferController {
                 .status(HttpStatus.FORBIDDEN)
                 .withError("File retrieval denied due to unclean antivirus status",
                         fileId,
-                        "fileId",
+                        FILE_ID_KEY,
                         "retrieval")
                 .build();
     }
@@ -190,7 +176,7 @@ public class FileTransferController {
         String fileId = e.getFileId();
 
         Map<String, Object> loggedVars = new HashMap<>();
-        loggedVars.put("fileId", fileId);
+        loggedVars.put(FILE_ID_KEY, fileId);
         logger.errorContext(fileId, "Unable to find file with ID", e, loggedVars);
         return ErrorResponseBuilder
                 .status(HttpStatus.NOT_FOUND)
@@ -228,8 +214,21 @@ public class FileTransferController {
     @DeleteMapping(path = "/{fileId}")
     public ResponseEntity<Void> delete(@PathVariable String fileId) {
         fileStorageStrategy.delete(fileId);
-        logger.infoContext(fileId, "Deleted file", new HashMap<>(Map.of("fileId", fileId)));
+        logger.infoContext(fileId, "Deleted file", new HashMap<>(Map.of(FILE_ID_KEY, fileId)));
         return ResponseEntity.noContent().build();
     }
 
+    private FileApi getFileApi(String fileId) throws FileNotFoundException, FileNotCleanException {
+        Supplier<FileNotFoundException> notFoundException = () ->
+                new FileNotFoundException(fileId);
+        FileDetailsApi fileDetails = fileStorageStrategy
+                .getFileDetails(fileId)
+                .orElseThrow(notFoundException);
+
+        if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+            throw new FileNotCleanException(fileDetails.getAvStatusApi(), fileId);
+        }
+
+        return fileStorageStrategy.load(fileId, fileDetails).orElseThrow(notFoundException);
+    }
 }
