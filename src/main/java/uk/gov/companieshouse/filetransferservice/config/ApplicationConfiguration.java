@@ -96,14 +96,5 @@ public class ApplicationConfiguration {
                 .withRegion(properties.getRegion())
                 .build();
     }
-
-    @Bean
-    public FilterRegistrationBean requestDumperFilter() {
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        Filter requestDumperFilter = new RequestDumperFilter();
-        registration.setFilter(requestDumperFilter);
-        registration.addUrlPatterns("/*");
-        return registration;
-    }
 }
 
