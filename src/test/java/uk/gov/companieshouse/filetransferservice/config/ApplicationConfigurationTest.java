@@ -48,21 +48,21 @@ class ApplicationConfigurationTest {
     @DisplayName("Test AmazonS3ClientBuilder Bean creates correct type")
     void testAmazonS3ClientBuilderCreation() {
         AmazonS3ClientBuilder actual = undertest.amazonS3ClientBuilder();
-        assertTrue(actual != null && undertest.amazonS3ClientBuilder() instanceof AmazonS3ClientBuilder);
+        assertTrue(actual != null && undertest.amazonS3ClientBuilder() != null);
     }
 
     @Test
     @DisplayName("Test interceptor Bean creates correct type")
     void testClientConfigurationCreation() {
         ClientConfiguration actual = undertest.clientConfiguration();
-        assertTrue(actual != null && undertest.clientConfiguration() instanceof ClientConfiguration);
+        assertTrue(actual != null && undertest.clientConfiguration() != null);
     }
 
     @Test
     @DisplayName("Test interceptor Bean creates correct type")
     void testInterceptorCreation() {
         InternalUserInterceptor actual = undertest.userInterceptor();
-        assertTrue(actual != null && undertest.userInterceptor() instanceof InternalUserInterceptor);
+        assertTrue(actual != null && undertest.userInterceptor() != null);
     }
 
     @Test
@@ -73,7 +73,7 @@ class ApplicationConfigurationTest {
 
         AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
-        assertTrue(actual != null && actual instanceof AmazonS3);
+        assertTrue(actual != null);
         verify(properties).getAccessKeyId();
         verify(properties).getSecretAccessKey();
         verify(properties).getProxyPort();
@@ -91,7 +91,7 @@ class ApplicationConfigurationTest {
 
         AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
-        assertTrue(actual != null && actual instanceof AmazonS3);
+        assertTrue(actual != null);
         verify(properties).getAccessKeyId();
         verify(properties).getSecretAccessKey();
         verify(properties).getProxyPort();
