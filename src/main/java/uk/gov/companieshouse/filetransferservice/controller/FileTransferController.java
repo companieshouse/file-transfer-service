@@ -1,5 +1,7 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -36,10 +38,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-
 @Controller
-@RequestMapping(path = "/file-transfer-service")
+@RequestMapping(path = "${service.path.prefix}")
 public class FileTransferController {
     public static final String FILE_ID_KEY = "fileId";
 

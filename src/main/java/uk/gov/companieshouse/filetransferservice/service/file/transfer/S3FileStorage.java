@@ -1,13 +1,20 @@
 package uk.gov.companieshouse.filetransferservice.service.file.transfer;
 
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.NOT_SCANNED;
+import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.valueOf;
+
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.api.model.filetransfer.FileLinksApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
+import uk.gov.companieshouse.logging.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
@@ -17,25 +24,31 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
-import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.NOT_SCANNED;
-import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.valueOf;
-
 /**
  * An implementation of the FileStorageStrategy for S3
  */
 @Component
 public class S3FileStorage implements FileStorageStrategy {
+    public static final String FILENAME_METADATA_KEY = "filename";
 
     private static final String AV_TIMESTAMP_KEY = "av-timestamp";
     private static final String AV_STATUS_KEY = "av-status";
     private static final int AV_KEY_COUNT = 2;
+    public static final String EXTENSION_METADATA_KEY = "extension";
+    private final Logger logger;
 
     private final AmazonFileTransfer amazonFileTransfer;
+    @Value("${service.path.prefix}")
+    private String servicePathPrefix;
 
     @Autowired
-    public S3FileStorage(AmazonFileTransfer amazonFileTransfer) {
+    public S3FileStorage(AmazonFileTransfer amazonFileTransfer, Logger logger) {
         this.amazonFileTransfer = amazonFileTransfer;
+        this.logger = logger;
+    }
+
+    public static String joinPathSegments(String... strings) {
+        return String.join("/", strings).replaceAll("/{2,}", "/");
     }
 
     /**
@@ -49,6 +62,8 @@ public class S3FileStorage implements FileStorageStrategy {
         String fileId = UUID.randomUUID().toString();
         Map<String, String> metaData = new HashMap<>();
         metaData.put(CONTENT_TYPE, file.getMimeType());
+        metaData.put(FILENAME_METADATA_KEY, file.getFileName());
+        metaData.put(EXTENSION_METADATA_KEY, file.getExtension());
 
         amazonFileTransfer.uploadFile(fileId, metaData, new ByteArrayInputStream(file.getBody()));
 
@@ -67,7 +82,7 @@ public class S3FileStorage implements FileStorageStrategy {
         return amazonFileTransfer
                 .downloadFile(fileId)
                 .map(bytes -> new FileApi(
-                        fileId,
+                        fileDetails.getName(),
                         bytes,
                         fileDetails.getContentType(),
                         bytes.length,
@@ -108,16 +123,24 @@ public class S3FileStorage implements FileStorageStrategy {
             avCreatedOn = avTags.get(AV_TIMESTAMP_KEY);
         }
 
+        String fileName = s3File.getObjectMetadata().getUserMetaDataOf(FILENAME_METADATA_KEY);
+
         FileDetailsApi fileDetailsApi = new FileDetailsApi(fileId,
                 avCreatedOn,
                 avStatus,
                 s3File.getObjectMetadata().getContentType(),
                 s3File.getObjectMetadata().getContentLength(),
-                fileId,
+                fileName,
                 s3File.getObjectMetadata().getLastModified().toString(),
-                null);
+                getLinks(fileId));
 
         return Optional.of(fileDetailsApi);
+    }
+
+    private FileLinksApi getLinks(String fileId) {
+        String selfLink = joinPathSegments(servicePathPrefix, fileId);
+        String downloadLink = joinPathSegments(selfLink, "download");
+        return new FileLinksApi(downloadLink, selfLink);
     }
 
     /**
