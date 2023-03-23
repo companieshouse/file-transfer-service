@@ -1,5 +1,7 @@
 package uk.gov.companieshouse.filetransferservice.service.impl;
 
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
@@ -22,8 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
 @Component
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
@@ -147,6 +147,13 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         } else {
             throw new SdkClientException("meta data does not contain Content-Type");
         }
+
+        // Add all other metadata key value pairs to user meta data
+        metaData.forEach((k, v) -> {
+            if (!k.equalsIgnoreCase(CONTENT_TYPE)) {
+                omd.addUserMetadata(k, v);
+            }
+        });
 
         return omd;
     }
