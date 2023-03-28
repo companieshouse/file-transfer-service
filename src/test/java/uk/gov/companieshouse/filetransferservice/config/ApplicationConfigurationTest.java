@@ -8,11 +8,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.gov.companieshouse.api.interceptor.InternalUserInterceptor;
 import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
-import uk.gov.companieshouse.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -40,29 +38,25 @@ class ApplicationConfigurationTest {
     @Test
     @DisplayName("Test logging Bean creates correct type")
     void testLoggerCreation() {
-        Logger actual = undertest.logger();
-        assertTrue(actual != null && undertest.logger() instanceof Logger);
+        assertNotNull(undertest.logger());
     }
 
     @Test
     @DisplayName("Test AmazonS3ClientBuilder Bean creates correct type")
     void testAmazonS3ClientBuilderCreation() {
-        AmazonS3ClientBuilder actual = undertest.amazonS3ClientBuilder();
-        assertTrue(actual != null && undertest.amazonS3ClientBuilder() != null);
+        assertNotNull(undertest.amazonS3ClientBuilder());
     }
 
     @Test
     @DisplayName("Test interceptor Bean creates correct type")
     void testClientConfigurationCreation() {
-        ClientConfiguration actual = undertest.clientConfiguration();
-        assertTrue(actual != null && undertest.clientConfiguration() != null);
+        assertNotNull(undertest.clientConfiguration());
     }
 
     @Test
     @DisplayName("Test interceptor Bean creates correct type")
     void testInterceptorCreation() {
-        InternalUserInterceptor actual = undertest.userInterceptor();
-        assertTrue(actual != null && undertest.userInterceptor() != null);
+        assertNotNull(undertest.userInterceptor());
     }
 
     @Test
@@ -73,7 +67,7 @@ class ApplicationConfigurationTest {
 
         AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
-        assertTrue(actual != null);
+        assertNotNull(actual);
         verify(properties).getAccessKeyId();
         verify(properties).getSecretAccessKey();
         verify(properties).getProxyPort();
@@ -91,7 +85,7 @@ class ApplicationConfigurationTest {
 
         AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
-        assertTrue(actual != null);
+        assertNotNull(actual);
         verify(properties).getAccessKeyId();
         verify(properties).getSecretAccessKey();
         verify(properties).getProxyPort();
