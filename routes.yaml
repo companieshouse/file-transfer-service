@@ -1,0 +1,5 @@
+app_name: file-transfer-service
+group: api
+weight: 900
+routes:
+  1: /file-transfer-service*
