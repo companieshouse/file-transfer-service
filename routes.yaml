@@ -1,5 +1,5 @@
 app_name: file-transfer-service
-group: api
+group: internalapi
 weight: 900
 routes:
-  1: /file-transfer-service*
+  1: ^/file-transfer-service.*
