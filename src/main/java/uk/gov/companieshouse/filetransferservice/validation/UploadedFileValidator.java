@@ -16,6 +16,7 @@ public class UploadedFileValidator {
             "image/jpg",
             "application/pdf",
             "text/csv",
+            "text/html",
             "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
