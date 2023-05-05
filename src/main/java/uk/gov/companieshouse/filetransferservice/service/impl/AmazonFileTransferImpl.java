@@ -19,6 +19,7 @@ import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,6 @@ import java.util.Optional;
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
     private static final String S3_PATH_PREFIX = "s3://";
-    private static final String ERROR_KEY = "error";
 
     private final AmazonS3 s3Client;
     private final AWSServiceProperties properties;
@@ -53,6 +53,19 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     /**
+     * Reads the body of an S3 object and ensures it is closed correctly afterwards.
+     *
+     * @param s3Object the object to read
+     * @return the body of the object as an array of bytes
+     * @throws IOException if the stream cannot be closed
+     */
+    private static byte[] readS3Object(S3Object s3Object) throws IOException {
+        try (InputStream stream = s3Object.getObjectContent()) {
+            return IOUtils.toByteArray(stream);
+        }
+    }
+
+    /**
      * Download a file from S3
      *
      * @return String
@@ -62,11 +75,12 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         try {
             validateS3Details();
             S3Object s3Object = getObjectInS3(fileId);
-            return Optional.ofNullable(IOUtils.toByteArray(s3Object.getObjectContent()));
+            return Optional.ofNullable(readS3Object(s3Object));
         } catch (Exception e) {
-            logger.error(e, new HashMap<>() {{
-                put(ERROR_KEY, "Unable to fetch file from S3");
+            logger.errorContext(fileId, "Unable to fetch file from S3", e, new HashMap<>() {{
+                put("fileId", fileId);
             }});
+
             return Optional.empty();
         }
     }
@@ -82,8 +96,8 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             validateS3Details();
             return Optional.ofNullable(s3Client.getObject(new GetObjectRequest(properties.getBucketName(), fileId)));
         } catch (Exception e) {
-            logger.error(e, new HashMap<>() {{
-                put(ERROR_KEY, "Unable to fetch object from S3");
+            logger.errorContext(fileId, "Unable to fetch object from S3", e, new HashMap<>() {{
+                put("fileId", fileId);
             }});
             return Optional.empty();
         }
@@ -100,8 +114,8 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             validateS3Details();
             return Optional.ofNullable(s3Client.getObjectTagging(new GetObjectTaggingRequest(properties.getBucketName(), fileId)).getTagSet());
         } catch (Exception e) {
-            logger.error(e, new HashMap<>() {{
-                put(ERROR_KEY, "Unable to fetch file tags from S3");
+            logger.errorContext(fileId, "Unable to fetch file tags from S3", e, new HashMap<>() {{
+                put("fileId", fileId);
             }});
             return Optional.empty();
         }
