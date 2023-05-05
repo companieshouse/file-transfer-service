@@ -19,6 +19,7 @@ import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -62,7 +63,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         try {
             validateS3Details();
             S3Object s3Object = getObjectInS3(fileId);
-            return Optional.ofNullable(IOUtils.toByteArray(s3Object.getObjectContent()));
+            return Optional.ofNullable(readS3Object(s3Object));
         } catch (Exception e) {
             logger.error(e, new HashMap<>() {{
                 put(ERROR_KEY, "Unable to fetch file from S3");
