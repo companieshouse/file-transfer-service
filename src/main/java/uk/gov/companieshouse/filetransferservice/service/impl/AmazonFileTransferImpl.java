@@ -10,6 +10,7 @@ import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.Tag;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
@@ -19,7 +20,6 @@ import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -53,19 +53,6 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     /**
-     * Reads the body of an S3 object and ensures it is closed correctly afterwards.
-     *
-     * @param s3Object the object to read
-     * @return the body of the object as an array of bytes
-     * @throws IOException if the stream cannot be closed
-     */
-    private static byte[] readS3Object(S3Object s3Object) throws IOException {
-        try (InputStream stream = s3Object.getObjectContent()) {
-            return IOUtils.toByteArray(stream);
-        }
-    }
-
-    /**
      * Download a file from S3
      *
      * @return String
@@ -74,8 +61,11 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public Optional<byte[]> downloadFile(String fileId) {
         try {
             validateS3Details();
-            S3Object s3Object = getObjectInS3(fileId);
-            return Optional.ofNullable(readS3Object(s3Object));
+            // Try-with ensures connections are closed once used.
+            try (S3Object s3Object = getObjectInS3(fileId);
+                 S3ObjectInputStream is = s3Object.getObjectContent()) {
+                return Optional.ofNullable(IOUtils.toByteArray(is));
+            }
         } catch (Exception e) {
             logger.errorContext(fileId, "Unable to fetch file from S3", e, new HashMap<>() {{
                 put("fileId", fileId);
