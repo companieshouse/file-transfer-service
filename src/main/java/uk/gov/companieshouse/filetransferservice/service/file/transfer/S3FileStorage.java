@@ -17,6 +17,7 @@ import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,44 +98,49 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public Optional<FileDetailsApi> getFileDetails(String fileId) {
-        Optional<S3Object> s3Object = amazonFileTransfer.getFileObject(fileId);
+        Optional<S3Object> optionalS3Object = amazonFileTransfer.getFileObject(fileId);
 
-        if (s3Object.isEmpty()) {
+        if (optionalS3Object.isEmpty()) {
             return Optional.empty();
         }
 
-        AvStatusApi avStatus = NOT_SCANNED;
-        String avCreatedOn = "";
+        FileDetailsApi fileDetailsApi = null;
+        try (S3Object s3Object = optionalS3Object.get()) {
 
-        S3Object s3File = s3Object.get();
+            AvStatusApi avStatus = NOT_SCANNED;
+            String avCreatedOn = "";
 
-        if (s3File.getTaggingCount() != null && s3File.getTaggingCount() > 0) {
-            Optional<List<Tag>> allTags = amazonFileTransfer.getFileTags(fileId);
-            if (allTags.isEmpty()) {
-                return Optional.empty();
+            if (s3Object.getTaggingCount() != null && s3Object.getTaggingCount() > 0) {
+                Optional<List<Tag>> allTags = amazonFileTransfer.getFileTags(fileId);
+                if (allTags.isEmpty()) {
+                    return Optional.empty();
+                }
+
+                Map<String, String> avTags = extractAVTags(allTags.get());
+                if (avTags.size() != AV_KEY_COUNT) {
+                    return Optional.empty();
+                }
+
+                avStatus = valueOf(avTags.get(AV_STATUS_KEY).toUpperCase());
+                avCreatedOn = avTags.get(AV_TIMESTAMP_KEY);
             }
 
-            Map<String, String> avTags = extractAVTags(allTags.get());
-            if (avTags.size() != AV_KEY_COUNT) {
-                return Optional.empty();
-            }
+            String fileName = s3Object.getObjectMetadata().getUserMetaDataOf(FILENAME_METADATA_KEY);
 
-            avStatus = valueOf(avTags.get(AV_STATUS_KEY).toUpperCase());
-            avCreatedOn = avTags.get(AV_TIMESTAMP_KEY);
+            fileDetailsApi = new FileDetailsApi(fileId,
+                    avCreatedOn,
+                    avStatus,
+                    s3Object.getObjectMetadata().getContentType(),
+                    s3Object.getObjectMetadata().getContentLength(),
+                    fileName,
+                    s3Object.getObjectMetadata().getLastModified().toString(),
+                    getLinks(fileId));
+
+            return Optional.of(fileDetailsApi);
+        } catch (IOException e) {
+            logger.errorContext(fileId, "Error closing S3Object when getting file details", e, null);
+            return Optional.ofNullable(fileDetailsApi);
         }
-
-        String fileName = s3File.getObjectMetadata().getUserMetaDataOf(FILENAME_METADATA_KEY);
-
-        FileDetailsApi fileDetailsApi = new FileDetailsApi(fileId,
-                avCreatedOn,
-                avStatus,
-                s3File.getObjectMetadata().getContentType(),
-                s3File.getObjectMetadata().getContentLength(),
-                fileName,
-                s3File.getObjectMetadata().getLastModified().toString(),
-                getLinks(fileId));
-
-        return Optional.of(fileDetailsApi);
     }
 
     private FileLinksApi getLinks(String fileId) {
