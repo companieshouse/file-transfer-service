@@ -148,7 +148,7 @@ public class FileTransferControllerTest {
         when(fileStorageStrategy.load(fileId, fileDetails))
                 .thenReturn(Optional.of(file));
 
-        ResponseEntity<byte[]> response = fileTransferController.download(fileId);
+        ResponseEntity<byte[]> response = fileTransferController.download(fileId, false);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(content.length, Objects.requireNonNull(response.getBody()).length);
@@ -166,7 +166,7 @@ public class FileTransferControllerTest {
         when(fileStorageStrategy.getFileDetails(fileId))
                 .thenReturn(Optional.empty());
 
-        assertThrows(FileNotFoundException.class, () -> fileTransferController.download(fileId));
+        assertThrows(FileNotFoundException.class, () -> fileTransferController.download(fileId, false));
     }
 
     @Test
@@ -180,7 +180,7 @@ public class FileTransferControllerTest {
         when(fileStorageStrategy.getFileDetails(fileId))
                 .thenReturn(Optional.of(fileDetailsApi));
 
-        assertThrows(FileNotCleanException.class, () -> fileTransferController.download(fileId));
+        assertThrows(FileNotCleanException.class, () -> fileTransferController.download(fileId, false));
     }
 
 

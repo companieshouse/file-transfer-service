@@ -126,7 +126,7 @@ public class FileTransferController {
      */
     @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<FileApi> downloadAsJson(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
-        return ResponseEntity.ok(getFileApi(fileId));
+        return ResponseEntity.ok(getFileApi(fileId, false));
     }
 
     /**
@@ -136,9 +136,9 @@ public class FileTransferController {
      * @return file data
      */
     @GetMapping(path = "/{fileId}/download")
-    public ResponseEntity<byte[]> download(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
+    public ResponseEntity<byte[]> download(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
 
-        FileApi file = getFileApi(fileId);
+        FileApi file = getFileApi(fileId, bypassAv);
 
         var data = file.getBody();
 
@@ -218,14 +218,14 @@ public class FileTransferController {
         return ResponseEntity.noContent().build();
     }
 
-    private FileApi getFileApi(String fileId) throws FileNotFoundException, FileNotCleanException {
+    private FileApi getFileApi(String fileId, boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
         Supplier<FileNotFoundException> notFoundException = () ->
                 new FileNotFoundException(fileId);
         FileDetailsApi fileDetails = fileStorageStrategy
                 .getFileDetails(fileId)
                 .orElseThrow(notFoundException);
 
-        if (fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
+        if (!bypassAv && fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
             throw new FileNotCleanException(fileDetails.getAvStatusApi(), fileId);
         }
 
