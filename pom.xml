@@ -50,6 +50,12 @@
                 <groupId>uk.gov.companieshouse</groupId>
                 <artifactId>private-api-sdk-java</artifactId>
                 <version>${private-api-sdk-java.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
