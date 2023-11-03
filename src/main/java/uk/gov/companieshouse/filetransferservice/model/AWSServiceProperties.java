@@ -13,12 +13,6 @@ public class AWSServiceProperties {
     private String region;
 
     @NotBlank
-    private String secretAccessKey;
-
-    @NotBlank
-    private String accessKeyId;
-
-    @NotBlank
     private String bucketName;
 
     @NotBlank
@@ -37,22 +31,6 @@ public class AWSServiceProperties {
 
     public void setRegion(String region) {
         this.region = region;
-    }
-
-    public String getSecretAccessKey() {
-        return secretAccessKey;
-    }
-
-    public void setSecretAccessKey(String secretAccessKey) {
-        this.secretAccessKey = secretAccessKey;
-    }
-
-    public String getAccessKeyId() {
-        return accessKeyId;
-    }
-
-    public void setAccessKeyId(String accessKeyId) {
-        this.accessKeyId = accessKeyId;
     }
 
     public String getBucketName() {
