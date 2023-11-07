@@ -70,8 +70,6 @@ class AmazonFileTransferImplTest {
     }
 
     private void mockConfigurationDetails() {
-        when(properties.getAccessKeyId()).thenReturn("");
-        when(properties.getSecretAccessKey()).thenReturn("");
         when(properties.getProtocol()).thenReturn("");
         when(properties.getBucketName()).thenReturn(S3_PATH);
         when(client.doesBucketExistV2(anyString())).thenReturn(true);

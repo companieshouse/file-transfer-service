@@ -68,8 +68,6 @@ class ApplicationConfigurationTest {
         AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
         assertNotNull(actual);
-        verify(properties).getAccessKeyId();
-        verify(properties).getSecretAccessKey();
         verify(properties).getProxyPort();
         verify(properties).getRegion();
         verify(clientConfiguration, times(0)).setProxyHost(anyString());
@@ -86,8 +84,6 @@ class ApplicationConfigurationTest {
         AmazonS3 actual = undertest.getAmazonS3Client(properties, clientConfiguration, builder);
 
         assertNotNull(actual);
-        verify(properties).getAccessKeyId();
-        verify(properties).getSecretAccessKey();
         verify(properties).getProxyPort();
         verify(properties, atLeastOnce()).getRegion();
         verify(clientConfiguration).setProxyHost(anyString());
@@ -102,8 +98,6 @@ class ApplicationConfigurationTest {
     }
 
     private void createPropertyValueMocks(String proxyHost, Integer proxyPort) {
-        when(properties.getAccessKeyId()).thenReturn("anything");
-        when(properties.getSecretAccessKey()).thenReturn("anything");
         when(properties.getProxyHost()).thenReturn(proxyHost);
         when(properties.getProxyPort()).thenReturn(proxyPort);
         when(properties.getRegion()).thenReturn("anything");
