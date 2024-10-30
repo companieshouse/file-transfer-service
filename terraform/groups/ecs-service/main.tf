@@ -136,9 +136,4 @@ module "ecs-service-secure" {
   task_secrets                  = local.task_secrets
   app_environment_filename      = local.app_environment_filename_secure
   use_set_environment_files     = local.use_set_environment_files
-  additional_sidecar_containers = local.additional_containers
-  target_container_name         = "proxy-sidecar"
-  target_container_port         = "8080"
-  total_service_memory          = 256 + 512
-  total_service_cpu             = 128 + 192
 }
