@@ -61,9 +61,6 @@ resource "aws_lb_listener_rule" "redirect_rule" {
     type = "redirect"
 
     redirect {
-      port        = "3000"
-      protocol    = "HTTP"
-      host        = data.aws_lb_target_group.secure_target_group.name
       path        = "/files"
       status_code = "HTTP_301"
     }
@@ -75,11 +72,6 @@ resource "aws_lb_listener_rule" "redirect_rule" {
     }
   }
 }
-
-data "aws_lb_target_group" "secure_target_group" {
-  name = "${var.environment}-${local.service_name}-secu-far"
-}
-
 
 # retrieve all secrets for this stack using the stack path
 data "aws_ssm_parameters_by_path" "secrets" {
