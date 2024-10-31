@@ -110,7 +110,7 @@ data "vault_generic_secret" "shared_s3" {
 # ------------------------------------------------------------------------------
 # Policy Documents
 # ------------------------------------------------------------------------------
-data "aws_iam_policy_document" "file_transfer_api_trust" {
+data "aws_iam_policy_document" "file_transfer_service_trust" {
   statement {
     sid       = "FileTransferAPITrust"
     effect = "Allow"
@@ -130,6 +130,6 @@ data "aws_iam_policy_document" "file_transfer_api_trust" {
 }
 
 output "execution_role" {
-  value = aws_iam_role.file_transfer_api_execution.arn
+  value = aws_iam_role.file_transfer_service_execution.arn
 }
 

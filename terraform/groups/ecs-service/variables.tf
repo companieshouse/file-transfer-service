@@ -124,7 +124,7 @@ variable "use_set_environment_files" {
   description = "Toggle default global and shared  environment files"
 }
 
-variable "file_transfer_api_version" {
+variable "file_transfer_service_version" {
   type        = string
   description = "The version of the file transfer web container to run."
 }

@@ -17,7 +17,7 @@ locals {
   vpc_name                         = local.service_secrets["vpc_name"]
   s3_config_bucket                 = data.vault_generic_secret.shared_s3.data["config_bucket_name"]
   app_environment_filename         = "file-transfer-service.env"
-  app_environment_filename_secure  = "file-transfer-service-secure.env"
+  app_environment_filename_secure  = "file-transfer-service.env"
   use_set_environment_files        = var.use_set_environment_files
   application_subnet_ids           = data.aws_subnets.application.ids
   stack_secrets                    = jsondecode(data.vault_generic_secret.stack_secrets.data_json)
