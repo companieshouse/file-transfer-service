@@ -7,8 +7,8 @@ locals {
   service_name_secure              = "file-transfer-secure"
   container_port                   = "8080"
   docker_repo                      = "file-transfer-service"
-  lb_listener_rule_priority        = 32
-  lb_listener_rule_priority_secure = 47
+  lb_listener_rule_priority        = 77
+  lb_listener_rule_priority_secure = 76
   lb_listener_paths                = ["/files*"]
   lb_listener_paths_secure         = ["secure/files*"]
   healthcheck_path                 = "/file-transfer-service/health"            # healthcheck path for file-transfer-service
