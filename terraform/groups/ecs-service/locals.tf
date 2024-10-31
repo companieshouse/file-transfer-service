@@ -11,7 +11,7 @@ locals {
   lb_listener_rule_priority_secure = 76
   lb_listener_paths                = ["/files*"]
   lb_listener_paths_secure         = ["secure/files*"]
-  healthcheck_path                 = "/file-transfer-service/health"            # healthcheck path for file-transfer-service
+  healthcheck_path                 = "/file-transfer-service/healthcheck"            # healthcheck path for file-transfer-service
   healthcheck_matcher              = "200"
   kms_alias                        = "alias/${var.aws_profile}/environment-services-kms"
   vpc_name                         = local.service_secrets["vpc_name"]
