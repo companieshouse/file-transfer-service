@@ -38,6 +38,6 @@ public class WebSecurityConfig {
      */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().requestMatchers("/actuator/**");
+        return (web) -> web.ignoring().requestMatchers("/file-transfer-service/healthcheck");
     }
 }
