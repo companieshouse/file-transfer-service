@@ -3,14 +3,14 @@ locals {
   stack_name                       = "utility"                               # this must match the stack name the service deploys into
   name_prefix                      = "${local.stack_name}-${var.environment}"
   global_prefix                    = "global-${var.environment}"
-  service_name                     = "file-transfer"
-  service_name_secure              = "file-transfer-secure"
+  service_name                     = "file-transfer-service"
+  service_name_secure              = "file-transfer-service-secure"
   container_port                   = 8080
   docker_repo                      = "file-transfer-service"
   lb_listener_rule_priority        = 77
   lb_listener_rule_priority_secure = 76
   lb_listener_paths                = ["/files*"]
-  lb_listener_paths_secure         = ["secure/files*"]
+  lb_listener_paths_secure         = ["/secure/files*"]
   healthcheck_path                 = "/file-transfer-service/healthcheck"            # healthcheck path for file-transfer-service
   healthcheck_matcher              = "200"
   kms_alias                        = "alias/${var.aws_profile}/environment-services-kms"
