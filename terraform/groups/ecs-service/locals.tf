@@ -5,7 +5,7 @@ locals {
   global_prefix                    = "global-${var.environment}"
   service_name                     = "file-transfer-service"
   service_name_secure              = "file-transfer-service-secure"
-  container_port                   = 8080
+  container_port                   = "8080"
   docker_repo                      = "file-transfer-service"
   lb_listener_rule_priority        = 77
   lb_listener_rule_priority_secure = 76
