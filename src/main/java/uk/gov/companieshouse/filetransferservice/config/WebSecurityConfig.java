@@ -27,7 +27,7 @@ public class WebSecurityConfig {
                 .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Stateless sessions
-                ).authorizeRequests(authorize -> authorize
+                ).authorizeHttpRequests(authorize -> authorize
                         .anyRequest().permitAll()
                 );
         return http.build();
@@ -38,6 +38,6 @@ public class WebSecurityConfig {
      */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().requestMatchers("/file-transfer-service/healthcheck");
+        return (web) -> web.ignoring().requestMatchers("/");
     }
 }
