@@ -106,7 +106,7 @@ module "ecs-service-secure" {
   vpc_id                  = data.aws_vpc.vpc.id
   ecs_cluster_id          = data.aws_ecs_cluster.ecs_cluster.id
   task_execution_role_arn = data.aws_iam_role.ecs_cluster_iam_role.arn
-  task_role_arn           = aws_iam_role.task_role.arn
+  task_role_arn           = aws_iam_role.task_role_secure.arn
 
   # Load balancer configuration
   use_task_container_healthcheck = true
