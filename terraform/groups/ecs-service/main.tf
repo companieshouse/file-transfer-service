@@ -56,6 +56,7 @@ module "ecs-service" {
   docker_repo       = local.docker_repo
   container_version = var.file_transfer_service_version
   container_port    = local.container_port
+  multilb_setup                   = false
 
   # Service configuration
   service_name = local.service_name
@@ -119,6 +120,7 @@ module "ecs-service-secure" {
   docker_repo       = local.docker_repo
   container_version = var.file_transfer_service_version
   container_port    = local.container_port
+  multilb_setup                   = false
 
   # Service configuration
   service_name = local.service_name_secure
