@@ -54,25 +54,6 @@ data "aws_lb_listener" "service_lb_listener_secure" {
 
 }
 
-resource "aws_lb_listener_rule" "redirect_rule" {
-  listener_arn = data.aws_lb_listener.service_lb_listener_secure.arn
-  priority     = 143
-  action {
-    type = "redirect"
-
-    redirect {
-      path        = "/files"
-      status_code = "HTTP_301"
-    }
-  }
-
-  condition {
-    path_pattern {
-      values = ["*/secure/files"]
-    }
-  }
-}
-
 # retrieve all secrets for this stack using the stack path
 data "aws_ssm_parameters_by_path" "secrets" {
   path = "/${local.name_prefix}"
