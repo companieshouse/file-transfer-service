@@ -4,7 +4,7 @@ locals {
   name_prefix                      = "${local.stack_name}-${var.environment}"
   global_prefix                    = "global-${var.environment}"
   service_name                     = "file-transfer-service"
-  service_name_secure              = "file-transfer-service-secure"
+  service_name_secure              = "file-transfer-secure-service"
   eric_port                        = "10000"
   container_port                   = "8080"
   docker_repo                      = "file-transfer-service"
