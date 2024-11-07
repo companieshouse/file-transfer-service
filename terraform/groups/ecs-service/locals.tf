@@ -5,6 +5,7 @@ locals {
   global_prefix                    = "global-${var.environment}"
   service_name                     = "file-transfer-service"
   service_name_secure              = "file-transfer-service-secure"
+  eric_port                        = "10000"
   container_port                   = "8080"
   docker_repo                      = "file-transfer-service"
   lb_listener_rule_priority        = 77
@@ -61,6 +62,12 @@ locals {
       name = "${replace(upper(local.service_name), "-", "_")}_${var.ssm_version_prefix}${replace(upper(basename(sec.name)), "-", "_")}", value = sec.version
     }
   ]
+
+  eric_secrets = [
+    { "name": "API_KEY", "valueFrom": local.global_secrets_arn_map.eric_api_key },
+    { "name": "AES256_KEY", "valueFrom": local.global_secrets_arn_map.eric_aes256_key }
+  ]
+  eric_environment_filename = "eric.env"
 
   # secrets to go in list
   task_secrets = concat(local.service_secret_list, local.global_secret_list, [])

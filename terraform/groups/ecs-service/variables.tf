@@ -129,6 +129,21 @@ variable "file_transfer_service_version" {
   description = "The version of the file transfer web container to run."
 }
 
+variable "eric_cpus" {
+  type = number
+  description = "The required cpu resource for eric. 1024 here is 1 vCPU"
+  default = 256
+}
+variable "eric_memory" {
+  type = number
+  description = "The required memory for eric"
+  default = 512
+}
+variable "eric_version" {
+  type        = string
+  description = "The version of the eric container to run."
+}
+
 variable file_transfer_kms_alias {}
 variable file_transfer_bucket {}
 variable stage {}
