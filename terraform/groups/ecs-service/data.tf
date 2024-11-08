@@ -7,7 +7,7 @@ data "aws_kms_key" "kms_key" {
 }
 
 data "vault_generic_secret" "service_secrets" {
-  path = "applications/${var.aws_profile}/${var.environment}/${local.stack_name}-stack/${local.service_name}"
+  path = "applications/${var.aws_profile}/${var.environment}/${local.stack_name}-stack/${local.service_name}-service"
 }
 
 data "aws_vpc" "vpc" {
