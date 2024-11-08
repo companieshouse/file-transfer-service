@@ -70,7 +70,7 @@ public class FileTransferController {
      */
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
     public ResponseEntity<IdApi> upload(
-            @RequestParam(value = "file") MultipartFile uploadedFile) throws IOException, InvalidMimeTypeException {
+            @RequestParam MultipartFile uploadedFile) throws IOException, InvalidMimeTypeException {
 
         FileApi file = fileConverter.convert(uploadedFile);
         return uploadJson(file);
