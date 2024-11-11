@@ -1,3 +1,9 @@
+resource "aws_iam_role" "task_role_secure" {
+  name               = "${var.environment}-${local.service_name_secure}-task-role"
+  path               = "/"
+  assume_role_policy = data.aws_iam_policy_document.task_assume.json
+}
+
 resource "aws_iam_role" "task_role" {
   name               = "${var.environment}-${local.service_name}-task-role"
   path               = "/"
@@ -22,46 +28,49 @@ resource "aws_iam_policy" "task_policy" {
   policy      = data.aws_iam_policy_document.task_policy.json
 }
 
+resource "aws_iam_policy" "task_policy_secure" {
+  name        = "${var.environment}-${local.service_name_secure}-task-policy"
+  policy      = data.aws_iam_policy_document.task_policy_secure.json
+}
+
 data "aws_iam_policy_document" "task_policy" {
   statement {
-    sid       = "AllowS3ListBuckets"
+    sid       = "AllowFullAccessToS3"
     effect    = "Allow"
-    actions   = [
-      "s3:ListBucket"
-    ]
-    resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket}"
-    ]
+    actions   = ["s3:*"]
+    resources = ["arn:aws:s3:::${var.file_transfer_bucket}/*"]
   }
 
   statement {
-    sid       = "AllowS3ReadObjects"
+    sid      = "AllowAccessForKey"
+    effect   = "Allow"
+    actions  = ["kms:*"]
+    resources = ["*"]
+  }
+}
+
+data "aws_iam_policy_document" "task_policy_secure" {
+  statement {
+    sid       = "AllowFullAccessToS3"
     effect    = "Allow"
-    actions   = [
-      "s3:GetBucketPolicy",
-      "s3:GetLifecycleConfiguration",
-      "s3:GetObject"
-    ]
-    resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket}/*"
-    ]
+    actions   = ["s3:*"]
+    resources = ["arn:aws:s3:::${var.file_transfer_bucket_secure}/*"]
   }
 
   statement {
-    sid       = "AllowS3WriteObjects"
-    effect    = "Allow"
-    actions   = [
-      "s3:PutObject",
-      "s3:PutObjectAcl",
-      "s3:PutObjectVersionAcl"
-    ]
-    resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket}/*"
-    ]
+    sid      = "AllowAccessForKey"
+    effect   = "Allow"
+    actions  = ["kms:*"]
+    resources = ["*"]
   }
 }
 
 resource "aws_iam_role_policy_attachment" "task_role_attachment" {
   role       = aws_iam_role.task_role.name
   policy_arn = aws_iam_policy.task_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "task_role_secure_attachment" {
+  role       = aws_iam_role.task_role_secure.name
+  policy_arn = aws_iam_policy.task_policy_secure.arn
 }
