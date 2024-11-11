@@ -94,7 +94,7 @@ resource "aws_iam_role_policy_attachment" "task_role_attachment" {
   policy_arn = aws_iam_policy.task_policy.arn
 }
 
-resource "aws_iam_role_policy_attachment" "task_role_attachment_secure" {
+resource "aws_iam_role_policy_attachment" "task_role_secure" {
   role       = aws_iam_role.task_role_secure.name
   policy_arn = aws_iam_policy.task_policy_secure.arn
 }
