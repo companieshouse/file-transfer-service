@@ -1,15 +1,8 @@
-resource "aws_iam_role" "task_role_secure" {
-  name               = "${var.environment}-${local.service_name_secure}-task-role"
-  path               = "/"
-  assume_role_policy = data.aws_iam_policy_document.task_assume.json
-}
-
 resource "aws_iam_role" "task_role" {
   name               = "${var.environment}-${local.service_name}-task-role"
   path               = "/"
   assume_role_policy = data.aws_iam_policy_document.task_assume.json
 }
-
 
 data "aws_iam_policy_document" "task_assume" {
   statement {
@@ -29,19 +22,25 @@ resource "aws_iam_policy" "task_policy" {
   policy      = data.aws_iam_policy_document.task_policy.json
 }
 
-
-resource "aws_iam_policy" "task_policy_secure" {
-  name        = "${var.environment}-${local.service_name_secure}-task-policy"
-  policy      = data.aws_iam_policy_document.task_policy_secure.json
-}
-
 data "aws_iam_policy_document" "task_policy" {
-
   statement {
-    sid       = "AllowFullAccessToS3"
+    sid       = "AllowS3ListBuckets"
     effect    = "Allow"
     actions   = [
-      "s3:*"
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.file_transfer_bucket}"
+    ]
+  }
+
+  statement {
+    sid       = "AllowS3ReadObjects"
+    effect    = "Allow"
+    actions   = [
+      "s3:GetBucketPolicy",
+      "s3:GetLifecycleConfiguration",
+      "s3:GetObject"
     ]
     resources = [
       "arn:aws:s3:::${var.file_transfer_bucket}/*"
@@ -49,31 +48,16 @@ data "aws_iam_policy_document" "task_policy" {
   }
 
   statement {
-    sid = "AllowAccessForKey"
-    effect    = "Allow"
-    actions   = ["kms:*"]
-    resources = ["*"]
-  }
-}
-
-data "aws_iam_policy_document" "task_policy_secure" {
-
-  statement {
-    sid       = "AllowFullAccessToS3"
+    sid       = "AllowS3WriteObjects"
     effect    = "Allow"
     actions   = [
-      "s3:*"
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+      "s3:PutObjectVersionAcl"
     ]
     resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+      "arn:aws:s3:::${var.file_transfer_bucket}/*"
     ]
-  }
-
-  statement {
-    sid = "AllowAccessForKey"
-    effect    = "Allow"
-    actions   = ["kms:*"]
-    resources = ["*"]
   }
 }
 
