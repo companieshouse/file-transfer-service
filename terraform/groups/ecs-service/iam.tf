@@ -1,7 +1,7 @@
 resource "aws_iam_role" "task_role_secure" {
   name               = "${var.environment}-${local.service_name_secure}-task-role"
   path               = "/"
-  assume_role_policy = data.aws_iam_policy_document.task_assume.json
+  assume_role_policy = data.aws_iam_policy_document.task_assume_secure.json
 }
 
 resource "aws_iam_role" "task_role" {
@@ -10,10 +10,22 @@ resource "aws_iam_role" "task_role" {
   assume_role_policy = data.aws_iam_policy_document.task_assume.json
 }
 
+data "aws_iam_policy_document" "task_assume_secure" {
+  statement {
+    sid     = "AllowTaskAssumeRoleSecure"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
 
 data "aws_iam_policy_document" "task_assume" {
   statement {
-    sid     = "AllowTaskAssumeRole"
+    sid     = "AllowTaskAssumeRoleFile"
     effect  = "Allow"
     actions = ["sts:AssumeRole"]
 
@@ -38,7 +50,7 @@ resource "aws_iam_policy" "task_policy_secure" {
 data "aws_iam_policy_document" "task_policy" {
 
   statement {
-    sid       = "AllowFullAccessToS3"
+    sid       = "AllowFullAccessToS3File"
     effect    = "Allow"
     actions   = [
       "s3:*"
@@ -49,7 +61,7 @@ data "aws_iam_policy_document" "task_policy" {
   }
 
   statement {
-    sid = "AllowAccessForKey"
+    sid = "AllowAccessForKeyFile"
     effect    = "Allow"
     actions   = ["kms:*"]
     resources = ["*"]
@@ -59,7 +71,7 @@ data "aws_iam_policy_document" "task_policy" {
 data "aws_iam_policy_document" "task_policy_secure" {
 
   statement {
-    sid       = "AllowFullAccessToS3"
+    sid       = "AllowFullAccessToS3Secure"
     effect    = "Allow"
     actions   = [
       "s3:*"
@@ -70,7 +82,7 @@ data "aws_iam_policy_document" "task_policy_secure" {
   }
 
   statement {
-    sid = "AllowAccessForKey"
+    sid = "AllowAccessForKeySecure"
     effect    = "Allow"
     actions   = ["kms:*"]
     resources = ["*"]
@@ -81,3 +93,9 @@ resource "aws_iam_role_policy_attachment" "task_role_attachment" {
   role       = aws_iam_role.task_role.name
   policy_arn = aws_iam_policy.task_policy.arn
 }
+
+resource "aws_iam_role_policy_attachment" "task_role_attachment" {
+  role       = aws_iam_role.task_role_secure.name
+  policy_arn = aws_iam_policy.task_policy_secure.arn
+}
+
