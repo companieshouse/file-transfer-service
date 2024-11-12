@@ -43,24 +43,6 @@ data "aws_lb_listener" "service_lb_listener" {
 
 }
 
-resource "aws_lb_listener_rule" "redirect_rule" {
-  listener_arn = data.aws_lb_listener.service_lb_listener_secure.arn
-  priority     = 143
-  action {
-    type = "redirect"
-
-    redirect {
-      path        = "/files"
-      status_code = "HTTP_301"
-    }
-  }
-
-  condition {
-    path_pattern {
-      values = ["*/secure/files"]
-    }
-  }
-}
 
 data "aws_lb" "service_lb_secure" {
   name = "${var.environment}-chs-secure-data-app"
