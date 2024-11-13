@@ -9,7 +9,7 @@ locals {
   container_port                   = "8080"
   docker_repo                      = "file-transfer-service"
   lb_listener_rule_priority        = 77
-  lb_listener_paths                = ["/files*"]
+  lb_listener_paths                = ["/file-transfer-service*"]
   healthcheck_path                 = "/file-transfer-service/healthcheck"            # healthcheck path for file-transfer-service
   healthcheck_matcher              = "200"
   kms_alias                        = "alias/${var.aws_profile}/environment-services-kms"
