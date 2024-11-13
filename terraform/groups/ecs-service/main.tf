@@ -146,7 +146,7 @@ module "ecs-service-secure" {
   # Service environment variable and secret configs
   task_environment              = local.task_environment
   task_secrets                  = local.task_secrets
-  app_environment_filename      = local.app_environment_filename
+  app_environment_filename      = local.app_environment_filename_secure
   use_set_environment_files     = local.use_set_environment_files
 
   # eric options for eric running API module
