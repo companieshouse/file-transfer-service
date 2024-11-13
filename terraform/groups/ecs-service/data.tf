@@ -85,7 +85,26 @@ data "vault_generic_secret" "shared_s3" {
 # ------------------------------------------------------------------------------
 data "aws_iam_policy_document" "file_transfer_service_trust" {
   statement {
-    sid       = "FileTransferAPITrust"
+    sid       = "FileTransferTrust"
+    effect = "Allow"
+    actions = [
+      "sts:AssumeRole",
+    ]
+
+    principals {
+      type = "Service"
+
+      identifiers = [
+        "ecs.amazonaws.com",
+        "ecs-tasks.amazonaws.com",
+      ]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "file_transfer_service_trust_secure" {
+  statement {
+    sid       = "FileTransferSecureTrust"
     effect = "Allow"
     actions = [
       "sts:AssumeRole",
@@ -106,3 +125,6 @@ output "execution_role" {
   value = aws_iam_role.file_transfer_service_execution.arn
 }
 
+output "execution_role_secure" {
+  value = aws_iam_role.file_transfer_service_execution.arn
+}

@@ -3,6 +3,12 @@ resource "aws_kms_key" "file_transfer_encryption_key" {
   deletion_window_in_days = 30
 }
 
+resource "aws_kms_key" "file_transfer_encryption_key_secure" {
+  description             = "Encrypt user uploaded data for the extensions project."
+  deletion_window_in_days = 30
+}
+
+
 data "aws_kms_alias" "file_transfer_encryption_key_alias_secure" {
   name          = var.file_transfer_kms_alias_secure
 }
@@ -30,4 +36,17 @@ resource "aws_kms_grant" "file_transfer_encryption_key_grant" {
 resource "aws_iam_role" "file_transfer_service_execution" {
   name               = "${var.stage}-file-transfer-service-ecs-execution"
   assume_role_policy = data.aws_iam_policy_document.file_transfer_service_trust.json
+}
+
+
+resource "aws_iam_role" "file_transfer_service_execution_secure" {
+  name               = "${var.stage}-file-transfer-service-secure-ecs-execution"
+  assume_role_policy = data.aws_iam_policy_document.file_transfer_service_trust_secure.json
+}
+
+resource "aws_kms_grant" "file_transfer_encryption_key_grant_secure" {
+  name              = "${var.stage}-file-transfer-service-secure-key-grant"
+  key_id            = aws_kms_key.file_transfer_encryption_key_secure.key_id
+  grantee_principal = aws_iam_role.file_transfer_service_execution_secure.arn
+  operations        = ["Encrypt", "Decrypt", "GenerateDataKey"]
 }
