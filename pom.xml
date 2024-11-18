@@ -386,9 +386,8 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <fork>true</fork>
-                    <meminitial>128m</meminitial>
                     <encoding>${project.build.sourceEncoding}</encoding>
-                    <maxmem>512m</maxmem>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
             <plugin>
