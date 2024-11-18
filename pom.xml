@@ -23,7 +23,7 @@
         <!-- tests -->
         <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
         <test-containers.version>1.16.3</test-containers.version>
-        <maven-failsafe-plugin.version>3.0.0-M5</maven-failsafe-plugin.version>
+        <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
         <skip.integration.tests>false</skip.integration.tests>
         <skip.unit.tests>false</skip.unit.tests>
         <maven-resources-plugin.version>2.5</maven-resources-plugin.version>
