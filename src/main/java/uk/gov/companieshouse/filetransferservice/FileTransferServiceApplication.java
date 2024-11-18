@@ -1,9 +1,11 @@
 package uk.gov.companieshouse.filetransferservice;
 
+import org.apache.commons.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import uk.gov.companieshouse.logging.Logger;
+
+import java.util.logging.Logger;
 
 @SpringBootApplication
 public class FileTransferServiceApplication {
@@ -21,6 +23,7 @@ public class FileTransferServiceApplication {
         System.out.println("heap size: " + formatSize(heapSize));
         System.out.println("heap max size: " + formatSize(heapMaxSize));
         System.out.println("heap free size: " + formatSize(heapFreeSize));
+        Logger.getAnonymousLogger("heap size:."+ formatSize(heapSize));
 
         SpringApplication.run(FileTransferServiceApplication.class, args);
     }
