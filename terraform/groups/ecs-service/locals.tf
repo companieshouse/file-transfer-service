@@ -1,27 +1,28 @@
 # Define all hardcoded local variable and local variables looked up from data resources
 locals {
-  stack_name                              = "utility"                               # this must match the stack name the service deploys into
-  name_prefix                             = "${local.stack_name}-${var.environment}"
-  global_prefix                           = "global-${var.environment}"
-  service_name                            = "file-transfer-service"
-  service_name_secure                     = "secure-file-transfer-service"
-  eric_port                               = "10000"
-  container_port                          = "8080"
-  docker_repo                             = "file-transfer-service"
-  lb_listener_rule_priority               = 77
-  lb_listener_paths                       = ["/file-transfer-service*"]
-  healthcheck_path                        = "/file-transfer-service/healthcheck"            # healthcheck path for file-transfer-service
-  healthcheck_matcher                     = "200"
-  kms_alias                               = "alias/${var.aws_profile}/environment-services-kms"
-  vpc_name                                = local.service_secrets["vpc_name"]
-  s3_config_bucket                        = data.vault_generic_secret.shared_s3.data["config_bucket_name"]
-  app_environment_filename                = "file-transfer-service.env"
-  app_environment_filename_secure         = "file-transfer-service-secure.env"
-  use_set_environment_files               = var.use_set_environment_files
-  application_subnet_ids                  = data.aws_subnets.application.ids
-  stack_secrets                           = jsondecode(data.vault_generic_secret.stack_secrets.data_json)
-  application_subnet_pattern              = local.stack_secrets["application_subnet_pattern"]
-  service_secrets                         = jsondecode(data.vault_generic_secret.service_secrets.data_json)
+  stack_name                                     = "file-transfer"                               # this must match the stack name the service deploys into
+  name_prefix                                    = "${local.stack_name}-${var.environment}"
+  global_prefix                                  = "global-${var.environment}"
+  service_name                                   = "file-transfer-service"
+  service_name_secure                            = "secure-file-transfer-service"
+  eric_port                                      = "10000"
+  container_port                                 = "8080"
+  docker_repo                                    = "file-transfer-service"
+  lb_listener_rule_priority                      = 77
+  lb_listener_rule_priority_secure               = 78
+  lb_listener_paths                              = ["/file-transfer-service*"]
+  healthcheck_path                               = "/file-transfer-service/healthcheck"            # healthcheck path for file-transfer-service
+  healthcheck_matcher                            = "200"
+  kms_alias                                      = "alias/${var.aws_profile}/environment-services-kms"
+  vpc_name                                       = local.service_secrets["vpc_name"]
+  s3_config_bucket                               = data.vault_generic_secret.shared_s3.data["config_bucket_name"]
+  app_environment_filename                       = "file-transfer-service.env"
+  app_environment_filename_secure                = "file-transfer-service-secure.env"
+  use_set_environment_files                      = var.use_set_environment_files
+  application_subnet_ids                         = data.aws_subnets.application.ids
+  stack_secrets                                  = jsondecode(data.vault_generic_secret.stack_secrets.data_json)
+  application_subnet_pattern                     = local.stack_secrets["application_subnet_pattern"]
+  service_secrets                                = jsondecode(data.vault_generic_secret.service_secrets.data_json)
 
 
   # create a map of secret name => secret arn to pass into ecs service module

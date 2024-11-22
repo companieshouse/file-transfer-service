@@ -45,7 +45,7 @@ data "aws_lb_listener" "service_lb_listener" {
 
 
 data "aws_lb" "service_lb_secure" {
-  name = "${var.environment}-chs-secure-data-app"
+  name = "${var.environment}-secure-filetransfer"
 }
 
 data "aws_lb_listener" "service_lb_listener_secure" {
