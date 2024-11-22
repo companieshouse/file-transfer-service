@@ -34,7 +34,7 @@ data "aws_iam_role" "ecs_cluster_iam_role" {
 }
 
 data "aws_lb" "service_lb" {
-  name = "${var.environment}-chs-internalapi"
+  name = "${var.environment}-file-transfer"
 }
 
 data "aws_lb_listener" "service_lb_listener" {
@@ -45,7 +45,7 @@ data "aws_lb_listener" "service_lb_listener" {
 
 
 data "aws_lb" "service_lb_secure" {
-  name = "${var.environment}-secure-filetransfer"
+  name = "${var.environment}-secure-file-transfer"
 }
 
 data "aws_lb_listener" "service_lb_listener_secure" {
