@@ -35,12 +35,12 @@
         <api-sdk-manager-java-library.version>3.0.6</api-sdk-manager-java-library.version>
         <private-api-sdk-java.version>2.0.451</private-api-sdk-java.version>
         <api-helper-java-library.version>1.4.6</api-helper-java-library.version>
-        <aws-java-sdk.version>1.12.777</aws-java-sdk.version>
-<!--        <api-helper-java.version>3.0.1</api-helper-java.version>-->
+        <aws-java-sdk-s3.version>1.12.778</aws-java-sdk-s3.version>
         <api-security-java-version>2.0.8</api-security-java-version>
-
+        <spring-boot-dependencies.version>3.4.0</spring-boot-dependencies.version>
         <!-- java apis libs -->
         <jaxb-api.version>2.3.1</jaxb-api.version>
+        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -64,8 +64,8 @@
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
-                <artifactId>aws-java-sdk</artifactId>
-                <version>${aws-java-sdk.version}</version>
+                <artifactId>aws-java-sdk-s3</artifactId>
+                <version>${aws-java-sdk-s3.version}</version>
                 <scope>compile</scope>
             </dependency>
             <dependency>
@@ -109,9 +109,11 @@
             <version>${api-security-java-version}</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>6.1.14</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-dependencies</artifactId>
+            <version>${spring-boot-dependencies.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -239,7 +241,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>${aws-java-sdk.version}</version>
+            <version>${aws-java-sdk-s3.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.validation</groupId>
@@ -371,7 +373,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <parallel>all</parallel>
                     <runOrder>random</runOrder>
@@ -388,20 +390,6 @@
                     <fork>true</fork>
                     <encoding>${project.build.sourceEncoding}</encoding>
                     <parameters>true</parameters>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>com.google.cloud.tools</groupId>
-                <artifactId>jib-maven-plugin</artifactId>
-                <version>${jib-maven-plugin.version}</version>
-                <configuration>
-                    <from>
-                        <image>416670754337.dkr.ecr.eu-west-2.amazonaws.com/ci-corretto-build-21:latest</image>
-                    </from>
-                    <to>
-                        <image>416670754337.dkr.ecr.eu-west-2.amazonaws.com/file-transfer-service:latest
-                        </image>
-                    </to>
                 </configuration>
             </plugin>
         </plugins>
