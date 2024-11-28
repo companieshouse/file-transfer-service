@@ -144,6 +144,11 @@ variable "eric_version" {
 }
 
 variable "secure_file_transfer_create_ecs" {
-  type        = string
-  description = "The version of the eric container to run."
+  type        = number
+  description = "The count for secure instance of file-transfer-service"
+}
+
+variable "file_transfer_create_ecs" {
+  type        = number
+  description = "The count for  instance of file-transfer-service."
 }
