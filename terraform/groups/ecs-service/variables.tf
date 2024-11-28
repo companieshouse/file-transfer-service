@@ -30,13 +30,14 @@ variable "docker_registry" {
 variable "desired_task_count" {
   type = number
   description = "The desired ECS task count for this service"
-  default = 3 # defaulted low for dev environments, override for production
+  default = 1 # defaulted low for dev environments, override for production
 }
 variable "required_cpus" {
   type = number
   description = "The required cpu resource for this service. 1024 here is 1 vCPU"
-  default = 1792 # defaulted low for dev environments, override for production
+  default = 256 # defaulted low for dev environments, override for production
 }
+
 variable "desired_task_count_secure" {
   type        = number
   description = "The desired ECS task count for this service"
@@ -50,7 +51,7 @@ variable "max_task_count_secure" {
 variable "required_memory" {
   type = number
   description = "The required memory for this service"
-  default = 3584 # defaulted low for node service in dev environments, override for production
+  default = 512 # defaulted low for node service in dev environments, override for production
 }
 
 variable "max_task_count" {
