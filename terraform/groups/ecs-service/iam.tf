@@ -57,7 +57,7 @@ data "aws_iam_policy_document" "task_policy" {
       "s3:ListAllMyBuckets"
     ]
     resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+      "arn:aws:s3:::${var.file_transfer_bucket}/*"
     ]
   }
   statement {
@@ -74,7 +74,7 @@ data "aws_iam_policy_document" "task_policy" {
       "s3:GetBucketPolicy",
     ]
     resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+      "arn:aws:s3:::${var.file_transfer_bucket}/*"
     ]
   }
   statement {
@@ -86,7 +86,7 @@ data "aws_iam_policy_document" "task_policy" {
       "s3:PutObjectVersionAcl"
     ]
     resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+      "arn:aws:s3:::${var.file_transfer_bucket}/*"
     ]
   }
 
