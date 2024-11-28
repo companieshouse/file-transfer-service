@@ -152,3 +152,19 @@ variable "file_transfer_create_ecs" {
   type        = number
   description = "The count for  instance of file-transfer-service."
 }
+variable "file_transfer_kms_alias" {
+  type        = string
+  description = "The kms alias for encryption."
+}
+variable "file_transfer_bucket" {
+  type        = string
+  description = "The s3 bucket to store object."
+}
+variable "file_transfer_bucket_secure" {
+  type        = string
+  description = "The s3 bucket to store object for secure instance."
+}
+variable "file_transfer_kms_alias_secure" {
+  type        = string
+  description = "The kms alias for encryption for secure instance."
+}
