@@ -168,7 +168,4 @@ variable "file_transfer_kms_alias_secure" {
   type        = string
   description = "The kms alias for encryption for secure instance."
 }
-variable stage {
-  type        = string
-  description = "The stage/environment."
-}
+

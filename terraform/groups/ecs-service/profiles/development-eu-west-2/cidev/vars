@@ -6,7 +6,6 @@ use_set_environment_files = true
 
 file_transfer_bucket = "s3av-cidev"
 file_transfer_kms_alias = "alias/cidev-file-transfer"
-stage = "cidev"
 log_level = "debug"
 file_transfer_bucket_secure = "s3av-secure"
 workspace_key_prefix = "secure-file-transfer-service"
