@@ -98,7 +98,7 @@ module "ecs-service" {
 
 module "ecs-service-secure" {
   source = "git@github.com:companieshouse/terraform-modules//aws/ecs/ecs-service?ref=1.0.253"
-
+  count  = "${var.secure_file_transfer_create_ecs == 1 ? 1 : 0}"
   # Environmental configuration
   environment             = var.environment
   aws_region              = var.aws_region

@@ -143,8 +143,7 @@ variable "eric_version" {
   description = "The version of the eric container to run."
 }
 
-variable file_transfer_kms_alias {}
-variable file_transfer_bucket {}
-variable stage {}
-variable file_transfer_bucket_secure {}
-variable file_transfer_kms_alias_secure {}
+variable "secure_file_transfer_create_ecs" {
+  type        = string
+  description = "The version of the eric container to run."
+}

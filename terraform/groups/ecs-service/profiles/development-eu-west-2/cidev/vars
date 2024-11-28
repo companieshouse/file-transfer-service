@@ -16,3 +16,4 @@ required_memory=3584
 desired_task_count=3
 max_task_count=6
 min_task_count=3
+secure_file_transfer_create_ecs = 1
