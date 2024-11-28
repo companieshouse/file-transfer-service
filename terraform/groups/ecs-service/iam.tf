@@ -50,27 +50,43 @@ resource "aws_iam_policy" "task_policy_secure" {
 data "aws_iam_policy_document" "task_policy" {
 
   statement {
-    sid       = "AllowFullAccessToS3File"
+    sid       = "ListS3ObjectsFileTransfer"
     effect    = "Allow"
     actions   = [
       "s3:ListBucket",
-      "s3:PutObject",
-      "s3:PutObjectAcl",
+      "s3:ListAllMyBuckets"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+    ]
+  }
+  statement {
+    sid       = "AllowS3ReadObjectsFileTransfer"
+    effect    = "Allow"
+    actions   = [
       "s3:GetObject",
       "s3:GetObjectAcl",
-      "s3:DeleteObject",
-      "s3:ListBucket",
-      "s3:ListAllMyBuckets",
       "s3:GetBucketTagging",
       "s3:GetBucketLocation",
-      "s3:CreateBucket",
       "s3:GetBucketPolicyStatus",
       "s3:GetBucketPublicAccessBlock",
       "s3:GetBucketAcl",
-      "s3:GetBucketPolicy"
+      "s3:GetBucketPolicy",
     ]
     resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket}/*"
+      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+    ]
+  }
+  statement {
+    sid       = "AllowS3WriteObjectsFileTransfer"
+    effect    = "Allow"
+    actions   = [
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+      "s3:PutObjectVersionAcl"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
     ]
   }
 
@@ -84,31 +100,73 @@ data "aws_iam_policy_document" "task_policy" {
 
 data "aws_iam_policy_document" "task_policy_secure" {
 
+
   statement {
-    sid       = "AllowFullAccessToS3Secure"
+    sid       = "ListS3ObjectsFileTransferSecure"
     effect    = "Allow"
     actions   = [
       "s3:ListBucket",
-      "s3:PutObject",
-      "s3:PutObjectAcl",
-      "s3:GetObject",
-      "s3:GetObjectAcl",
-      "s3:DeleteObject",
-      "s3:GetObject",
-      "s3:ListBucket",
-      "s3:ListAllMyBuckets",
-      "s3:GetBucketTagging",
-      "s3:GetBucketLocation",
-      "s3:CreateBucket",
-      "s3:GetBucketPolicyStatus",
-      "s3:GetBucketPublicAccessBlock",
-      "s3:GetBucketAcl",
-      "s3:GetBucketPolicy"
+      "s3:ListAllMyBuckets"
     ]
     resources = [
       "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
     ]
   }
+  statement {
+    sid       = "AllowS3ReadObjectsFileTransferSecure"
+    effect    = "Allow"
+    actions   = [
+      "s3:GetObject",
+      "s3:GetObjectAcl",
+      "s3:GetBucketTagging",
+      "s3:GetBucketLocation",
+      "s3:GetBucketPolicyStatus",
+      "s3:GetBucketPublicAccessBlock",
+      "s3:GetBucketAcl",
+      "s3:GetBucketPolicy",
+    ]
+    resources = [
+      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+    ]
+  }
+  statement {
+    sid       = "AllowS3WriteObjectsFileTransferSecure"
+    effect    = "Allow"
+    actions   = [
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+      "s3:PutObjectVersionAcl"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+    ]
+  }
+
+#  statement {
+#    sid       = "AllowFullAccessToS3Secure"
+#    effect    = "Allow"
+#    actions   = [
+#      "s3:ListBucket",
+#      "s3:PutObject",
+#      "s3:PutObjectAcl",
+#      "s3:GetObject",
+#      "s3:GetObjectAcl",
+#      "s3:DeleteObject",
+#      "s3:GetObject",
+#      "s3:ListBucket",
+#      "s3:ListAllMyBuckets",
+#      "s3:GetBucketTagging",
+#      "s3:GetBucketLocation",
+#      "s3:CreateBucket",
+#      "s3:GetBucketPolicyStatus",
+#      "s3:GetBucketPublicAccessBlock",
+#      "s3:GetBucketAcl",
+#      "s3:GetBucketPolicy"
+#    ]
+#    resources = [
+#      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+#    ]
+#  }
 
   statement {
     sid = "AllowAccessForKeySecure"
@@ -128,3 +186,51 @@ resource "aws_iam_role_policy_attachment" "task_role_secure_attachment" {
   policy_arn = aws_iam_policy.task_policy_secure.arn
 }
 
+# ------------------------------------------------------------------------------
+# Policy Documents
+# ------------------------------------------------------------------------------
+data "aws_iam_policy_document" "file_transfer_service_trust" {
+  statement {
+    sid       = "FileTransferTrust"
+    effect = "Allow"
+    actions = [
+      "sts:AssumeRole",
+    ]
+
+    principals {
+      type = "Service"
+
+      identifiers = [
+        "ecs.amazonaws.com",
+        "ecs-tasks.amazonaws.com",
+      ]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "file_transfer_service_trust_secure" {
+  statement {
+    sid       = "FileTransferSecureTrust"
+    effect = "Allow"
+    actions = [
+      "sts:AssumeRole",
+    ]
+
+    principals {
+      type = "Service"
+
+      identifiers = [
+        "ecs.amazonaws.com",
+        "ecs-tasks.amazonaws.com",
+      ]
+    }
+  }
+}
+
+output "execution_role" {
+  value = aws_iam_role.file_transfer_service_execution.arn
+}
+
+output "execution_role_secure" {
+  value = aws_iam_role.file_transfer_service_execution.arn
+}
