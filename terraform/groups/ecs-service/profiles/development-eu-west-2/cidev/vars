@@ -8,7 +8,6 @@ file_transfer_bucket = "s3av-cidev"
 file_transfer_kms_alias = "alias/cidev-file-transfer"
 log_level = "debug"
 file_transfer_bucket_secure = "s3av-secure"
-workspace_key_prefix = "secure-file-transfer-service"
 file_transfer_kms_alias_secure = "alias/secure-file-transfer"
 secure_file_transfer_create_ecs = 1
 file_transfer_create_ecs = 1

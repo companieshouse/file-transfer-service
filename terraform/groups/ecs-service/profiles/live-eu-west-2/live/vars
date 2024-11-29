@@ -10,3 +10,7 @@ account_name = "live"
 file_transfer_bucket = "s3-av-live"
 file_transfer_kms_alias = "alias/file-transfer-service"
 release_bucket_name = "ch-service-live-release.ch.gov.uk"
+secure_file_transfer_create_ecs = 1
+file_transfer_create_ecs = 1
+required_cpus=1792
+required_memory=3584
