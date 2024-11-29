@@ -142,32 +142,6 @@ data "aws_iam_policy_document" "task_policy_secure" {
     ]
   }
 
-#  statement {
-#    sid       = "AllowFullAccessToS3Secure"
-#    effect    = "Allow"
-#    actions   = [
-#      "s3:ListBucket",
-#      "s3:PutObject",
-#      "s3:PutObjectAcl",
-#      "s3:GetObject",
-#      "s3:GetObjectAcl",
-#      "s3:DeleteObject",
-#      "s3:GetObject",
-#      "s3:ListBucket",
-#      "s3:ListAllMyBuckets",
-#      "s3:GetBucketTagging",
-#      "s3:GetBucketLocation",
-#      "s3:CreateBucket",
-#      "s3:GetBucketPolicyStatus",
-#      "s3:GetBucketPublicAccessBlock",
-#      "s3:GetBucketAcl",
-#      "s3:GetBucketPolicy"
-#    ]
-#    resources = [
-#      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
-#    ]
-#  }
-
   statement {
     sid = "AllowAccessForKeySecure"
     effect    = "Allow"
