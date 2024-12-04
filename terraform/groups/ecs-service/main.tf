@@ -22,7 +22,7 @@ terraform {
 }
 
 module "secrets" {
-  source = "git@github.com:companieshouse/terraform-modules//aws/ecs/secrets?ref=1.0.253"
+  source = "git@github.com:companieshouse/terraform-modules//aws/ecs/secrets?ref=1.0.296"
 
   name_prefix = "${local.service_name}-${var.environment}"
   environment = var.environment
@@ -32,7 +32,7 @@ module "secrets" {
 
 module "ecs-service" {
   count  = "${var.file_transfer_create_ecs == 1 ? 1 : 0}"
-  source = "git@github.com:companieshouse/terraform-modules//aws/ecs/ecs-service?ref=1.0.253"
+  source = "git@github.com:companieshouse/terraform-modules//aws/ecs/ecs-service?ref=1.0.296"
 
   # Environmental configuration
   environment             = var.environment
@@ -57,7 +57,7 @@ module "ecs-service" {
   docker_repo       = local.docker_repo
   container_version = var.file_transfer_service_version
   container_port    = local.container_port
-  multilb_setup                   = false
+  multilb_setup     = false
 
   # Service configuration
   service_name = local.service_name
@@ -99,7 +99,7 @@ module "ecs-service" {
 
 module "ecs-service-secure" {
   count  = "${var.secure_file_transfer_create_ecs == 1 ? 1 : 0}"
-  source = "git@github.com:companieshouse/terraform-modules//aws/ecs/ecs-service?ref=1.0.253"
+  source = "git@github.com:companieshouse/terraform-modules//aws/ecs/ecs-service?ref=1.0.296"
   # Environmental configuration
   environment             = var.environment
   aws_region              = var.aws_region
