@@ -4,43 +4,43 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>uk.gov.companieshouse</groupId>
-        <artifactId>companies-house-parent</artifactId>
-        <version>2.1.4</version>
+            <artifactId>companies-house-parent</artifactId>
+        <version>2.1.10</version>
     </parent>
     <artifactId>file-transfer-service</artifactId>
     <version>unversioned</version>
     <name>file-transfer-service</name>
     <description>An interface to upload and download files via CHS</description>
     <properties>
-        <java.version>11</java.version>
+        <java.version>21</java.version>
 
-        <maven-build-helper-plugin.version>3.2.0</maven-build-helper-plugin.version>
-        <spring-boot-dependencies.version>2.7.17</spring-boot-dependencies.version>
-        <spring-boot-maven-plugin.version>2.7.17</spring-boot-maven-plugin.version>
+        <maven-build-helper-plugin.version>3.6.3</maven-build-helper-plugin.version>
+        <spring-boot-dependencies.version>3.3.5</spring-boot-dependencies.version>
+        <spring-boot-maven-plugin.version>3.3.5</spring-boot-maven-plugin.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- tests -->
-        <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
-        <jib-maven-plugin.version>3.1.4</jib-maven-plugin.version>
+        <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
         <test-containers.version>1.16.3</test-containers.version>
-        <maven-failsafe-plugin.version>3.0.0-M5</maven-failsafe-plugin.version>
+        <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
         <skip.integration.tests>false</skip.integration.tests>
         <skip.unit.tests>false</skip.unit.tests>
-        <maven-resources-plugin.version>2.5</maven-resources-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <mockito.version>4.8.0</mockito.version>
+        <maven-compiler-plugin.version>3.9.0</maven-compiler-plugin.version>
 
         <!-- internal -->
-        <structured-logging.version>1.9.14</structured-logging.version>
-        <api-sdk-manager-java-library.version>1.0.9</api-sdk-manager-java-library.version>
-        <private-api-sdk-java.version>2.0.316</private-api-sdk-java.version>
+        <structured-logging.version>2.0.3</structured-logging.version>
+        <api-sdk-manager-java-library.version>3.0.6</api-sdk-manager-java-library.version>
+        <private-api-sdk-java.version>2.0.451</private-api-sdk-java.version>
         <api-helper-java-library.version>1.4.6</api-helper-java-library.version>
-        <aws-java-sdk.version>1.12.343</aws-java-sdk.version>
-        <api-helper-java.version>1.4.3</api-helper-java.version>
-        <api-security-java-version>0.4.0</api-security-java-version>
-
+        <aws-java-sdk-s3.version>1.12.778</aws-java-sdk-s3.version>
+        <api-security-java-version>2.0.8</api-security-java-version>
+        <spring-boot-dependencies.version>3.4.0</spring-boot-dependencies.version>
         <!-- java apis libs -->
         <jaxb-api.version>2.3.1</jaxb-api.version>
+        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -64,9 +64,14 @@
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
-                <artifactId>aws-java-sdk</artifactId>
-                <version>${aws-java-sdk.version}</version>
+                <artifactId>aws-java-sdk-s3</artifactId>
+                <version>${aws-java-sdk-s3.version}</version>
                 <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.amazon.ion</groupId>
+                <artifactId>ion-java</artifactId>
+                <version>1.11.9</version>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>
@@ -104,9 +109,11 @@
             <version>${api-security-java-version}</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.3.30</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-dependencies</artifactId>
+            <version>${spring-boot-dependencies.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -171,7 +178,7 @@
             <version>${api-sdk-manager-java-library.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>javax.servlet</groupId>
+                    <groupId>jakarta.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
             </exclusions>
@@ -234,7 +241,12 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>${aws-java-sdk.version}</version>
+            <version>${aws-java-sdk-s3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.1.0</version>
         </dependency>
     </dependencies>
 
@@ -354,25 +366,32 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${maven-build-helper-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>add-integration-test-sources</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>add-test-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>src/feature/java</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <configuration>
+                    <parallel>all</parallel>
+                    <runOrder>random</runOrder>
+                    <useUnlimitedThreads>true</useUnlimitedThreads>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <fork>true</fork>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <parameters>true</parameters>
+                </configuration>
             </plugin>
         </plugins>
     </build>
-
 </project>
