@@ -8,9 +8,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
+import uk.gov.companieshouse.logging.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -62,12 +64,17 @@ public class UploadedFileValidatorTest {
             "application/x-zip-compressed",
             "application/xml",
             "application/atom+xml",
-            "application/rss+xml"
+            "application/rss+xml",
+            "multipart/x-zip",
+            "application/zip-compressed"
     );
 
 
     @InjectMocks
     private UploadedFileValidator validator;
+
+    @Mock
+    private Logger logger;
 
     public static Stream<Arguments> getAllowedMimeTypes() {
         return UploadedFileValidator.ALLOWED_MIME_TYPES.stream()
