@@ -5,16 +5,18 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -42,20 +44,24 @@ import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 public class FileTransferControllerTest {
-    @Spy
-    UploadedFileValidator uploadedFileValidator;
+    @Mock
+    private Logger logger;
+
+    @Mock
+    private UploadedFileValidator uploadedFileValidator;
 
     @Spy
     private MultipartFileToFileApiConverter converter;
 
     @Mock
-    private Logger logger;
-
-    @Mock
     private FileStorageStrategy fileStorageStrategy;
 
-    @InjectMocks
     private FileTransferController fileTransferController;
+
+    @BeforeEach
+    void beforeEach() {
+        fileTransferController = new FileTransferController(fileStorageStrategy, logger, converter, uploadedFileValidator);
+    }
 
     @Test
     @DisplayName("Test uploading a file with allowed MIME type")
@@ -76,7 +82,8 @@ public class FileTransferControllerTest {
 
     @Test
     @DisplayName("Test uploading a file with unsupported MIME type")
-    public void testUploadFileWithUnsupportedMimeType() {
+    public void testUploadFileWithUnsupportedMimeType() throws InvalidMimeTypeException {
+        doThrow(new InvalidMimeTypeException("invalid")).when(uploadedFileValidator).validate(any(FileApi.class));
         MultipartFile mockFile = new MockMultipartFile("file",
                 "test.txt",
                 "invalid",

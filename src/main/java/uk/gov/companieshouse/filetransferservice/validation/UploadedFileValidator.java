@@ -12,8 +12,12 @@ import java.util.List;
 @Component
 public class UploadedFileValidator {
 
+    private final Logger logger;
+
     @Autowired
-    Logger logger;
+    public UploadedFileValidator(final Logger logger){
+        this.logger = logger;
+    }
 
     public static final List<String> ALLOWED_MIME_TYPES = Arrays.asList(
             "text/plain",
@@ -46,10 +50,10 @@ public class UploadedFileValidator {
 
     public void validate(FileApi file) throws InvalidMimeTypeException {
         var contentType = file.getMimeType();
-        if (!isValidMimeType(contentType)) {
-            throw new InvalidMimeTypeException(contentType);
-        } else {
+        if (isValidMimeType(contentType)) {
             logger.debug(String.format("Accepted file type submitted: %s", contentType));
+        } else {
+            throw new InvalidMimeTypeException(contentType);
         }
     }
 }
