@@ -13,6 +13,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final LoggingInterceptor loggingInterceptor;
     private final InternalUserInterceptor internalUserInterceptor;
 
+    private final String HEALTHCHECK_PATH="/file-transfer-service/healthcheck";
+
+
     @Autowired
     public WebMvcConfig(LoggingInterceptor loggingInterceptor,
                         InternalUserInterceptor internalUserInterceptor) {
@@ -22,7 +25,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(final InterceptorRegistry registry) {
-        registry.addInterceptor(loggingInterceptor);
-        registry.addInterceptor(internalUserInterceptor);
+        registry.addInterceptor(loggingInterceptor).excludePathPatterns(HEALTHCHECK_PATH);
+        registry.addInterceptor(internalUserInterceptor).excludePathPatterns(HEALTHCHECK_PATH);
     }
 }
