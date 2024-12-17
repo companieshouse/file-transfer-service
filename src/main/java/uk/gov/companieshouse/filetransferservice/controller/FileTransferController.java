@@ -73,6 +73,7 @@ public class FileTransferController {
             @RequestParam(value = "file") MultipartFile uploadedFile) throws IOException, InvalidMimeTypeException {
 
         FileApi file = fileConverter.convert(uploadedFile);
+
         return uploadJson(file);
     }
 
@@ -231,4 +232,5 @@ public class FileTransferController {
 
         return fileStorageStrategy.load(fileId, fileDetails).orElseThrow(notFoundException);
     }
+
 }
