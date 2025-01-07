@@ -144,15 +144,18 @@ variable "eric_version" {
   description = "The version of the eric container to run."
 }
 
-variable "secure_file_transfer_create_ecs" {
-  type        = number
-  description = "The count for secure instance of file-transfer-service"
+variable "file_transfer_create_ecs" {
+  type        = bool
+  description = "The count for  instance of file-transfer-service."
+  default     = true
 }
 
-variable "file_transfer_create_ecs" {
-  type        = number
-  description = "The count for  instance of file-transfer-service."
+variable "secure_file_transfer_create_ecs" {
+  type        = bool
+  description = "The count for secure instance of file-transfer-service"
+  default     = true
 }
+
 variable "file_transfer_kms_alias" {
   type        = string
   description = "The kms alias for encryption."
