@@ -38,16 +38,6 @@ variable "required_cpus" {
   default = 256 # defaulted low for dev environments, override for production
 }
 
-variable "desired_task_count_secure" {
-  type        = number
-  description = "The desired ECS task count for this service"
-  default     = 1 # defaulted low for dev environments, override for production if required
-}
-variable "max_task_count_secure" {
-  type        = number
-  description = "The maximum number of tasks for this service."
-  default     = 3
-}
 variable "required_memory" {
   type = number
   description = "The required memory for this service"
