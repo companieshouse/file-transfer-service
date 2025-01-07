@@ -145,6 +145,7 @@ module "ecs-service-secure" {
   eric_environment_filename = local.eric_environment_filename
   eric_secrets              = local.eric_secrets
 }
+
 */
 
 module "secrets" {
