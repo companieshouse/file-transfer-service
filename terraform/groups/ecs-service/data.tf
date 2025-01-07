@@ -34,7 +34,7 @@ data "aws_iam_role" "ecs_cluster_iam_role" {
 }
 
 data "aws_lb" "service_lb" {
-  name = "${var.environment}-file-transfer"
+  name = "alb-${var.environment}-file-transfer"
 }
 
 data "aws_lb_listener" "service_lb_listener" {
@@ -44,13 +44,12 @@ data "aws_lb_listener" "service_lb_listener" {
 
 
 data "aws_lb" "service_lb_secure" {
-  name = "${var.environment}-secure-file-transfer"
+  name = "alb-${var.environment}-secure-file-transfer"
 }
 
 data "aws_lb_listener" "service_lb_listener_secure" {
   load_balancer_arn = data.aws_lb.service_lb_secure.arn
   port = 443
-
 }
 
 # retrieve all secrets for this stack using the stack path
