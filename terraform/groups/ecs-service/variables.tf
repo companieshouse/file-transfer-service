@@ -54,6 +54,12 @@ variable "required_memory" {
   default = 512 # defaulted low for node service in dev environments, override for production
 }
 
+variable "min_task_count" {
+  type        = number
+  description = "The minimum number of tasks for this service."
+  default     = 1
+}
+
 variable "max_task_count" {
   type        = number
   description = "The maximum number of tasks for this service."

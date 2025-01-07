@@ -1,18 +1,19 @@
 provider "aws" {
-  region  = var.aws_region
+  region = var.aws_region
 }
 
 terraform {
-  backend "s3" {}
-  required_version = ">= 1.3, < 2.0"
+  backend "s3" {
+  }
+  required_version = "~> 1.3"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 5.0, < 6.0"
+      version = "~> 4.54.0"
     }
     vault = {
       source  = "hashicorp/vault"
-      version = ">= 4.0, < 5.0"
+      version = "~> 3.18.0"
     }
   }
 }
@@ -52,6 +53,7 @@ module "ecs-service" {
 
   # Service performance and scaling configs
   desired_task_count                 = var.desired_task_count
+  min_task_count                     = var.min_task_count
   max_task_count                     = var.max_task_count
   required_cpus                      = var.required_cpus
   required_memory                    = var.required_memory
