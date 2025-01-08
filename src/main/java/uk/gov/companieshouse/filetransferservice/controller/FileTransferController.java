@@ -202,12 +202,6 @@ public class FileTransferController {
     @GetMapping(path = "/{fileId}")
     public ResponseEntity<FileDetailsApi> getFileDetails(@PathVariable String fileId) throws FileNotFoundException {
 
-        String path = environment.getProperty("aws.secretAccessKey");
-        String path1 = environment.getProperty("aws.accessKeyId");
-        String path2 = environment.getProperty("aws.region");
-        String path3 = environment.getProperty(" aws.bucketName");
-logger.debug("Vars are "+path+" "+path1+" "+path2+" "+path3+" ");
-
         Optional<FileDetailsApi> fileDetails = fileStorageStrategy.getFileDetails(fileId);
 
         if (fileDetails.isPresent()) {
