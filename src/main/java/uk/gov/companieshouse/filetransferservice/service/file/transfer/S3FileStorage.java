@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Component;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
@@ -16,8 +17,10 @@ import uk.gov.companieshouse.api.model.filetransfer.FileLinksApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +102,17 @@ public class S3FileStorage implements FileStorageStrategy {
     @Override
     public Optional<FileDetailsApi> getFileDetails(String fileId) {
         Optional<S3Object> optionalS3Object = amazonFileTransfer.getFileObject(fileId);
+logger.debug(optionalS3Object.toString());
+        InputStreamResource resource = new InputStreamResource(optionalS3Object.get().getObjectContent());
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                logger.debug(line);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         if (optionalS3Object.isEmpty()) {
             return Optional.empty();
