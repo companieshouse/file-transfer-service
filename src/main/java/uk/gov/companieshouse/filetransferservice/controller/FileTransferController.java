@@ -3,6 +3,7 @@ package uk.gov.companieshouse.filetransferservice.controller;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -47,6 +48,9 @@ public class FileTransferController {
     private final Logger logger;
     private final MultipartFileToFileApiConverter fileConverter;
     private final UploadedFileValidator fileValidator;
+
+    @Autowired
+    Environment environment;
 
     @Autowired
     public FileTransferController(FileStorageStrategy fileStorageStrategy,
@@ -197,6 +201,13 @@ public class FileTransferController {
      */
     @GetMapping(path = "/{fileId}")
     public ResponseEntity<FileDetailsApi> getFileDetails(@PathVariable String fileId) throws FileNotFoundException {
+
+        String path = environment.getProperty("aws.secretAccessKey");
+        String path1 = environment.getProperty("aws.accessKeyId");
+        String path2 = environment.getProperty("aws.region");
+        String path3 = environment.getProperty(" aws.bucketName");
+logger.debug("Vars are "+path+" "+path1+" "+path2+" "+path3+" ");
+
         Optional<FileDetailsApi> fileDetails = fileStorageStrategy.getFileDetails(fileId);
 
         if (fileDetails.isPresent()) {
