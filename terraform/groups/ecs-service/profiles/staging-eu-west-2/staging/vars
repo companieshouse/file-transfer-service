@@ -1,6 +1,12 @@
 environment = "staging"
 aws_profile = "staging-eu-west-2"
 
+# service configs
+file_transfer_bucket = "s3-av-staging"
+file_transfer_kms_alias = "alias/file-transfer-service"
+file_transfer_bucket_secure = "s3av-secure"
+file_transfer_kms_alias_secure = "alias/secure-file-transfer"
+
 # Scheduled scaling of tasks
 service_autoscale_enabled  = true
 service_scaledown_schedule = "55 19 * * ? *"
