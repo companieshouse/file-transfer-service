@@ -78,3 +78,18 @@ data "vault_generic_secret" "shared_s3" {
   path = "aws-accounts/shared-services/s3"
 }
 
+data "aws_kms_alias" "file_transfer_encryption_key_alias_secure" {
+  name          = var.file_transfer_kms_alias_secure
+}
+
+data "aws_kms_alias" "file_transfer_encryption_key_alias" {
+  name          = var.file_transfer_kms_alias
+}
+
+data "aws_s3_bucket" "file_transfer_bucket" {
+  bucket = var.file_transfer_bucket
+}
+
+data "aws_s3_bucket" "file_transfer_bucket_secure" {
+  bucket = var.file_transfer_bucket_secure
+}

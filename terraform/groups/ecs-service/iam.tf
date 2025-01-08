@@ -201,10 +201,12 @@ data "aws_iam_policy_document" "file_transfer_service_trust_secure" {
   }
 }
 
-output "execution_role" {
-  value = aws_iam_role.file_transfer_service_execution.arn
+resource "aws_iam_role" "file_transfer_service_execution" {
+  name               = "${var.environment}-file-transfer-service-ecs-execution"
+  assume_role_policy = data.aws_iam_policy_document.file_transfer_service_trust.json
 }
 
-output "execution_role_secure" {
-  value = aws_iam_role.file_transfer_service_execution.arn
+resource "aws_iam_role" "file_transfer_service_execution_secure" {
+  name               = "${var.environment}-file-transfer-service-secure-ecs-execution"
+  assume_role_policy = data.aws_iam_policy_document.file_transfer_service_trust_secure.json
 }
