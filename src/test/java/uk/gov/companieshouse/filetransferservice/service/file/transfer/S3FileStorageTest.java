@@ -30,6 +30,7 @@ import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
+import uk.gov.companieshouse.logging.Logger;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -49,6 +50,9 @@ public class S3FileStorageTest {
 
     @Mock
     private AmazonFileTransfer amazonFileTransfer;
+
+    @Mock
+    Logger logger;
 
     @InjectMocks
     private S3FileStorage underTest;

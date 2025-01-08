@@ -102,21 +102,12 @@ public class S3FileStorage implements FileStorageStrategy {
     @Override
     public Optional<FileDetailsApi> getFileDetails(String fileId) {
         Optional<S3Object> optionalS3Object = amazonFileTransfer.getFileObject(fileId);
-logger.debug(optionalS3Object.toString());
-        InputStreamResource resource = new InputStreamResource(optionalS3Object.get().getObjectContent());
-
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                logger.debug(line);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
         if (optionalS3Object.isEmpty()) {
             return Optional.empty();
         }
+
+        logger.debug(optionalS3Object.toString());
+
 
         FileDetailsApi fileDetailsApi = null;
         try (S3Object s3Object = optionalS3Object.get()) {

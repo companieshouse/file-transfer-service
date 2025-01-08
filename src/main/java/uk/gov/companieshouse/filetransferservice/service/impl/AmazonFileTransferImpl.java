@@ -1,7 +1,5 @@
 package uk.gov.companieshouse.filetransferservice.service.impl;
 
-import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
-
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
@@ -22,7 +20,6 @@ import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
@@ -30,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
 @Component
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
@@ -69,17 +68,10 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             // Try-with ensures connections are closed once used.
             try (S3Object s3Object = getObjectInS3(fileId);
                  S3ObjectInputStream is = s3Object.getObjectContent()) {
-                InputStreamResource resource = new InputStreamResource(s3Object.getObjectContent());
-
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        logger.debug("line is for download"+line);
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
+                //FIXME
+                if(is!=null&&is.readAllBytes()!=null)
+         logger.debug("line is "+is.readAllBytes().toString());
+                //FIXME
                 return Optional.ofNullable(IOUtils.toByteArray(is));
             }
         } catch (Exception e) {
@@ -101,22 +93,24 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         try {
             validateS3Details();
             S3Object s3Object=s3Client.getObject(new GetObjectRequest(properties.getBucketName(), fileId));
-            logger.debug(s3Object.toString());
-            InputStreamResource resource = new InputStreamResource(s3Object.getObjectContent());
+            //FIXME
+            if(s3Object!=null) {
+               logger.debug(s3Object.toString());
 
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    logger.debug("line is"+line);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+           }
+            if(s3Object!=null&&s3Object.getObjectMetadata()!=null) {
+                logger.debug("1111" + s3Object.getObjectMetadata().getETag());
+                String hh=s3Object.getObjectMetadata().getETag();
+                int fg=0;
             }
+            if(s3Object!=null&&s3Object.getObjectContent()!=null) {
+                logger.debug("1113" + s3Object.getObjectContent().toString());
+                String hh=s3Object.getObjectContent().toString();
+                int df=0;
+            }
+//FIXME
 
 
-            logger.debug( "1111"+s3Object.getObjectMetadata().getETag());
-            logger.debug( "1112"+s3Object.getObjectContent().toString());
-            logger.debug( "1113"+s3Object.getObjectContent().toString());
             try (S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent()) {
                 try {
                     // Read from stream as necessary
@@ -132,6 +126,8 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
                 // The stream will be closed automatically by the try-with-resources statement
             }
+
+
             return Optional.of(s3Object);
         } catch (Exception e) {
             logger.errorContext(fileId, "Unable to fetch object from S3", e, new HashMap<>() {{
@@ -150,6 +146,9 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public Optional<List<Tag>> getFileTags(String fileId) {
         try {
             validateS3Details();
+            S3Object s3Object=s3Client.getObject(new GetObjectRequest(properties.getBucketName(), fileId));
+            if(s3Object!=null&&s3Object.getObjectMetadata()!=null)
+            logger.debug(s3Object.getObjectMetadata().getETag());
             return Optional.ofNullable(s3Client.getObjectTagging(new GetObjectTaggingRequest(properties.getBucketName(), fileId)).getTagSet());
         } catch (Exception e) {
             logger.errorContext(fileId, "Unable to fetch file tags from S3", e, new HashMap<>() {{
