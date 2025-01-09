@@ -122,17 +122,16 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
                 s3ObjectInputStream = s3Object.getObjectContent();
 
                 // Read from the stream and convert to a human-readable String
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(s3ObjectInputStream))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(s3ObjectInputStream,StandardCharsets.UTF_8))) {
                     StringBuilder content = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) {
                         content.append(line).append(System.lineSeparator()); // Add a newline after each line
                         // Log each line of the content
-                        logger.debug("Read line: {}+ line");
+                        logger.debug("Read line: {}+"+line);
                     }
 
                     // Now the content contains the object as a human-readable String
-                    logger.debug("Object Content:{}" + content.toString());
                 } catch (IOException e) {
                     logger.error("IOException occurred while reading the object content.", e);
                 }
@@ -142,7 +141,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
                 if (s3ObjectInputStream != null) {
                     try {
                         // Before closing the stream, capture any remaining data
-                        byte[] remainingBytes = new byte[8921];
+                        byte[] remainingBytes = new byte[1024];
                         int bytesRead;
                         while ((bytesRead = s3ObjectInputStream.read(remainingBytes)) != -1) {
                             remainingDataStream.write(remainingBytes, 0, bytesRead);
