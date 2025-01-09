@@ -199,6 +199,7 @@ public class FileTransferController {
     public ResponseEntity<FileDetailsApi> getFileDetails(@PathVariable String fileId) throws FileNotFoundException {
         Optional<FileDetailsApi> fileDetails = fileStorageStrategy.getFileDetails(fileId);
 
+
         if (fileDetails.isPresent()) {
             return ResponseEntity.ok(fileDetails.get());
         } else {
