@@ -64,14 +64,7 @@ data "aws_iam_policy_document" "task_policy" {
     sid       = "AllowS3ReadObjectsFileTransfer"
     effect    = "Allow"
     actions   = [
-      "s3:GetObject",
-      "s3:GetObjectAcl",
-      "s3:GetBucketTagging",
-      "s3:GetBucketLocation",
-      "s3:GetBucketPolicyStatus",
-      "s3:GetBucketPublicAccessBlock",
-      "s3:GetBucketAcl",
-      "s3:GetBucketPolicy",
+      "s3:*"
     ]
     resources = [
       "arn:aws:s3:::${var.file_transfer_bucket}/*"
