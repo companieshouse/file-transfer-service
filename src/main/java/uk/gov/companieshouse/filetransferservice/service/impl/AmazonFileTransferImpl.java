@@ -20,8 +20,11 @@ import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -92,51 +95,90 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public Optional<S3Object> getFileObject(String fileId) {
         try {
             validateS3Details();
-            S3Object s3Object=s3Client.getObject(new GetObjectRequest(properties.getBucketName(), fileId));
+            S3Object s3Object = s3Client.getObject(new GetObjectRequest(properties.getBucketName(), fileId));
             //FIXME
-            if(s3Object!=null) {
-               logger.debug(s3Object.toString());
+            if (s3Object != null) {
+                logger.debug(s3Object.toString());
 
-           }
-            if(s3Object!=null&&s3Object.getObjectMetadata()!=null) {
-                logger.debug("1111" + s3Object.getObjectMetadata().getETag());
-                String hh=s3Object.getObjectMetadata().getETag();
-                int fg=0;
             }
-            if(s3Object!=null&&s3Object.getObjectContent()!=null) {
+            if (s3Object != null && s3Object.getObjectMetadata() != null) {
+                logger.debug("1111" + s3Object.getObjectMetadata().getETag());
+                String hh = s3Object.getObjectMetadata().getETag();
+                int fg = 0;
+            }
+            if (s3Object != null && s3Object.getObjectContent() != null) {
                 logger.debug("1113" + s3Object.getObjectContent().toString());
-                String hh=s3Object.getObjectContent().toString();
-                int df=0;
+                String hh = s3Object.getObjectContent().toString();
+                int df = 0;
             }
 //FIXME
 
 
-            try (S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent()) {
-                try {
-                    // Read from stream as necessary
-                } catch (Exception e) {
-                    // Handle exceptions as necessary
-                } finally {
-                    while (s3ObjectInputStream != null && s3ObjectInputStream.read() != -1) {
-                        logger.debug("1114"+ s3ObjectInputStream.toString());
-                        logger.debug("1115"+Arrays.toString(s3ObjectInputStream.readAllBytes()));
+            S3ObjectInputStream s3ObjectInputStream = null;
+            ByteArrayOutputStream remainingDataStream = new ByteArrayOutputStream();
 
+            try {
+                // Retrieve the object content (the InputStream)
+                s3ObjectInputStream = s3Object.getObjectContent();
+
+                // Read from the stream and convert to a human-readable String
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(s3ObjectInputStream))) {
+                    StringBuilder content = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        content.append(line).append(System.lineSeparator()); // Add a newline after each line
+                        // Log each line of the content
+                        logger.debug("Read line: {}+ line");
+                    }
+
+                    // Now the content contains the object as a human-readable String
+                    logger.debug("Object Content:{}" + content.toString());
+                } catch (IOException e) {
+                    logger.error("IOException occurred while reading the object content.", e);
+                }
+
+            } finally {
+                // Ensure the remaining content in the stream is captured and printed
+                if (s3ObjectInputStream != null) {
+                    try {
+                        // Before closing the stream, capture any remaining data
+                        byte[] remainingBytes = new byte[8921];
+                        int bytesRead;
+                        while ((bytesRead = s3ObjectInputStream.read(remainingBytes)) != -1) {
+                            remainingDataStream.write(remainingBytes, 0, bytesRead);
+                        }
+
+                        // Print the remaining data in the stream
+                        if (remainingDataStream.size() > 0) {
+                            String remainingContent = new String(remainingDataStream.toByteArray(), StandardCharsets.UTF_8);
+                            logger.debug("Remaining Data in Stream:\n{}" + remainingContent);
+                        }
+
+                        // Close the stream after capturing remaining data
+                        s3ObjectInputStream.close();
+                        logger.debug("Stream closed successfully.");
+
+                    } catch (IOException e) {
+                        logger.error("IOException occurred while closing the stream.", e);
                     }
                 }
 
-                // The stream will be closed automatically by the try-with-resources statement
+                // Any other necessary cleanup can be added here
+                logger.debug("Finally block executed.");
+                return Optional.of(s3Object);
+
             }
 
 
-            return Optional.of(s3Object);
-        } catch (Exception e) {
-            logger.errorContext(fileId, "Unable to fetch object from S3", e, new HashMap<>() {{
-                put("fileId", fileId);
-            }});
-            return Optional.empty();
         }
+    catch (Exception e) {
+        logger.errorContext(fileId, "Unable to fetch object from S3", e, new HashMap<>() {{
+            put("fileId", fileId);
+        }});
+        return Optional.empty();
     }
 
+    }
     /**
      * Get file meta tags
      *
