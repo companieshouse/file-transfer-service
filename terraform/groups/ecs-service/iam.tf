@@ -38,16 +38,80 @@ data "aws_iam_policy_document" "task_assume" {
 
 resource "aws_iam_policy" "task_policy" {
   name        = "${var.environment}-${local.service_name}-task-policy"
-  policy      = data.aws_iam_policy_document.task_policy.json
+  policy      = data.aws_iam_policy_document.file_transfer_ecs_execution.json
 }
 
 
 resource "aws_iam_policy" "task_policy_secure" {
   name        = "${var.environment}-${local.service_name_secure}-task-policy"
-  policy      = data.aws_iam_policy_document.task_policy_secure.json
+  policy      = data.aws_iam_policy_document.file_transfer_secure_ecs_execution.json
 }
 
-data "aws_iam_policy_document" "task_policy" {
+data "aws_iam_policy_document" "file_transfer_ecs_execution" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:PutAccountPublicAccessBlock",
+      "s3:GetAccountPublicAccessBlock",
+      "s3:ListAllMyBuckets",
+      "s3:HeadBucket"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:*",
+      "logs:*"
+    ]
+
+    resources = [
+      "arn:aws:logs:*:*:log-group:*:*:*",
+      "arn:aws:s3:::${var.file_transfer_bucket}/*",
+    ]
+  }
+}
+
+data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:PutAccountPublicAccessBlock",
+      "s3:GetAccountPublicAccessBlock",
+      "s3:ListAllMyBuckets",
+      "s3:HeadBucket"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:*",
+      "logs:*"
+    ]
+
+    resources = [
+      "arn:aws:logs:*:*:log-group:*:*:*",
+      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*",
+    ]
+  }
+}
+
+# FIXME: Remove
+/*
+data "aws_iam_policy_document" "task_policy_old" {
 
   statement {
     sid       = "AllowS3AllObjectsFileTransfer"
@@ -67,8 +131,11 @@ data "aws_iam_policy_document" "task_policy" {
     resources = ["*"]
   }
 }
+*/
 
-data "aws_iam_policy_document" "task_policy_secure" {
+# FIXME: Remove
+/*
+data "aws_iam_policy_document" "task_policy_secure_old" {
 
 
   statement {
@@ -119,6 +186,7 @@ data "aws_iam_policy_document" "task_policy_secure" {
     resources = ["*"]
   }
 }
+*/
 
 resource "aws_iam_role_policy_attachment" "task_role_attachment" {
   role       = aws_iam_role.task_role.name
