@@ -76,6 +76,14 @@ data "aws_iam_policy_document" "file_transfer_ecs_execution" {
       "arn:aws:s3:::${var.file_transfer_bucket}/*",
     ]
   }
+
+  statement {
+    sid = "AllowAccessForKeyFile"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
 }
 
 data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
@@ -107,6 +115,14 @@ data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
       "arn:aws:s3:::${var.file_transfer_bucket_secure}/*",
     ]
   }
+
+  statement {
+    sid = "AllowAccessForKeyFile"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
 }
 
 # FIXME: Remove
@@ -114,10 +130,40 @@ data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
 data "aws_iam_policy_document" "task_policy_old" {
 
   statement {
-    sid       = "AllowS3AllObjectsFileTransfer"
+    sid       = "ListS3ObjectsFileTransfer"
     effect    = "Allow"
     actions   = [
-      "s3:*"
+      "s3:ListBucket",
+      "s3:ListAllMyBuckets"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.file_transfer_bucket}/*"
+    ]
+  }
+  statement {
+    sid       = "AllowS3ReadObjectsFileTransfer"
+    effect    = "Allow"
+    actions   = [
+      "s3:GetObject",
+      "s3:GetObjectAcl",
+      "s3:GetBucketTagging",
+      "s3:GetBucketLocation",
+      "s3:GetBucketPolicyStatus",
+      "s3:GetBucketPublicAccessBlock",
+      "s3:GetBucketAcl",
+      "s3:GetBucketPolicy",
+    ]
+    resources = [
+      "arn:aws:s3:::${var.file_transfer_bucket}/*"
+    ]
+  }
+  statement {
+    sid       = "AllowS3WriteObjectsFileTransfer"
+    effect    = "Allow"
+    actions   = [
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+      "s3:PutObjectVersionAcl"
     ]
     resources = [
       "arn:aws:s3:::${var.file_transfer_bucket}/*"
