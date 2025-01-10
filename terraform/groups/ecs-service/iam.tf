@@ -50,40 +50,10 @@ resource "aws_iam_policy" "task_policy_secure" {
 data "aws_iam_policy_document" "task_policy" {
 
   statement {
-    sid       = "ListS3ObjectsFileTransfer"
+    sid       = "AllowS3AllObjectsFileTransfer"
     effect    = "Allow"
     actions   = [
-      "s3:ListBucket",
-      "s3:ListAllMyBuckets"
-    ]
-    resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket}/*"
-    ]
-  }
-  statement {
-    sid       = "AllowS3ReadObjectsFileTransfer"
-    effect    = "Allow"
-    actions   = [
-      "s3:GetObject",
-      "s3:GetObjectAcl",
-      "s3:GetBucketTagging",
-      "s3:GetBucketLocation",
-      "s3:GetBucketPolicyStatus",
-      "s3:GetBucketPublicAccessBlock",
-      "s3:GetBucketAcl",
-      "s3:GetBucketPolicy",
-    ]
-    resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket}/*"
-    ]
-  }
-  statement {
-    sid       = "AllowS3WriteObjectsFileTransfer"
-    effect    = "Allow"
-    actions   = [
-      "s3:PutObject",
-      "s3:PutObjectAcl",
-      "s3:PutObjectVersionAcl"
+      "s3:*"
     ]
     resources = [
       "arn:aws:s3:::${var.file_transfer_bucket}/*"
