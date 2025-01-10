@@ -38,55 +38,42 @@ data "aws_iam_policy_document" "task_assume" {
 
 resource "aws_iam_policy" "task_policy" {
   name        = "${var.environment}-${local.service_name}-task-policy"
-  policy      = data.aws_iam_policy_document.task_policy.json
+  policy      = data.aws_iam_policy_document.file_transfer_ecs_execution.json
 }
 
 
 resource "aws_iam_policy" "task_policy_secure" {
   name        = "${var.environment}-${local.service_name_secure}-task-policy"
-  policy      = data.aws_iam_policy_document.task_policy_secure.json
+  policy      = data.aws_iam_policy_document.file_transfer_secure_ecs_execution.json
 }
 
-data "aws_iam_policy_document" "task_policy" {
+data "aws_iam_policy_document" "file_transfer_ecs_execution" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:PutAccountPublicAccessBlock",
+      "s3:GetAccountPublicAccessBlock",
+      "s3:ListAllMyBuckets",
+      "s3:HeadBucket"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
 
   statement {
-    sid       = "ListS3ObjectsFileTransfer"
-    effect    = "Allow"
-    actions   = [
-      "s3:ListBucket",
-      "s3:ListAllMyBuckets"
+    effect = "Allow"
+
+    actions = [
+      "s3:*",
+      "logs:*"
     ]
+
     resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket}/*"
-    ]
-  }
-  statement {
-    sid       = "AllowS3ReadObjectsFileTransfer"
-    effect    = "Allow"
-    actions   = [
-      "s3:GetObject",
-      "s3:GetObjectAcl",
-      "s3:GetBucketTagging",
-      "s3:GetBucketLocation",
-      "s3:GetBucketPolicyStatus",
-      "s3:GetBucketPublicAccessBlock",
-      "s3:GetBucketAcl",
-      "s3:GetBucketPolicy",
-    ]
-    resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket}/*"
-    ]
-  }
-  statement {
-    sid       = "AllowS3WriteObjectsFileTransfer"
-    effect    = "Allow"
-    actions   = [
-      "s3:PutObject",
-      "s3:PutObjectAcl",
-      "s3:PutObjectVersionAcl"
-    ]
-    resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket}/*"
+      "arn:aws:logs:*:*:log-group:*:*:*",
+      "arn:aws:s3:::${var.file_transfer_bucket}/*",
     ]
   }
 
@@ -96,59 +83,48 @@ data "aws_iam_policy_document" "task_policy" {
     actions   = ["kms:*"]
     resources = ["*"]
   }
+
 }
 
-data "aws_iam_policy_document" "task_policy_secure" {
+data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
+  statement {
+    effect = "Allow"
 
+    actions = [
+      "s3:PutAccountPublicAccessBlock",
+      "s3:GetAccountPublicAccessBlock",
+      "s3:ListAllMyBuckets",
+      "s3:HeadBucket"
+    ]
 
-  statement {
-    sid       = "ListS3ObjectsFileTransferSecure"
-    effect    = "Allow"
-    actions   = [
-      "s3:ListBucket",
-      "s3:ListAllMyBuckets"
-    ]
     resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
-    ]
-  }
-  statement {
-    sid       = "AllowS3ReadObjectsFileTransferSecure"
-    effect    = "Allow"
-    actions   = [
-      "s3:GetObject",
-      "s3:GetObjectAcl",
-      "s3:GetBucketTagging",
-      "s3:GetBucketLocation",
-      "s3:GetBucketPolicyStatus",
-      "s3:GetBucketPublicAccessBlock",
-      "s3:GetBucketAcl",
-      "s3:GetBucketPolicy",
-    ]
-    resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
-    ]
-  }
-  statement {
-    sid       = "AllowS3WriteObjectsFileTransferSecure"
-    effect    = "Allow"
-    actions   = [
-      "s3:PutObject",
-      "s3:PutObjectAcl",
-      "s3:PutObjectVersionAcl"
-    ]
-    resources = [
-      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*"
+      "*"
     ]
   }
 
   statement {
-    sid = "AllowAccessForKeySecure"
+    effect = "Allow"
+
+    actions = [
+      "s3:*",
+      "logs:*"
+    ]
+
+    resources = [
+      "arn:aws:logs:*:*:log-group:*:*:*",
+      "arn:aws:s3:::${var.file_transfer_bucket_secure}/*",
+    ]
+  }
+
+  statement {
+    sid = "AllowAccessForKeyFile"
     effect    = "Allow"
     actions   = ["kms:*"]
     resources = ["*"]
   }
+
 }
+
 
 resource "aws_iam_role_policy_attachment" "task_role_attachment" {
   role       = aws_iam_role.task_role.name
