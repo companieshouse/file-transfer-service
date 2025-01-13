@@ -17,6 +17,8 @@ import uk.gov.companieshouse.logging.LoggerFactory;
 @Configuration
 public class ApplicationConfiguration {
 
+
+
     @Value("${application.namespace}")
     private String applicationNameSpace;
 
