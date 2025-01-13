@@ -31,7 +31,7 @@
         <maven-compiler-plugin.version>3.9.0</maven-compiler-plugin.version>
 
         <!-- internal -->
-        <structured-logging.version>2.0.3</structured-logging.version>
+        <structured-logging.version>3.0.19</structured-logging.version>
         <api-sdk-manager-java-library.version>3.0.6</api-sdk-manager-java-library.version>
         <private-api-sdk-java.version>2.0.451</private-api-sdk-java.version>
         <api-helper-java-library.version>1.4.6</api-helper-java-library.version>
@@ -166,6 +166,12 @@
             <groupId>uk.gov.companieshouse</groupId>
             <artifactId>structured-logging</artifactId>
             <version>${structured-logging.version}</version>
+            <exclusions>
+            <exclusion>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+            </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -247,6 +253,16 @@
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
             <version>3.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.16</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.5.16</version>
         </dependency>
     </dependencies>
 
