@@ -6,3 +6,6 @@ file_transfer_bucket = "s3-av-live"
 file_transfer_kms_alias = "alias/file-transfer-api"
 file_transfer_bucket_secure = "s3-av-live-secure"
 file_transfer_kms_alias_secure = "alias/secure-file-transfer-api"
+
+required_cpus=4096
+required_memory=8192
