@@ -5,13 +5,16 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.util.Objects;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
+
 import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
@@ -37,10 +41,6 @@ import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeExcept
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
 import uk.gov.companieshouse.filetransferservice.validation.UploadedFileValidator;
 import uk.gov.companieshouse.logging.Logger;
-
-import java.io.IOException;
-import java.util.Objects;
-import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 public class FileTransferControllerTest {
@@ -155,7 +155,7 @@ public class FileTransferControllerTest {
         when(fileStorageStrategy.load(fileId, fileDetails))
                 .thenReturn(Optional.of(file));
 
-        ResponseEntity<byte[]> response = fileTransferController.download(fileId, false);
+        ResponseEntity<byte[]> response = fileTransferController.downloadBinary(fileId, false);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(content.length, Objects.requireNonNull(response.getBody()).length);
@@ -173,7 +173,7 @@ public class FileTransferControllerTest {
         when(fileStorageStrategy.getFileDetails(fileId))
                 .thenReturn(Optional.empty());
 
-        assertThrows(FileNotFoundException.class, () -> fileTransferController.download(fileId, false));
+        assertThrows(FileNotFoundException.class, () -> fileTransferController.downloadBinary(fileId, false));
     }
 
     @Test
@@ -187,7 +187,7 @@ public class FileTransferControllerTest {
         when(fileStorageStrategy.getFileDetails(fileId))
                 .thenReturn(Optional.of(fileDetailsApi));
 
-        assertThrows(FileNotCleanException.class, () -> fileTransferController.download(fileId, false));
+        assertThrows(FileNotCleanException.class, () -> fileTransferController.downloadBinary(fileId, false));
     }
 
 
@@ -236,7 +236,7 @@ public class FileTransferControllerTest {
 
     @Test
     @DisplayName("InvalidMimeType exception should result an unsupported media type exception")
-    void testInvalidMimeTypeExceotionHandler() {
+    void testInvalidMimeTypeExceptionHandler() {
         // Given
         String mimeType = "mimeType";
         InvalidMimeTypeException e = new InvalidMimeTypeException(mimeType);

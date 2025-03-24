@@ -136,8 +136,8 @@ public class FileTransferController {
      * @param fileId of remote file
      * @return file data
      */
-    @GetMapping(path = "/{fileId}/download")
-    public ResponseEntity<byte[]> download(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
+    @GetMapping(path = "/{fileId}/downloadbinary")
+    public ResponseEntity<byte[]> downloadBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
 
         FileApi file = getFileApi(fileId, bypassAv);
 

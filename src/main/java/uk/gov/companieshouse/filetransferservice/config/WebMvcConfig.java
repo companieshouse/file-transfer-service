@@ -16,6 +16,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final String HEALTHCHECK_PATH="/file-transfer-service/healthcheck";
 
 
+
     @Autowired
     public WebMvcConfig(LoggingInterceptor loggingInterceptor,
                         InternalUserInterceptor internalUserInterceptor) {
