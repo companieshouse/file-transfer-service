@@ -32,6 +32,7 @@ import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStora
 import uk.gov.companieshouse.filetransferservice.validation.UploadedFileValidator;
 import uk.gov.companieshouse.logging.Logger;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -225,6 +226,8 @@ public class FileTransferController {
         FileDetailsApi fileDetails = fileStorageStrategy
                 .getFileDetails(fileId)
                 .orElseThrow(notFoundException);
+
+        logger.debug(String.format("The retrieved details for file %s are: %s", fileId, fileDetails.toString()));
 
         if (!bypassAv && fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
             throw new FileNotCleanException(fileDetails.getAvStatusApi(), fileId);

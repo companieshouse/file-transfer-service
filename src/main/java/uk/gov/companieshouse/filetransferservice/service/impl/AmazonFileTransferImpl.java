@@ -20,6 +20,8 @@ import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -64,7 +66,11 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             // Try-with ensures connections are closed once used.
             try (S3Object s3Object = getObjectInS3(fileId);
                  S3ObjectInputStream is = s3Object.getObjectContent()) {
-                return Optional.ofNullable(IOUtils.toByteArray(is));
+
+                byte[] readData = readBytesFromStream(is);
+                logger.debug(String.format("The size of the file downloaded from S3 is: %d", readData.length));
+
+                return Optional.ofNullable(readData);
             }
         } catch (Exception e) {
             logger.errorContext(fileId, "Unable to fetch file from S3", e, new HashMap<>() {{
@@ -73,6 +79,19 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
             return Optional.empty();
         }
+    }
+
+    private byte[] readBytesFromStream(S3ObjectInputStream is) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] data = new byte[1024];
+        int bytesRead;
+
+        while((bytesRead = is.read(data)) != -1) {
+            buffer.write(data, 0, bytesRead);
+        }
+
+        byte[] readData = buffer.toByteArray();
+        return readData;
     }
 
     /**
