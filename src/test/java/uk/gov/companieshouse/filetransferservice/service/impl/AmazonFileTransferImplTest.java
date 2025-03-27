@@ -1,5 +1,7 @@
 package uk.gov.companieshouse.filetransferservice.service.impl;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,6 +24,8 @@ import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.Tag;
+
+import org.checkerframework.checker.units.qual.t;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -64,8 +68,6 @@ class AmazonFileTransferImplTest {
 
         s3Object = createTestS3Object();
         properties = mock(AWSServiceProperties.class);
-        s3ObjectInputStream = mock(S3ObjectInputStream.class);
-
         amazonFileTransfer = new AmazonFileTransferImpl(client, properties, mock(Logger.class));
     }
 
@@ -140,16 +142,17 @@ class AmazonFileTransferImplTest {
         when(client.doesBucketExistV2(anyString())).thenReturn(true);
         when(client.doesObjectExist(anyString(), anyString())).thenReturn(true);
         when(client.getObject(any())).thenReturn(s3Object);
-        when(s3Object.getObjectContent()).thenReturn(s3ObjectInputStream);
-        when(s3ObjectInputStream.read(any())).thenReturn(-1);
+        byte[] testData = "test_data".getBytes();
 
+        s3ObjectInputStream = new S3ObjectInputStream(new ByteArrayInputStream(testData), null);
+        when(s3Object.getObjectContent()).thenReturn(s3ObjectInputStream);
         Optional<byte[]> actual = amazonFileTransfer.downloadFile("123");
 
         assertTrue(actual.isPresent());
+        assertArrayEquals(testData,actual.get());
         verify(client).doesObjectExist(anyString(), anyString());
         verify(client).getObject(any());
         verify(s3Object).getObjectContent();
-        verify(s3ObjectInputStream).read(any());
     }
 
     @Test
@@ -372,4 +375,3 @@ class AmazonFileTransferImplTest {
         }};
     }
 }
-
