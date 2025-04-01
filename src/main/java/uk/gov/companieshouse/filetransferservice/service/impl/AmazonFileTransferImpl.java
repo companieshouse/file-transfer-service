@@ -2,6 +2,17 @@ package uk.gov.companieshouse.filetransferservice.service.impl;
 
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
@@ -12,21 +23,11 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.Tag;
-import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+
 import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Component
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
@@ -69,7 +70,6 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
                 byte[] readData = readBytesFromStream(is);
                 logger.debug(String.format("The size of the file downloaded from S3 is: %d", readData.length));
-
                 return Optional.ofNullable(readData);
             }
         } catch (Exception e) {

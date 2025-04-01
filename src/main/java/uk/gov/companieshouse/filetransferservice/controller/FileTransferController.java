@@ -2,6 +2,12 @@ package uk.gov.companieshouse.filetransferservice.controller;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+
 import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
@@ -31,13 +38,6 @@ import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeExcept
 import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
 import uk.gov.companieshouse.filetransferservice.validation.UploadedFileValidator;
 import uk.gov.companieshouse.logging.Logger;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Supplier;
 
 @Controller
 @RequestMapping(path = "${service.path.prefix}")
