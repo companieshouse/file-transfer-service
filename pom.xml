@@ -35,7 +35,6 @@
         <api-sdk-manager-java-library.version>3.0.6</api-sdk-manager-java-library.version>
         <private-api-sdk-java.version>2.0.451</private-api-sdk-java.version>
         <api-helper-java-library.version>1.4.6</api-helper-java-library.version>
-        <aws-java-sdk-s3.version>1.12.778</aws-java-sdk-s3.version>
         <api-security-java-version>2.0.8</api-security-java-version>
         <spring-boot-dependencies.version>3.4.0</spring-boot-dependencies.version>
         <!-- java apis libs -->
@@ -61,17 +60,6 @@
                 <version>${spring-boot-dependencies.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.amazonaws</groupId>
-                <artifactId>aws-java-sdk-s3</artifactId>
-                <version>${aws-java-sdk-s3.version}</version>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.amazon.ion</groupId>
-                <artifactId>ion-java</artifactId>
-                <version>1.11.9</version>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>
@@ -103,6 +91,11 @@
         </dependencies>
     </dependencyManagement>
     <dependencies>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.31.18</version>
+        </dependency>
         <dependency>
             <groupId>uk.gov.companieshouse</groupId>
             <artifactId>api-security-java</artifactId>
@@ -243,11 +236,6 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-s3</artifactId>
-            <version>${aws-java-sdk-s3.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.validation</groupId>

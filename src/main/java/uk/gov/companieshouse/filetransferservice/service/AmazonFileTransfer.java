@@ -1,21 +1,20 @@
 package uk.gov.companieshouse.filetransferservice.service;
 
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.Tag;
 
-import java.io.InputStream;
-import java.util.List;
+import java.io.OutputStream;
 import java.util.Map;
 import java.util.Optional;
 
+import uk.gov.companieshouse.filetransferservice.model.S3FileMetadata;
+
 public interface AmazonFileTransfer {
-    void uploadFile(String fileId, Map<String, String> metaData, InputStream inputStream);
+    void uploadFile(String fileId, Map<String, String> metaData, byte[] data);
 
     Optional<byte[]> downloadFile(String fileId);
 
-    Optional<S3Object> getFileObject(String fileId);
+    OutputStream downloadFileAStream(String fileId);
 
-    Optional<List<Tag>> getFileTags(String fileId);
+    Optional <S3FileMetadata> getFileMetadata(String fileId);
 
     void deleteFile(String fileId);
 }

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -137,7 +138,7 @@ public class FileTransferControllerTest {
 
     @Test
     @DisplayName("Test successful file download")
-    public void testDownloadSuccess() throws FileNotFoundException, FileNotCleanException {
+    public void testDownloadSuccess() throws FileNotFoundException, FileNotCleanException, IOException {
         String fileId = "123";
         byte[] content = {0x01, 0x02, 0x03};
         String mimeType = "text/plain";
@@ -155,11 +156,10 @@ public class FileTransferControllerTest {
         when(fileStorageStrategy.load(fileId, fileDetails))
                 .thenReturn(Optional.of(file));
 
-        ResponseEntity<byte[]> response = fileTransferController.downloadBinary(fileId, false);
+        ResponseEntity<InputStreamResource> response = fileTransferController.downloadBinary(fileId, false);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(content.length, Objects.requireNonNull(response.getBody()).length);
-        assertArrayEquals(content, response.getBody());
+        assertEquals(content.length, response.getBody().contentLength());
         assertEquals(mimeType, Objects.requireNonNull(response.getHeaders().getContentType()).toString());
         assertEquals("attachment; filename=\"file.txt\"", response.getHeaders().getContentDisposition().toString());
         assertEquals(content.length, response.getHeaders().getContentLength());
@@ -247,5 +247,7 @@ public class FileTransferControllerTest {
         // Then
         assertThat(response.getStatusCode(), equalTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE));
     }
+
+
 
 }

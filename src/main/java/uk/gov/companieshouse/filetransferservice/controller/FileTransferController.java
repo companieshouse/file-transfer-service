@@ -9,6 +9,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -137,23 +139,25 @@ public class FileTransferController {
      * @param fileId of remote file
      * @return file data
      */
-    @GetMapping(path = "/{fileId}/downloadbinary")
-    public ResponseEntity<byte[]> downloadBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
+    @GetMapping(path = "/{fileId}/downloadbinary",   produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<InputStreamResource> downloadBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
 
         FileApi file = getFileApi(fileId, bypassAv);
 
         var data = file.getBody();
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
         headers.setContentDisposition(ContentDisposition.builder("attachment")
                 .filename(file.getFileName())
                 .build());
         headers.setContentLength(data.length);
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(data);
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.builder("attachment")
+                                            .filename(file.getFileName())
+                                            .build().toString())
+        .contentType(MediaType.parseMediaType(file.getMimeType()))
+        .contentLength(file.getSize())
+        .body(new InputStreamResource(new ByteArrayResource(data)));
     }
 
     @ExceptionHandler({FileNotCleanException.class})
@@ -189,7 +193,6 @@ public class FileTransferController {
                 .build();
     }
 
-
     /**
      * Handles the request to retrieve a file's details from S3
      *
@@ -206,7 +209,6 @@ public class FileTransferController {
             throw new FileNotFoundException(fileId);
         }
     }
-
 
     /**
      * Handles the request to delete a file from S3
@@ -235,5 +237,4 @@ public class FileTransferController {
 
         return fileStorageStrategy.load(fileId, fileDetails).orElseThrow(notFoundException);
     }
-
 }

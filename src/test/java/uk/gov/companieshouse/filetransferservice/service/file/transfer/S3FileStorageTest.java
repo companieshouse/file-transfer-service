@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
@@ -15,10 +16,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.companieshouse.filetransferservice.service.file.transfer.S3FileStorage.FILENAME_METADATA_KEY;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.Tag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,12 +23,19 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.model.Tag;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.filetransferservice.model.S3FileMetadata;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -58,19 +62,19 @@ public class S3FileStorageTest {
     void testSaveFileSuccess() {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, String>> metaDataCapture = ArgumentCaptor.forClass(Map.class);
-        doNothing().when(amazonFileTransfer).uploadFile(anyString(), metaDataCapture.capture(), any(InputStream.class));
+        doNothing().when(amazonFileTransfer).uploadFile(anyString(), metaDataCapture.capture(), any(byte[].class));
 
         String actual = underTest.save(createTestFileApi());
 
         assertNotNull(UUID.fromString(actual));
-        verify(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
+        verify(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(byte[].class));
         assertThat(metaDataCapture.getValue(), hasEntry(FILENAME_METADATA_KEY, TEST_FILE_NAME));
     }
 
     @Test
     @DisplayName("Test SdkClientException thrown on unsuccessful File Save")
     void testSdkClientExceptionThrownFromFileSaveFailure() {
-        doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
+        doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(byte[].class));
 
         assertThrows(SdkClientException.class, () -> underTest.save(createTestFileApi()));
     }
@@ -100,79 +104,69 @@ public class S3FileStorageTest {
     @Test
     @DisplayName("Test successful Get File Details with AV tags")
     void testGetFileDetailsSuccessWithAvTags() {
-        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(createTestS3ObjectTags(4));
-        when(amazonFileTransfer.getFileTags(anyString())).thenReturn(createMixedTags());
-
+        when(amazonFileTransfer.getFileMetadata(anyString())).thenReturn(createTestS3ObjectTags(4));
         Optional<FileDetailsApi> actual = underTest.getFileDetails(TEST_FILE_NAME);
 
         assertTrue(actual.isPresent());
         assertNotNull(actual.get().getAvTimestamp());
         assertNotNull(actual.get().getAvStatusApi());
-        verify(amazonFileTransfer).getFileObject(anyString());
-        verify(amazonFileTransfer).getFileTags(anyString());
+        verify(amazonFileTransfer).getFileMetadata(anyString());
     }
 
     @Test
     @DisplayName("Test successful Get File Details with empty tags")
     void testGetFileDetailsSuccessWithNullTags() {
-        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(createTestS3ObjectWithNullTags());
+        when(amazonFileTransfer.getFileMetadata(anyString())).thenReturn(createTestS3ObjectWithNullTags());
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails(TEST_FILE_NAME);
 
         assertTrue(actual.isPresent());
-        verify(amazonFileTransfer).getFileObject(anyString());
-        verify(amazonFileTransfer, times(0)).getFileTags(anyString());
+        verify(amazonFileTransfer).getFileMetadata(anyString());
     }
 
     @Test
     @DisplayName("Test successful Get File Details with zero tags")
     void testGetFileDetailsSuccessWithZeroTags() {
-        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(createTestS3ObjectTags(0));
+        when(amazonFileTransfer.getFileMetadata(anyString())).thenReturn(createTestS3ObjectTags(0));
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails(TEST_FILE_NAME);
 
         assertTrue(actual.isPresent());
-        verify(amazonFileTransfer).getFileObject(anyString());
+        verify(amazonFileTransfer).getFileMetadata(anyString());
 
-        verify(amazonFileTransfer, times(0)).getFileTags(anyString());
     }
 
     @Test
     @DisplayName("Test failure Get File Details with no AV tags")
     void testGetFileDetailsSuccessWithNoAVTags() {
-        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(createTestS3ObjectTags(2));
-        when(amazonFileTransfer.getFileTags(anyString())).thenReturn(createNonAvTags());
+        when(amazonFileTransfer.getFileMetadata(anyString())).thenReturn(createTestS3ObjectTags(2));
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails(TEST_FILE_NAME);
 
         assertTrue(actual.isEmpty());
-        verify(amazonFileTransfer).getFileObject(anyString());
-        verify(amazonFileTransfer).getFileTags(anyString());
+        verify(amazonFileTransfer).getFileMetadata(anyString());
     }
 
     @Test
     @DisplayName("Test failure Get File Details when s3 object not found")
     void testGetFileDetailsFailsWhenS3ObjectNotFound() {
-        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(Optional.empty());
+        when(amazonFileTransfer.getFileMetadata(anyString())).thenReturn(Optional.empty());
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails(TEST_FILE_NAME);
 
         assertTrue(actual.isEmpty());
-        verify(amazonFileTransfer).getFileObject(anyString());
-        verify(amazonFileTransfer, times(0)).getFileTags(anyString());
+        verify(amazonFileTransfer).getFileMetadata(anyString());
     }
 
     @Test
     @DisplayName("Test failure no Get File Details when Get File Tags fails")
     void testGetFileDetailsFailsOnRetrievingTags() {
-        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(createTestS3ObjectTags(1));
-        when(amazonFileTransfer.getFileTags(anyString())).thenReturn(Optional.empty());
+        when(amazonFileTransfer.getFileMetadata(anyString())).thenReturn(createTestS3ObjectTags(1));
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails(TEST_FILE_NAME);
 
         assertTrue(actual.isEmpty());
-        verify(amazonFileTransfer).getFileObject(anyString());
-        verify(amazonFileTransfer).getFileTags(anyString());
+        verify(amazonFileTransfer).getFileMetadata(anyString());
     }
 
     @Test
@@ -213,38 +207,37 @@ public class S3FileStorageTest {
                 null);
     }
 
-    private Optional<S3Object> createTestS3ObjectWithNullTags() {
-        S3Object s3Object = new S3Object();
-        ObjectMetadata objectMetadata = new ObjectMetadata();
+    private Optional<S3FileMetadata> createTestS3ObjectWithNullTags() {
+        S3FileMetadata s3FileMetadata = new S3FileMetadata();
 
-        objectMetadata.setContentType("anything");
-        objectMetadata.setContentLength(objectMetadata.getContentType().length());
-        objectMetadata.setLastModified(new Date());
 
-        s3Object.setObjectMetadata(objectMetadata);
-
-        return Optional.of(s3Object);
+        HeadObjectResponse response = HeadObjectResponse
+                                            .builder()
+                                            .contentType("anything")
+                                            .lastModified(Instant.now())
+                                            .contentLength(100L)
+                                            .build();
+        s3FileMetadata.setMetadata(response);
+        return Optional.of(s3FileMetadata);
     }
 
-    private Optional<S3Object> createTestS3ObjectTags(int tagCount) {
-        Optional<S3Object> s3Object = createTestS3ObjectWithNullTags();
+    private Optional<S3FileMetadata> createTestS3ObjectTags(int tagCount) {
+        Optional<S3FileMetadata> s3FileMetadata = createTestS3ObjectWithNullTags();
 
-        s3Object.get().setTaggingCount(tagCount);
-
-        return s3Object;
+        return s3FileMetadata;
     }
 
     private Optional<List<Tag>> createAvTags() {
         return Optional.of(new ArrayList<>() {{
-            add(new Tag("av-timestamp", new Date().toString()));
-            add(new Tag("av-status", "clean"));
+            add(Tag.builder().key("av-timestamp").value(new Date().toString()).build());
+            add(Tag.builder().key("av-status").value("clean").build());
         }});
     }
 
     private Optional<List<Tag>> createNonAvTags() {
         return Optional.of(new ArrayList<>() {{
-            add(new Tag("anything", "anything"));
-            add(new Tag("anything2", "anything2"));
+            add(Tag.builder().key("anything1").value("anything1").build());
+            add(Tag.builder().key("anything2").value("anything2").build());
         }});
     }
 

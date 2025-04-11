@@ -1,11 +1,9 @@
 package uk.gov.companieshouse.filetransferservice.service.impl;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -13,43 +11,42 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.companieshouse.filetransferservice.service.file.transfer.S3FileStorage.FILENAME_METADATA_KEY;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
-import com.amazonaws.services.s3.model.GetObjectTaggingResult;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.Tag;
-
-import org.checkerframework.checker.units.qual.t;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
-import uk.gov.companieshouse.logging.Logger;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetBucketAclRequest;
+import software.amazon.awssdk.services.s3.model.GetBucketAclResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
+import uk.gov.companieshouse.filetransferservice.model.S3FileMetadata;
+import uk.gov.companieshouse.logging.Logger;
 
 class AmazonFileTransferImplTest {
     private static final String TEST_FILE_NAME = "file.pdf";
     private AmazonFileTransferImpl amazonFileTransfer;
     private AWSServiceProperties properties;
-    private GetObjectTaggingResult taggingResult;
-    private AmazonS3Client client;
+    private S3Client client;
     private S3Object s3Object;
-    private S3ObjectInputStream s3ObjectInputStream;
     private PutObjectRequest putObjectRequest;
-    private PutObjectResult putObjectResult;
     private DeleteObjectRequest deleteObjectRequest;
     private static final String S3_PATH = "s3://s3av-cidev/ade";
     private static final String VALID_S3_PATH_PREFIX = "s3://";
@@ -62,9 +59,7 @@ class AmazonFileTransferImplTest {
         properties = mock(AWSServiceProperties.class);
         putObjectRequest = mock(PutObjectRequest.class);
         deleteObjectRequest = mock(DeleteObjectRequest.class);
-        putObjectResult = mock(PutObjectResult.class);
-        client = mock(AmazonS3Client.class);
-        taggingResult = mock(GetObjectTaggingResult.class);
+        client = mock(S3Client.class);
 
         s3Object = createTestS3Object();
         properties = mock(AWSServiceProperties.class);
@@ -74,8 +69,7 @@ class AmazonFileTransferImplTest {
     private void mockConfigurationDetails() {
         when(properties.getProtocol()).thenReturn("");
         when(properties.getBucketName()).thenReturn(S3_PATH);
-        when(client.doesBucketExistV2(anyString())).thenReturn(true);
-        when(client.doesObjectExist(BUCKET_NAME, PATH_DIRECTORY)).thenReturn(true);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenReturn(GetBucketAclResponse.builder().build());
     }
 
     @Test
@@ -84,12 +78,10 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(true);
-        when(client.putObject(putObjectRequest)).thenReturn(putObjectResult);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenReturn(GetBucketAclResponse.builder().build());
+        amazonFileTransfer.uploadFile("123", createValidMetaData(), "anything".getBytes());
 
-        amazonFileTransfer.uploadFile("123", createValidMetaData(), getInputStream());
-
-        verify(client).putObject(any(PutObjectRequest.class));
+        verify(client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     @Test
@@ -98,10 +90,11 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(true);
-        when(client.putObject(putObjectRequest)).thenReturn(putObjectResult);
+        when(client.getBucketAcl(any(GetBucketAclRequest.class))).thenReturn(GetBucketAclResponse.builder().build());
 
-        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createInvalidMetaData(), getInputStream()));
+        PutObjectRequest objectRequest = PutObjectRequest.builder().build();
+        AmazonFileTransferImpl amazonFileTransfer1 = new AmazonFileTransferImpl(client, properties, mock(Logger.class));
+        assertThrows(SdkClientException.class, () -> amazonFileTransfer1.uploadFile("123", createInvalidMetaData(), "anything".getBytes()));
     }
 
     @Test
@@ -109,7 +102,7 @@ class AmazonFileTransferImplTest {
     void testUploadFileWhenInvalidS3Path() {
         when(properties.getS3PathPrefix()).thenReturn(INVALID_S3_PATH_PREFIX);
 
-        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), getInputStream()));
+        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), "anything".getBytes()));
     }
 
     @Test
@@ -118,7 +111,7 @@ class AmazonFileTransferImplTest {
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("");
 
-        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), getInputStream()));
+        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), "anything".getBytes()));
     }
 
     @Test
@@ -127,9 +120,9 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(false);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenThrow(AwsServiceException.builder().statusCode(404).build());
 
-        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), getInputStream()));
+        assertThrows(SdkClientException.class, () -> amazonFileTransfer.uploadFile("123", createValidMetaData(), "anything".getBytes()));
     }
 
     @Test
@@ -139,20 +132,17 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(true);
-        when(client.doesObjectExist(anyString(), anyString())).thenReturn(true);
-        when(client.getObject(any())).thenReturn(s3Object);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenReturn(GetBucketAclResponse.builder().build());
+        ResponseInputStream<GetObjectResponse> responseInputStream = new ResponseInputStream<GetObjectResponse>(GetObjectResponse.builder().build(), getInputStream());
+
+        when(client.getObject(any(GetObjectRequest.class))).thenReturn(responseInputStream);
         byte[] testData = "test_data".getBytes();
 
-        s3ObjectInputStream = new S3ObjectInputStream(new ByteArrayInputStream(testData), null);
-        when(s3Object.getObjectContent()).thenReturn(s3ObjectInputStream);
         Optional<byte[]> actual = amazonFileTransfer.downloadFile("123");
 
         assertTrue(actual.isPresent());
         assertArrayEquals(testData,actual.get());
-        verify(client).doesObjectExist(anyString(), anyString());
-        verify(client).getObject(any());
-        verify(s3Object).getObjectContent();
+        verify(client).getObject(any(GetObjectRequest.class));
     }
 
     @Test
@@ -160,13 +150,10 @@ class AmazonFileTransferImplTest {
     void testDownloadFileWhenS3ObjectNotFound() {
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(true);
-        when(client.doesObjectExist(anyString(), anyString())).thenReturn(false);
-
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenReturn(GetBucketAclResponse.builder().build());
         Optional<byte[]> actual = amazonFileTransfer.downloadFile("123");
 
         assertTrue(actual.isEmpty());
-        verify(client).doesObjectExist(anyString(), anyString());
     }
 
     @Test
@@ -198,12 +185,12 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(false);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenThrow(AwsServiceException.builder().statusCode(404).build());
 
         Optional<byte[]> actual = amazonFileTransfer.downloadFile("123");
 
         assertTrue(actual.isEmpty());
-        verify(client, atLeastOnce()).doesBucketExistV2(anyString());
+        verify(client, atLeastOnce()).getBucketAcl(r -> r.bucket(any()));
     }
 
     @Test
@@ -212,10 +199,12 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(true);
-        when(client.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenReturn(GetBucketAclResponse.builder().build());
+        ResponseInputStream<GetObjectResponse> responseInputStream = new ResponseInputStream<GetObjectResponse>(GetObjectResponse.builder().build(), getInputStream());
 
-        Optional<S3Object> actual = amazonFileTransfer.getFileObject("123");
+        when(client.getObject(any(GetObjectRequest.class))).thenReturn(responseInputStream);
+
+        Optional<S3FileMetadata> actual = amazonFileTransfer.getFileMetadata("123");
 
         assertTrue(actual.isPresent());
         verify(client).getObject(any(GetObjectRequest.class));
@@ -226,7 +215,7 @@ class AmazonFileTransferImplTest {
     void testGetFileObjectWhenInvalidS3Path() {
         when(properties.getS3PathPrefix()).thenReturn(INVALID_S3_PATH_PREFIX);
 
-        Optional<S3Object> actual = amazonFileTransfer.getFileObject("123");
+        Optional<S3FileMetadata> actual = amazonFileTransfer.getFileMetadata("123");
 
         assertTrue(actual.isEmpty());
         verify(properties, atLeastOnce()).getBucketName();
@@ -238,7 +227,7 @@ class AmazonFileTransferImplTest {
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("");
 
-        Optional<S3Object> actual = amazonFileTransfer.getFileObject("123");
+        Optional<S3FileMetadata> actual = amazonFileTransfer.getFileMetadata("123");
 
         assertTrue(actual.isEmpty());
         verify(properties, atLeastOnce()).getBucketName();
@@ -250,12 +239,12 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(false);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenThrow(AwsServiceException.builder().statusCode(404).build());
 
-        Optional<S3Object> actual = amazonFileTransfer.getFileObject("123");
+        Optional<S3FileMetadata> actual = amazonFileTransfer.getFileMetadata("123");
 
         assertTrue(actual.isEmpty());
-        verify(client, atLeastOnce()).doesBucketExistV2(anyString());
+        verify(client, atLeastOnce()).getBucketAcl(r -> r.bucket(any()));
     }
 
     @Test
@@ -264,10 +253,12 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(true);
-        when(client.getObjectTagging(any(GetObjectTaggingRequest.class))).thenReturn(taggingResult);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenReturn(GetBucketAclResponse.builder().build());
 
-        Optional<List<Tag>> actual = amazonFileTransfer.getFileTags("123");
+        GetObjectTaggingResponse getObjectTaggingResponse = GetObjectTaggingResponse.builder().build();
+
+        when(client.getObjectTagging(any(GetObjectTaggingRequest.class))).thenReturn(getObjectTaggingResponse);
+        Optional<S3FileMetadata> actual = amazonFileTransfer.getFileMetadata("123");
 
         assertTrue(actual.isPresent());
         verify(client).getObjectTagging(any(GetObjectTaggingRequest.class));
@@ -278,7 +269,7 @@ class AmazonFileTransferImplTest {
     void testGetFileTagsWhenInvalidS3Path() {
         when(properties.getS3PathPrefix()).thenReturn(INVALID_S3_PATH_PREFIX);
 
-        Optional<List<Tag>> actual = amazonFileTransfer.getFileTags("123");
+        Optional<S3FileMetadata> actual = amazonFileTransfer.getFileMetadata("123");
 
         assertTrue(actual.isEmpty());
         verify(properties, atLeastOnce()).getBucketName();
@@ -290,7 +281,7 @@ class AmazonFileTransferImplTest {
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("");
 
-        Optional<List<Tag>> actual = amazonFileTransfer.getFileTags("123");
+        Optional<S3FileMetadata> actual = amazonFileTransfer.getFileMetadata("123");
 
         assertTrue(actual.isEmpty());
         verify(properties, atLeastOnce()).getBucketName();
@@ -302,12 +293,12 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(false);
 
-        Optional<List<Tag>> actual = amazonFileTransfer.getFileTags("123");
+
+        Optional<S3FileMetadata> actual = amazonFileTransfer.getFileMetadata("123");
 
         assertTrue(actual.isEmpty());
-        verify(client, atLeastOnce()).doesBucketExistV2(anyString());
+        verify(client).getBucketAcl(r -> r.bucket(any()));
     }
 
     @Test
@@ -316,12 +307,12 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(true);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenReturn(GetBucketAclResponse.builder().build());
         doNothing().when(client).deleteObject(deleteObjectRequest);
 
         amazonFileTransfer.deleteFile("123");
 
-        verify(client).doesBucketExistV2(anyString());
+        verify(client).getBucketAcl(r -> r.bucket(any()));
         verify(client).deleteObject(any(DeleteObjectRequest.class));
     }
 
@@ -348,7 +339,7 @@ class AmazonFileTransferImplTest {
         mockConfigurationDetails();
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn("anything");
-        when(client.doesBucketExistV2(anyString())).thenReturn(false);
+        when(client.getBucketAcl(r -> r.bucket(any()))).thenThrow(AwsServiceException.builder().statusCode(404).build());
 
         assertThrows(SdkClientException.class, () -> amazonFileTransfer.deleteFile("123"));
     }
@@ -358,7 +349,9 @@ class AmazonFileTransferImplTest {
     }
 
     private S3Object createTestS3Object() {
-        return new S3Object();
+        return  S3Object.builder()
+                        .key("file.txt")
+                        .build();
     }
 
     private Map<String, String> createValidMetaData() {

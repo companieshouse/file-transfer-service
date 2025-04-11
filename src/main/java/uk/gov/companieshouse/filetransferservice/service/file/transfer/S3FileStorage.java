@@ -4,26 +4,25 @@ import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.NOT_SCANNED;
 import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.valueOf;
 
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileLinksApi;
-import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
-import uk.gov.companieshouse.logging.Logger;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import software.amazon.awssdk.services.s3.model.Tag;
+import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
+import uk.gov.companieshouse.api.model.filetransfer.FileApi;
+import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.api.model.filetransfer.FileLinksApi;
+import uk.gov.companieshouse.filetransferservice.model.S3FileMetadata;
+import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
+import uk.gov.companieshouse.logging.Logger;
 
 /**
  * An implementation of the FileStorageStrategy for S3
@@ -66,7 +65,7 @@ public class S3FileStorage implements FileStorageStrategy {
         metaData.put(FILENAME_METADATA_KEY, file.getFileName());
         metaData.put(EXTENSION_METADATA_KEY, file.getExtension());
 
-        amazonFileTransfer.uploadFile(fileId, metaData, new ByteArrayInputStream(file.getBody()));
+        amazonFileTransfer.uploadFile(fileId, metaData, file.getBody());
 
         return fileId;
     }
@@ -98,49 +97,43 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public Optional<FileDetailsApi> getFileDetails(String fileId) {
-        Optional<S3Object> optionalS3Object = amazonFileTransfer.getFileObject(fileId);
+        Optional<S3FileMetadata> potentialFileMetadata = amazonFileTransfer.getFileMetadata(fileId);
 
-        if (optionalS3Object.isEmpty()) {
+        if (!potentialFileMetadata.isPresent() || potentialFileMetadata.get().getTags().isEmpty()) {
             return Optional.empty();
         }
 
         FileDetailsApi fileDetailsApi = null;
-        try (S3Object s3Object = optionalS3Object.get()) {
 
-            AvStatusApi avStatus = NOT_SCANNED;
-            String avCreatedOn = "";
+        AvStatusApi avStatus = NOT_SCANNED;
+        String avCreatedOn = "";
 
-            if (s3Object.getTaggingCount() != null && s3Object.getTaggingCount() > 0) {
-                Optional<List<Tag>> allTags = amazonFileTransfer.getFileTags(fileId);
-                if (allTags.isEmpty()) {
-                    return Optional.empty();
-                }
+        S3FileMetadata fileMetadata = potentialFileMetadata.get();
 
-                Map<String, String> avTags = extractAVTags(allTags.get());
-                if (avTags.size() != AV_KEY_COUNT) {
-                    return Optional.empty();
-                }
-
-                avStatus = valueOf(avTags.get(AV_STATUS_KEY).toUpperCase());
-                avCreatedOn = avTags.get(AV_TIMESTAMP_KEY);
-            }
-
-            String fileName = s3Object.getObjectMetadata().getUserMetaDataOf(FILENAME_METADATA_KEY);
-
-            fileDetailsApi = new FileDetailsApi(fileId,
-                    avCreatedOn,
-                    avStatus,
-                    s3Object.getObjectMetadata().getContentType(),
-                    s3Object.getObjectMetadata().getContentLength(),
-                    fileName,
-                    s3Object.getObjectMetadata().getLastModified().toString(),
-                    getLinks(fileId));
-
-            return Optional.of(fileDetailsApi);
-        } catch (IOException e) {
-            logger.errorContext(fileId, "Error closing S3Object when getting file details", e, null);
-            return Optional.ofNullable(fileDetailsApi);
+        Optional<List<Tag>> allTags = Optional.ofNullable(potentialFileMetadata.get().getTags());
+        if (allTags.isEmpty()) {
+            return Optional.empty();
         }
+
+        Map<String, String> avTags = extractAVTags(allTags.get());
+        if (avTags.size() != AV_KEY_COUNT) {
+            return Optional.empty();
+        }
+
+        avStatus = valueOf(avTags.get(AV_STATUS_KEY).toUpperCase());
+        avCreatedOn = avTags.get(AV_TIMESTAMP_KEY);
+
+
+        fileDetailsApi = new FileDetailsApi(fileId,
+                avCreatedOn,
+                avStatus,
+                fileMetadata.getMetadata().contentType(),
+                fileMetadata.getMetadata().contentLength(),
+                fileId,
+                fileMetadata.getMetadata().lastModified().toString(),
+                getLinks(fileId));
+
+        return Optional.of(fileDetailsApi);
     }
 
     private FileLinksApi getLinks(String fileId) {
@@ -161,7 +154,7 @@ public class S3FileStorage implements FileStorageStrategy {
 
     private Map<String, String> extractAVTags(List<Tag> tags) {
         return tags.stream()
-                .filter(tag -> AV_TIMESTAMP_KEY.equals(tag.getKey()) || AV_STATUS_KEY.equals(tag.getKey()))
-                .collect((Collectors.toMap(Tag::getKey, Tag::getValue)));
+                .filter(tag -> AV_TIMESTAMP_KEY.equals(tag.key()) || AV_STATUS_KEY.equals(tag.key()))
+                .collect((Collectors.toMap(Tag::key, Tag::value)));
     }
 }
