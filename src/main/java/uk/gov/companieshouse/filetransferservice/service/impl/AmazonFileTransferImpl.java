@@ -1,6 +1,14 @@
 package uk.gov.companieshouse.filetransferservice.service.impl;
 
-import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.*;
+import com.amazonaws.util.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
+import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
+import uk.gov.companieshouse.logging.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,24 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.Tag;
-import com.amazonaws.util.StringUtils;
-
-import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
-import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
-import uk.gov.companieshouse.logging.Logger;
+import static java.lang.String.format;
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
 @Component
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
@@ -37,7 +29,6 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     private final AmazonS3 s3Client;
     private final AWSServiceProperties properties;
     private final Logger logger;
-
 
     @Autowired
     public AmazonFileTransferImpl(AmazonS3 s3Client, AWSServiceProperties properties, Logger logger) {
@@ -50,28 +41,52 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * Upload the file to S3
      */
     @Override
-    public void uploadFile(String fileId, Map<String, String> metaData, InputStream inputStream) {
+    public void uploadFile(final String fileId, final Map<String, String> metaData, final InputStream inputStream) {
+        logger.trace(format("uploadFile(fileId=%s, metaData=%s) method called.", fileId, metaData));
+
         validateS3Details();
-        s3Client.putObject(new PutObjectRequest(properties.getBucketName(), fileId, inputStream, createObjectMetaData(metaData)));
+
+        try {
+            logger.debug(format("Uploading file %s to %s...", fileId, S3_PATH_PREFIX));
+
+            ObjectMetadata objectMetadata = createObjectMetaData(metaData);
+
+            logger.debug(format("............S3 Path: %s", getS3Path()));
+            logger.debug(format("........Object Path: %s", getObjectPath(fileId)));
+            logger.debug(format("........Bucket Name: %s", properties.getBucketName()));
+            logger.debug(format("............File ID: %s", fileId));
+            logger.debug(format(".......Input Stream: %d", inputStream.available()));
+            logger.debug(format("....Object Metadata: %s", objectMetadata));
+
+            PutObjectRequest putObjectRequest = new PutObjectRequest(properties.getBucketName(), fileId, inputStream, objectMetadata);
+            s3Client.putObject(putObjectRequest);
+
+        } catch(Exception ex) {
+            logger.error("An exception occurred writing to bucket: ", ex);
+        }
     }
 
     /**
      * Download a file from S3
-     *
-     * @return String
      */
     @Override
-    public Optional<byte[]> downloadFile(String fileId) {
+    public Optional<byte[]> downloadFile(final String fileId) {
+        logger.trace(format("downloadFile(fileId=%s) method called.", fileId));
+
         try {
             validateS3Details();
+
             // Try-with ensures connections are closed once used.
             try (S3Object s3Object = getObjectInS3(fileId);
-                 S3ObjectInputStream is = s3Object.getObjectContent()) {
+                S3ObjectInputStream is = s3Object.getObjectContent()) {
 
+                logger.debug(format("Downloading file %s from %s...", fileId, S3_PATH_PREFIX));
                 byte[] readData = readBytesFromStream(is);
-                logger.debug(String.format("The size of the file downloaded from S3 is: %d", readData.length));
-                return Optional.ofNullable(readData);
+
+                logger.debug(format("The size of the file downloaded from S3 is: %d", readData.length));
+                return Optional.of(readData);
             }
+
         } catch (Exception e) {
             logger.errorContext(fileId, "Unable to fetch file from S3", e, new HashMap<>() {{
                 put("fileId", fileId);
@@ -81,7 +96,9 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         }
     }
 
-    private byte[] readBytesFromStream(S3ObjectInputStream is) throws IOException {
+    private byte[] readBytesFromStream(final S3ObjectInputStream is) throws IOException {
+        logger.debug(format("readBytesFromStream(%d bytes available) method called.", is.available()));
+
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         byte[] data = new byte[1024];
         int bytesRead;
@@ -90,17 +107,16 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             buffer.write(data, 0, bytesRead);
         }
 
-        byte[] readData = buffer.toByteArray();
-        return readData;
+        return buffer.toByteArray();
     }
 
     /**
-     * Get file meta data
-     *
-     * @return String
+     * Get file metadata
      */
     @Override
-    public Optional<S3Object> getFileObject(String fileId) {
+    public Optional<S3Object> getFileObject(final String fileId) {
+        logger.debug(format("getFileObject(fileId=%s) method called.", fileId));
+
         try {
             validateS3Details();
             return Optional.ofNullable(s3Client.getObject(new GetObjectRequest(properties.getBucketName(), fileId)));
@@ -114,11 +130,11 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
     /**
      * Get file meta tags
-     *
-     * @return Object containing Map of Tags
      */
     @Override
-    public Optional<List<Tag>> getFileTags(String fileId) {
+    public Optional<List<Tag>> getFileTags(final String fileId) {
+        logger.debug(format("getFileTags(fileId=%s) method called.", fileId));
+
         try {
             validateS3Details();
             return Optional.ofNullable(s3Client.getObjectTagging(new GetObjectTaggingRequest(properties.getBucketName(), fileId)).getTagSet());
@@ -132,37 +148,43 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
     /**
      * Delete an object in S3
-     *
-     * @throws SdkClientException
      */
     @Override
-    public void deleteFile(String fileId) {
+    public void deleteFile(final String fileId) {
+        logger.debug(format("deleteFile(fileId=%s) method called.", fileId));
+
         validateS3Details();
         s3Client.deleteObject(new DeleteObjectRequest(properties.getBucketName(), fileId));
     }
 
     /**
      * Get an object from S3
-     *
-     * @throws SdkClientException
      */
-    private S3Object getObjectInS3(String fileId) {
+    private S3Object getObjectInS3(final String fileId) {
+        logger.debug(format("getObjectInS3(%s) method called.", fileId));
+
         if (!s3Client.doesObjectExist(properties.getBucketName(), fileId))
-            throw new SdkClientException("S3 path does not exist: " + getObjectPath(fileId));
+            throw new SdkClientException("S3 Path does not exist: " + getObjectPath(fileId));
 
         return s3Client.getObject(new GetObjectRequest(properties.getBucketName(), fileId));
     }
 
     private void validateS3Details() {
+        logger.trace("validateS3Details() method called.");
+
         if (!validateS3Path())
-            throw new SdkClientException("S3 path is invalid");
+            throw new SdkClientException(format("S3 Path is invalid: [%s]", getS3Path()));
+
         if (!validateBucketName())
-            throw new SdkClientException("bucket name is invalid");
+            throw new SdkClientException(format("S3 Bucket Name is invalid: [%s]", properties.getBucketName()));
+
+        /*
         if (!s3Client.doesBucketExistV2(properties.getBucketName()))
-            throw new SdkClientException("bucket does not exist");
+            throw new SdkClientException(format("S3 Bucket does not exist: [%s]", properties.getBucketName()));
+        */
     }
 
-    private ObjectMetadata createObjectMetaData(Map<String, String> metaData) {
+    private ObjectMetadata createObjectMetaData(final Map<String, String> metaData) {
         ObjectMetadata omd = new ObjectMetadata();
 
         if (metaData.containsKey(CONTENT_TYPE)) {
@@ -171,7 +193,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             throw new SdkClientException("meta data does not contain Content-Type");
         }
 
-        // Add all other metadata key value pairs to user meta data
+        // Add all other metadata key value pairs to user metadata
         metaData.forEach((k, v) -> {
             if (!k.equalsIgnoreCase(CONTENT_TYPE)) {
                 omd.addUserMetadata(k, v);
@@ -182,11 +204,11 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     private String getS3Path() {
-        return String.format("%s%s", properties.getS3PathPrefix(), properties.getBucketName());
+        return format("%s%s", properties.getS3PathPrefix(), properties.getBucketName());
     }
 
     private String getObjectPath(String fileId) {
-        return String.format("%s%s/%s", S3_PATH_PREFIX, properties.getBucketName(), fileId);
+        return format("%s%s/%s", S3_PATH_PREFIX, properties.getBucketName(), fileId);
     }
 
     private boolean validateS3Path() {

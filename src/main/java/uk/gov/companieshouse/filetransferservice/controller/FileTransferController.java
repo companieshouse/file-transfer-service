@@ -42,6 +42,7 @@ import uk.gov.companieshouse.logging.Logger;
 @Controller
 @RequestMapping(path = "${service.path.prefix}")
 public class FileTransferController {
+
     public static final String FILE_ID_KEY = "fileId";
 
     private final FileStorageStrategy fileStorageStrategy;
@@ -70,12 +71,29 @@ public class FileTransferController {
      * @return a ResponseEntity containing the ID of the uploaded file or an error message
      */
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<IdApi> upload(
-            @RequestParam(value = "file") MultipartFile uploadedFile) throws IOException, InvalidMimeTypeException {
+    public ResponseEntity<IdApi> upload(@RequestParam(value = "file") MultipartFile uploadedFile) throws IOException, InvalidMimeTypeException {
+        logger.debug("upload(file) method called.");
 
         FileApi file = fileConverter.convert(uploadedFile);
 
         return uploadJson(file);
+    }
+
+    /**
+     * Uploads a file represented as a JSON object to the file transfer service. The uploaded file must be of a valid
+     * MIME type and within size limits. If the upload is successful, the ID of the uploaded file is returned in a
+     * ResponseEntity. Otherwise, an error message is returned.
+     *
+     * @param file a JSON object representing the file to upload
+     * @return a ResponseEntity containing the ID of the uploaded file or an error message
+     */
+    @PostMapping(value = "/upload", consumes = "application/json")
+    public ResponseEntity<IdApi> uploadJson(@RequestBody FileApi file) throws InvalidMimeTypeException {
+        logger.debug("upload(json) method called.");
+
+        fileValidator.validate(file);
+        String fileId = fileStorageStrategy.save(file);
+        return ResponseEntity.ok(new IdApi(fileId));
     }
 
     @ExceptionHandler({IOException.class})
@@ -88,23 +106,6 @@ public class FileTransferController {
                         "getBytes",
                         "method",
                         "upload").build();
-    }
-
-    /**
-     * Uploads a file represented as a JSON object to the file transfer service. The uploaded file must be of a valid
-     * MIME type and within size limits. If the upload is successful, the ID of the uploaded file is returned in a
-     * ResponseEntity. Otherwise, an error message is returned.
-     *
-     * @param file a JSON object representing the file to upload
-     * @return a ResponseEntity containing the ID of the uploaded file or an error message
-     */
-    @PostMapping(value = "/upload", consumes = "application/json")
-    public ResponseEntity<IdApi> uploadJson(
-            @RequestBody FileApi file) throws InvalidMimeTypeException {
-
-        fileValidator.validate(file);
-        String fileId = fileStorageStrategy.save(file);
-        return ResponseEntity.ok(new IdApi(fileId));
     }
 
     @ExceptionHandler({InvalidMimeTypeException.class})
@@ -139,7 +140,6 @@ public class FileTransferController {
      */
     @GetMapping(path = "/{fileId}/downloadbinary")
     public ResponseEntity<byte[]> downloadBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
-
         FileApi file = getFileApi(fileId, bypassAv);
 
         var data = file.getBody();
@@ -161,9 +161,8 @@ public class FileTransferController {
         String fileId = e.getFileId();
         Map<String, Object> loggedVars = new HashMap<>();
         loggedVars.put(FILE_ID_KEY, fileId);
-        logger.infoContext(fileId,
-                "Request for file denied as AV status is not clean",
-                loggedVars);
+        logger.infoContext(fileId, "Request for file denied as AV status is not clean", loggedVars);
+
         return ErrorResponseBuilder
                 .status(HttpStatus.FORBIDDEN)
                 .withError("File retrieval denied due to unclean antivirus status",
@@ -221,8 +220,7 @@ public class FileTransferController {
     }
 
     private FileApi getFileApi(String fileId, boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
-        Supplier<FileNotFoundException> notFoundException = () ->
-                new FileNotFoundException(fileId);
+        Supplier<FileNotFoundException> notFoundException = () -> new FileNotFoundException(fileId);
         FileDetailsApi fileDetails = fileStorageStrategy
                 .getFileDetails(fileId)
                 .orElseThrow(notFoundException);

@@ -39,6 +39,7 @@ public class S3FileStorage implements FileStorageStrategy {
     private final Logger logger;
 
     private final AmazonFileTransfer amazonFileTransfer;
+
     @Value("${service.path.prefix}")
     private String servicePathPrefix;
 
@@ -59,12 +60,13 @@ public class S3FileStorage implements FileStorageStrategy {
      * @return file id used in subsequent calls on the S3 file resource
      */
     @Override
-    public String save(FileApi file) {
-        String fileId = UUID.randomUUID().toString();
+    public String save(final FileApi file) {
         Map<String, String> metaData = new HashMap<>();
         metaData.put(CONTENT_TYPE, file.getMimeType());
         metaData.put(FILENAME_METADATA_KEY, file.getFileName());
         metaData.put(EXTENSION_METADATA_KEY, file.getExtension());
+
+        String fileId = UUID.randomUUID().toString();
 
         amazonFileTransfer.uploadFile(fileId, metaData, new ByteArrayInputStream(file.getBody()));
 
@@ -79,7 +81,7 @@ public class S3FileStorage implements FileStorageStrategy {
      * @return Empty, if there is no such file, otherwise the File wrapped in an optional
      */
     @Override
-    public Optional<FileApi> load(String fileId, FileDetailsApi fileDetails) {
+    public Optional<FileApi> load(final String fileId, final FileDetailsApi fileDetails) {
         return amazonFileTransfer
                 .downloadFile(fileId)
                 .map(bytes -> new FileApi(
@@ -155,11 +157,11 @@ public class S3FileStorage implements FileStorageStrategy {
      * @param fileId of the file to delete
      */
     @Override
-    public void delete(String fileId) {
+    public void delete(final String fileId) {
         amazonFileTransfer.deleteFile(fileId);
     }
 
-    private Map<String, String> extractAVTags(List<Tag> tags) {
+    private Map<String, String> extractAVTags(final List<Tag> tags) {
         return tags.stream()
                 .filter(tag -> AV_TIMESTAMP_KEY.equals(tag.getKey()) || AV_STATUS_KEY.equals(tag.getKey()))
                 .collect((Collectors.toMap(Tag::getKey, Tag::getValue)));
