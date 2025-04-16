@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.config.WebMvcConfig;
-import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
+import uk.gov.companieshouse.filetransferservice.service.storage.FileStorageStrategy;
 
 @SpringBootTest(properties = { "service.path.prefix=/file-transfer-service" })
 @AutoConfigureMockMvc

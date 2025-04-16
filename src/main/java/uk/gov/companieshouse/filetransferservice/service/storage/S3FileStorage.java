@@ -1,4 +1,4 @@
-package uk.gov.companieshouse.filetransferservice.service.file.transfer;
+package uk.gov.companieshouse.filetransferservice.service.storage;
 
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.NOT_SCANNED;
@@ -6,6 +6,15 @@ import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.valueOf;
 
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.Tag;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -13,23 +22,17 @@ import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileLinksApi;
+import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
+import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * An implementation of the FileStorageStrategy for S3
  */
 @Component
 public class S3FileStorage implements FileStorageStrategy {
+
     public static final String FILENAME_METADATA_KEY = "filename";
 
     private static final String AV_TIMESTAMP_KEY = "av-timestamp";
@@ -73,6 +76,20 @@ public class S3FileStorage implements FileStorageStrategy {
         return fileId;
     }
 
+    @Override
+    public String save(final FileUploadApi file) {
+        Map<String, String> metaData = new HashMap<>();
+        metaData.put(CONTENT_TYPE, file.getMimeType());
+        metaData.put(FILENAME_METADATA_KEY, file.getFileName());
+        metaData.put(EXTENSION_METADATA_KEY, file.getExtension());
+
+        String fileId = UUID.randomUUID().toString();
+
+        amazonFileTransfer.uploadFile(fileId, metaData, file.getBody());
+
+        return fileId;
+    }
+
     /**
      * Download a file from S3
      *
@@ -82,14 +99,25 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public Optional<FileApi> load(final String fileId, final FileDetailsApi fileDetails) {
-        return amazonFileTransfer
-                .downloadFile(fileId)
+        return amazonFileTransfer.downloadFile(fileId)
                 .map(bytes -> new FileApi(
                         fileDetails.getName(),
                         bytes,
                         fileDetails.getContentType(),
                         bytes.length,
                         null));
+    }
+
+    @Override
+    public Optional<FileDownloadApi> fetch(final String fileId, final FileDetailsApi fileDetailsApi) {
+        Optional<InputStream> inputStream = amazonFileTransfer.downloadStream(fileId);
+
+        return inputStream.map(stream -> new FileDownloadApi(
+                fileDetailsApi.getName(),
+                stream,
+                fileDetailsApi.getContentType(),
+                0,
+                null));
     }
 
     /**
@@ -99,14 +127,13 @@ public class S3FileStorage implements FileStorageStrategy {
      * @return Empty, if there is no such file, otherwise the File wrapped in an optional
      */
     @Override
-    public Optional<FileDetailsApi> getFileDetails(String fileId) {
+    public Optional<FileDetailsApi> getFileDetails(final String fileId) {
         Optional<S3Object> optionalS3Object = amazonFileTransfer.getFileObject(fileId);
 
         if (optionalS3Object.isEmpty()) {
             return Optional.empty();
         }
 
-        FileDetailsApi fileDetailsApi = null;
         try (S3Object s3Object = optionalS3Object.get()) {
 
             AvStatusApi avStatus = NOT_SCANNED;
@@ -129,7 +156,7 @@ public class S3FileStorage implements FileStorageStrategy {
 
             String fileName = s3Object.getObjectMetadata().getUserMetaDataOf(FILENAME_METADATA_KEY);
 
-            fileDetailsApi = new FileDetailsApi(fileId,
+            FileDetailsApi fileDetailsApi = new FileDetailsApi(fileId,
                     avCreatedOn,
                     avStatus,
                     s3Object.getObjectMetadata().getContentType(),
@@ -139,13 +166,14 @@ public class S3FileStorage implements FileStorageStrategy {
                     getLinks(fileId));
 
             return Optional.of(fileDetailsApi);
+
         } catch (IOException e) {
             logger.errorContext(fileId, "Error closing S3Object when getting file details", e, null);
-            return Optional.ofNullable(fileDetailsApi);
+            return Optional.empty();
         }
     }
 
-    private FileLinksApi getLinks(String fileId) {
+    private FileLinksApi getLinks(final String fileId) {
         String selfLink = joinPathSegments(servicePathPrefix, fileId);
         String downloadLink = joinPathSegments(selfLink, "download");
         return new FileLinksApi(downloadLink, selfLink);

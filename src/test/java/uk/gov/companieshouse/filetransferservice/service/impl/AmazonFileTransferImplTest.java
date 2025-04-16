@@ -11,7 +11,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static uk.gov.companieshouse.filetransferservice.service.file.transfer.S3FileStorage.FILENAME_METADATA_KEY;
+import static uk.gov.companieshouse.filetransferservice.service.storage.S3FileStorage.FILENAME_METADATA_KEY;
 
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -25,11 +25,10 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.Tag;
 
-import org.checkerframework.checker.units.qual.t;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
+import uk.gov.companieshouse.filetransferservice.config.properties.AWSServiceProperties;
 import uk.gov.companieshouse.logging.Logger;
 
 import java.io.ByteArrayInputStream;

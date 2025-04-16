@@ -22,7 +22,7 @@ public class MultipartFileToFileApiConverter {
         return new FileApi(fileName, data, mimeType, size, extension);
     }
 
-    private String getFileExtension(String fileName) {
+    private String getFileExtension(final String fileName) {
         int dotIndex = fileName.lastIndexOf('.');
         if (dotIndex == -1 || dotIndex == fileName.length() - 1) {
             return "";

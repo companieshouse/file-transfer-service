@@ -1,4 +1,4 @@
-package uk.gov.companieshouse.filetransferservice.model;
+package uk.gov.companieshouse.filetransferservice.config.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

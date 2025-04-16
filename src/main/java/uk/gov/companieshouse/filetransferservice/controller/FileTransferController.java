@@ -1,6 +1,24 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
+import uk.gov.companieshouse.api.model.filetransfer.FileApi;
+import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.api.model.filetransfer.IdApi;
+import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileApiConverter;
+import uk.gov.companieshouse.filetransferservice.exception.FileNotCleanException;
+import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException;
+import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
+import uk.gov.companieshouse.filetransferservice.service.storage.FileStorageStrategy;
+import uk.gov.companieshouse.filetransferservice.validation.UploadedFileValidator;
+import uk.gov.companieshouse.logging.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -8,36 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
-
-import uk.gov.companieshouse.api.error.ApiErrorResponse;
-import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
-import uk.gov.companieshouse.api.model.filetransfer.IdApi;
-import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileApiConverter;
-import uk.gov.companieshouse.filetransferservice.errors.ErrorResponseBuilder;
-import uk.gov.companieshouse.filetransferservice.exception.FileNotCleanException;
-import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException;
-import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
-import uk.gov.companieshouse.filetransferservice.service.file.transfer.FileStorageStrategy;
-import uk.gov.companieshouse.filetransferservice.validation.UploadedFileValidator;
-import uk.gov.companieshouse.logging.Logger;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @Controller
 @RequestMapping(path = "${service.path.prefix}")
@@ -72,7 +61,7 @@ public class FileTransferController {
      */
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
     public ResponseEntity<IdApi> upload(@RequestParam(value = "file") MultipartFile uploadedFile) throws IOException, InvalidMimeTypeException {
-        logger.debug("upload(file) method called.");
+        logger.trace("upload(file) method called.");
 
         FileApi file = fileConverter.convert(uploadedFile);
 
@@ -93,32 +82,8 @@ public class FileTransferController {
 
         fileValidator.validate(file);
         String fileId = fileStorageStrategy.save(file);
+
         return ResponseEntity.ok(new IdApi(fileId));
-    }
-
-    @ExceptionHandler({IOException.class})
-    ResponseEntity<ApiErrorResponse> handleIOException(IOException e) {
-        logger.error("Error uploading file IOException when reading file contents.", e);
-
-        return ErrorResponseBuilder
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .withError("Unable to upload file",
-                        "getBytes",
-                        "method",
-                        "upload").build();
-    }
-
-    @ExceptionHandler({InvalidMimeTypeException.class})
-    ResponseEntity<ApiErrorResponse> handleInvalidMimeType(InvalidMimeTypeException e) {
-        logger.error("File was uploaded with an invalid mime type", e);
-        return ErrorResponseBuilder
-                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .withError("Invalid MIME type",
-                        "file",
-                        "body_parameter",
-                        "validation"
-                )
-                .build();
     }
 
     /**
@@ -129,7 +94,8 @@ public class FileTransferController {
      */
     @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<FileApi> downloadAsJson(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
-        return ResponseEntity.ok(getFileApi(fileId, false));
+        FileApi fileApi = getFileApi(fileId, false);
+        return ResponseEntity.ok(fileApi);
     }
 
     /**
@@ -156,39 +122,6 @@ public class FileTransferController {
                 .body(data);
     }
 
-    @ExceptionHandler({FileNotCleanException.class})
-    ResponseEntity<ApiErrorResponse> handleFileNotCleanException(FileNotCleanException e) {
-        String fileId = e.getFileId();
-        Map<String, Object> loggedVars = new HashMap<>();
-        loggedVars.put(FILE_ID_KEY, fileId);
-        logger.infoContext(fileId, "Request for file denied as AV status is not clean", loggedVars);
-
-        return ErrorResponseBuilder
-                .status(HttpStatus.FORBIDDEN)
-                .withError("File retrieval denied due to unclean antivirus status",
-                        fileId,
-                        FILE_ID_KEY,
-                        "retrieval")
-                .build();
-    }
-
-    @ExceptionHandler({FileNotFoundException.class})
-    ResponseEntity<ApiErrorResponse> handleFileNotFoundException(FileNotFoundException e) {
-        String fileId = e.getFileId();
-
-        Map<String, Object> loggedVars = new HashMap<>();
-        loggedVars.put(FILE_ID_KEY, fileId);
-        logger.errorContext(fileId, "Unable to find file with ID", e, loggedVars);
-        return ErrorResponseBuilder
-                .status(HttpStatus.NOT_FOUND)
-                .withError(String.format("Unable to find file with id [%s]", fileId),
-                        fileId,
-                        "jsonPath",
-                        "retrieval")
-                .build();
-    }
-
-
     /**
      * Handles the request to retrieve a file's details from S3
      *
@@ -205,7 +138,6 @@ public class FileTransferController {
             throw new FileNotFoundException(fileId);
         }
     }
-
 
     /**
      * Handles the request to delete a file from S3

@@ -1,16 +1,13 @@
 package uk.gov.companieshouse.filetransferservice.config;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import uk.gov.companieshouse.api.interceptor.InternalUserInterceptor;
-import uk.gov.companieshouse.filetransferservice.model.AWSServiceProperties;
+import uk.gov.companieshouse.filetransferservice.config.properties.AWSServiceProperties;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.logging.LoggerFactory;
 
@@ -32,12 +29,6 @@ public class ApplicationConfiguration {
         return LoggerFactory.getLogger(applicationNameSpace);
     }
 
-    @Bean
-    public AWSCredentials awsCredentials(@Value("${aws.accessKeyId}") String awsAccessKeyId,
-                                         @Value("${aws.secretAccessKey}") String awsSecretAccessKey) {
-        return new BasicAWSCredentials(awsAccessKeyId, awsSecretAccessKey);
-    }
-
     /**
      * Creates the user interceptor used by the application.
      *
@@ -46,6 +37,30 @@ public class ApplicationConfiguration {
     @Bean
     public InternalUserInterceptor userInterceptor() {
         return new InternalUserInterceptor(applicationNameSpace);
+    }
+
+    /**
+     * Creates the client configuration used by the amazon s3 client builder.
+     *
+     * @return client configuration
+     */
+    @Bean
+    public ClientConfiguration clientConfiguration() {
+        return new ClientConfiguration();
+    }
+
+    /**
+     * Creates and configures a builder for creating AmazonS3 client instances.
+     * <p>
+     * This bean uses the standard configuration for the AmazonS3ClientBuilder which
+     * includes region and credential configuration that auto-detects the AWS settings
+     * based on the environment.
+     *
+     * @return a configured instance of AmazonS3ClientBuilder ready for further customization
+     */
+    @Bean
+    public AmazonS3ClientBuilder amazonS3ClientBuilder() {
+        return AmazonS3ClientBuilder.standard();
     }
 
     /**
@@ -64,14 +79,16 @@ public class ApplicationConfiguration {
      *   Example: Use `eval "$(aws configure export-credentials --profile dev --format env)"` to set the required
      *   environment variables after an SSO login.
      * </p>
-     * @param credentials         The AWSCredentials object containing the accessKey and secretKey.
      * @param properties          The AWSServiceProperties object containing the region, proxy host, and proxy port.
-     *
+     * @param clientConfiguration The ClientConfiguration object that may be pre-configured with proxy
+     *                            settings and other client parameters.
+     * @param amazonS3ClientBuilder The AmazonS3ClientBuilder object to be used for creating the client.
      * @return An initialized AmazonS3 client that is ready to be used to communicate with the S3 service.
      */
     @Bean
-    public AmazonS3 getAmazonS3Client(AWSCredentials credentials, AWSServiceProperties properties) {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
+    public AmazonS3 getAmazonS3Client(AWSServiceProperties properties,
+                                      ClientConfiguration clientConfiguration,
+                                      AmazonS3ClientBuilder amazonS3ClientBuilder) {
 
         String httpProxyHostName = properties.getProxyHost();
         if (!isNullOrEmpty(httpProxyHostName)) {
@@ -83,10 +100,9 @@ public class ApplicationConfiguration {
             clientConfiguration.setProxyPort(httpProxyPort);
         }
 
-        return AmazonS3Client.builder()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion(properties.getRegion())
+        return amazonS3ClientBuilder
                 .withClientConfiguration(clientConfiguration)
+                .withRegion(properties.getRegion())
                 .build();
     }
 }

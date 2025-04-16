@@ -1,4 +1,4 @@
-package uk.gov.companieshouse.filetransferservice.service.file.transfer;
+package uk.gov.companieshouse.filetransferservice.service.storage;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
@@ -13,7 +13,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static uk.gov.companieshouse.filetransferservice.service.file.transfer.S3FileStorage.FILENAME_METADATA_KEY;
+import static uk.gov.companieshouse.filetransferservice.service.storage.S3FileStorage.FILENAME_METADATA_KEY;
 
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.model.ObjectMetadata;

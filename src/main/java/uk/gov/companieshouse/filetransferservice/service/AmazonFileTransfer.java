@@ -9,9 +9,12 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface AmazonFileTransfer {
+
     void uploadFile(String fileId, Map<String, String> metaData, InputStream inputStream);
 
     Optional<byte[]> downloadFile(String fileId);
+
+    Optional<InputStream> downloadStream(String fileId);
 
     Optional<S3Object> getFileObject(String fileId);
 
