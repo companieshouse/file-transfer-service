@@ -50,9 +50,9 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public void uploadFile(final String fileId, final Map<String, String> metaData, final InputStream inputStream) {
         logger.trace(format("uploadFile(fileId=%s, metaData=%s) method called.", fileId, metaData));
 
-        validateS3Details();
-
         try {
+            validateS3Details();
+
             logger.debug(format("Uploading file '%s' to '%s'...", fileId, S3_PATH_PREFIX));
 
             ObjectMetadata objectMetadata = createObjectMetaData(metaData);
@@ -62,6 +62,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
         } catch(SdkClientException ex) {
             logger.error("An exception occurred writing to bucket: ", ex);
+            throw ex;
         }
     }
 
@@ -72,10 +73,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public Optional<byte[]> downloadFile(final String fileId) {
         logger.trace(format("downloadFile(fileId=%s) method called.", fileId));
 
-        validateS3Details();
-
-        try (S3Object s3Object = getObjectInS3(fileId);
-            S3ObjectInputStream is = s3Object.getObjectContent()) {
+        try (S3Object s3Object = getObjectInS3(fileId); S3ObjectInputStream is = s3Object.getObjectContent()) {
 
             logger.debug(format("Downloading file %s from %s...", fileId, S3_PATH_PREFIX));
             byte[] readData = readBytesFromStream(is);
@@ -117,9 +115,9 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public Optional<S3Object> getFileObject(final String fileId) {
         logger.debug(format("getFileObject(fileId=%s) method called.", fileId));
 
-        validateS3Details();
-
         try {
+            validateS3Details();
+
             GetObjectRequest getObjectRequest = new GetObjectRequest(properties.getBucketName(), fileId);
             S3Object object = s3Client.getObject(getObjectRequest);
 
@@ -140,9 +138,9 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public Optional<List<Tag>> getFileTags(final String fileId) {
         logger.debug(format("getFileTags(fileId=%s) method called.", fileId));
 
-        validateS3Details();
-
         try {
+            validateS3Details();
+
             GetObjectTaggingRequest getObjectTaggingRequest = new GetObjectTaggingRequest(properties.getBucketName(), fileId);
             List<Tag> tagSet = s3Client.getObjectTagging(getObjectTaggingRequest).getTagSet();
 
@@ -174,6 +172,8 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      */
     private S3Object getObjectInS3(final String fileId) {
         logger.trace(format("getObjectInS3(%s) method called.", fileId));
+
+        validateS3Details();
 
         if (!s3Client.doesObjectExist(properties.getBucketName(), fileId))
             throw new SdkClientException("S3 Path does not exist: " + getObjectPath(fileId));
