@@ -5,7 +5,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -32,8 +31,6 @@ import uk.gov.companieshouse.logging.Logger;
 @Controller
 @RequestMapping(path = "${service.path.prefix}")
 public class FileTransferStreamingController {
-
-    public static final String FILE_ID_KEY = "fileId";
 
     private final FileStorageStrategy fileStorageStrategy;
     private final MultipartFileToFileUploadApiConverter fileUploadConverter;
@@ -78,8 +75,7 @@ public class FileTransferStreamingController {
     public ResponseEntity<FileDownloadApi> fetch(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
         logger.trace(format("fetch(fileId=%s) method called.", fileId));
 
-        FileDetailsApi fileDetailsApi = fileStorageStrategy
-                .getFileDetails(fileId)
+        FileDetailsApi fileDetailsApi = fileStorageStrategy.getFileDetails(fileId)
                 .orElseThrow(() -> new FileNotFoundException(fileId));
 
         FileDownloadApi fileDownload = fileStorageStrategy.fetch(fileId, fileDetailsApi)
@@ -92,8 +88,7 @@ public class FileTransferStreamingController {
     public ResponseEntity<InputStreamResource> fetchRaw(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
         logger.trace(format("fetchRaw(fileId=%s) method called.", fileId));
 
-        FileDetailsApi fileDetailsApi = fileStorageStrategy
-                .getFileDetails(fileId)
+        FileDetailsApi fileDetailsApi = fileStorageStrategy.getFileDetails(fileId)
                 .orElseThrow(() -> new FileNotFoundException(fileId));
 
         FileDownloadApi fileDownload = fileStorageStrategy.fetch(fileId, fileDetailsApi)
@@ -101,9 +96,6 @@ public class FileTransferStreamingController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(fileDownload.getMimeType()));
-        headers.setContentDisposition(ContentDisposition.builder("attachment")
-                .filename(fileDownload.getFileName())
-                .build());
 
         return ResponseEntity.ok().headers(headers).body(new InputStreamResource(fileDownload.getBody()));
     }

@@ -10,16 +10,15 @@ import java.util.Base64;
 public class InputStreamToBase64Serializer extends JsonSerializer<InputStream> {
 
     @Override
-    public void serialize(InputStream inputStream, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-            throws IOException {
+    public void serialize(InputStream input, JsonGenerator generator, SerializerProvider provider) throws IOException {
         // Read the InputStream into a byte array
-        byte[] byteArray = inputStream.readAllBytes();
+        byte[] byteArray = input.readAllBytes();
 
         // Encode the byte array to a base64 string
         String base64String = Base64.getEncoder().encodeToString(byteArray);
 
         // Write the base64 string to the JSON output
-        jsonGenerator.writeString(base64String);
+        generator.writeString(base64String);
     }
 
 }

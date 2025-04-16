@@ -1,13 +1,12 @@
 package uk.gov.companieshouse.filetransferservice.converter;
 
+import static java.util.Objects.requireNonNullElseGet;
+
+import java.io.IOException;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
-
-import java.io.IOException;
-
-import static java.util.Objects.requireNonNullElseGet;
 
 @Component
 public class MultipartFileToFileUploadApiConverter implements Converter<MultipartFile, FileUploadApi> {
@@ -20,13 +19,14 @@ public class MultipartFileToFileUploadApiConverter implements Converter<Multipar
         fileUploadApi.setFileName(originalFilename);
         try {
             fileUploadApi.setBody(source.getInputStream());
+            fileUploadApi.setSize(source.getInputStream().readAllBytes().length);
 
         } catch(IOException ex) {
             fileUploadApi.setBody(null);
+            fileUploadApi.setSize(0);
         }
         fileUploadApi.setMimeType(source.getContentType());
         fileUploadApi.setExtension(originalFilename.substring(originalFilename.lastIndexOf(".")));
-        fileUploadApi.setSize(0);
 
         return fileUploadApi;
     }
