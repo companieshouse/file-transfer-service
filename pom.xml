@@ -38,9 +38,21 @@
         <aws-java-sdk-s3.version>1.12.778</aws-java-sdk-s3.version>
         <api-security-java-version>2.0.8</api-security-java-version>
         <spring-boot-dependencies.version>3.4.0</spring-boot-dependencies.version>
+
         <!-- java apis libs -->
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
+
+        <!--sonar configuration-->
+        <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
+        <sonar.java.binaries>${project.basedir}/target,${project.basedir}/target/*</sonar.java.binaries>
+        <sonar.token>${CODE_ANALYSIS_TOKEN}</sonar.token>
+        <sonar.login></sonar.login>
+        <sonar.password></sonar.password>
+        <sonar.projectKey>uk.gov.companieshouse:${project.name}</sonar.projectKey>
+        <sonar.projectName>${project.name}</sonar.projectName>
+        <sonar.coverage.exclusions/>
+
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -264,6 +276,22 @@
             <artifactId>logback-core</artifactId>
             <version>1.5.16</version>
         </dependency>
+        <dependency>
+            <!-- update from version in transient dependency of ch-kafka -->
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <version>${sonar-maven-plugin.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-sec-dispatcher</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.sonarsource.scanner.api</groupId>
+                    <artifactId>sonar-scanner-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -436,7 +464,7 @@
                         <image>416670754337.dkr.ecr.eu-west-2.amazonaws.com/ci-corretto-build-21:latest</image>
                     </from>
                     <to>
-                        <image>416670754337.dkr.ecr.eu-west-2.amazonaws.com/file-transfer-service:latest</image>
+                        <image>416670754337.dkr.ecr.eu-west-2.amazonaws.com/${project.name}:latest</image>
                     </to>
                     <container>
                         <expandClasspathDependencies>true</expandClasspathDependencies>
