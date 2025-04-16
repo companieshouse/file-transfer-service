@@ -24,7 +24,6 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import uk.gov.companieshouse.filetransferservice.config.properties.AWSServiceProperties;
-import uk.gov.companieshouse.filetransferservice.model.S3File;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 import uk.gov.companieshouse.logging.Logger;
 
@@ -199,11 +198,11 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     private ObjectMetadata createObjectMetaData(final Map<String, String> metaData) {
         ObjectMetadata omd = new ObjectMetadata();
 
-        if (metaData.containsKey(CONTENT_TYPE)) {
-            omd.setContentType(metaData.get(CONTENT_TYPE));
-        } else {
+        if (!metaData.containsKey(CONTENT_TYPE)) {
             throw new SdkClientException("meta data does not contain Content-Type");
         }
+
+        omd.setContentType(metaData.get(CONTENT_TYPE));
 
         // Add all other metadata key value pairs to user metadata
         metaData.forEach((k, v) -> {

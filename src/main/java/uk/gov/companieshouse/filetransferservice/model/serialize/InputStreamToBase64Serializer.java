@@ -1,4 +1,4 @@
-package uk.gov.companieshouse.filetransferservice.model.format;
+package uk.gov.companieshouse.filetransferservice.model.serialize;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
 
-public class InputStreamToBase64Deserializer extends JsonSerializer<InputStream> {
+public class InputStreamToBase64Serializer extends JsonSerializer<InputStream> {
 
     @Override
     public void serialize(InputStream inputStream, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)

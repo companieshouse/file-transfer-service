@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.InputStream;
 import java.util.Objects;
-import uk.gov.companieshouse.filetransferservice.model.format.Base64ToInputStreamDeserializer;
+import uk.gov.companieshouse.filetransferservice.model.serialize.Base64ToInputStreamDeserializer;
 
 public class FileUploadApi {
 

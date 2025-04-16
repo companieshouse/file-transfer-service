@@ -4,14 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.InputStream;
 import java.util.Objects;
-import uk.gov.companieshouse.filetransferservice.model.format.InputStreamToBase64Deserializer;
+import uk.gov.companieshouse.filetransferservice.model.serialize.InputStreamToBase64Serializer;
 
 public class FileDownloadApi {
 
     @JsonProperty("file_name")
     private String fileName;
 
-    @JsonSerialize(using = InputStreamToBase64Deserializer.class)
+    @JsonSerialize(using = InputStreamToBase64Serializer.class)
     @JsonProperty("body")
     private InputStream body;
 

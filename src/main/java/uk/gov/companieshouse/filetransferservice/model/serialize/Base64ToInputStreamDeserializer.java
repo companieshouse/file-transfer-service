@@ -1,4 +1,4 @@
-package uk.gov.companieshouse.filetransferservice.model.format;
+package uk.gov.companieshouse.filetransferservice.model.serialize;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
