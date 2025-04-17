@@ -11,7 +11,7 @@ public class FileUploadApi {
     @JsonProperty("file_name")
     private String fileName;
 
-    @JsonDeserialize(using = Base64ToInputStreamDeserializer.class)
+    //@JsonDeserialize(using = Base64ToInputStreamDeserializer.class)
     @JsonProperty("body")
     private InputStream body;
 

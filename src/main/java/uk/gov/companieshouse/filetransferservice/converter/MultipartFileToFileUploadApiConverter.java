@@ -19,12 +19,11 @@ public class MultipartFileToFileUploadApiConverter implements Converter<Multipar
         fileUploadApi.setFileName(originalFilename);
         try {
             fileUploadApi.setBody(source.getInputStream());
-            fileUploadApi.setSize(source.getInputStream().readAllBytes().length);
 
         } catch(IOException ex) {
             fileUploadApi.setBody(null);
-            fileUploadApi.setSize(0);
         }
+        fileUploadApi.setSize(0);
         fileUploadApi.setMimeType(source.getContentType());
         fileUploadApi.setExtension(originalFilename.substring(originalFilename.lastIndexOf(".")));
 

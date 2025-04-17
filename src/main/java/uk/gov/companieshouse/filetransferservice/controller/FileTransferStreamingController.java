@@ -5,6 +5,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -96,8 +97,11 @@ public class FileTransferStreamingController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(fileDownload.getMimeType()));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(fileDownload.getFileName()).build());
 
-        return ResponseEntity.ok().headers(headers).body(new InputStreamResource(fileDownload.getBody()));
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(new InputStreamResource(fileDownload.getBody()));
     }
 
 }
