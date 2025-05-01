@@ -20,7 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.api.model.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileUploadApiConverter;
-import uk.gov.companieshouse.filetransferservice.exception.FileNotCleanException;
 import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
@@ -73,7 +72,7 @@ public class FileTransferStreamingController {
     }
 
     @GetMapping(path = "/{fileId}/fetch", produces = APPLICATION_JSON_VALUE)
-    public ResponseEntity<FileDownloadApi> fetch(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
+    public ResponseEntity<FileDownloadApi> fetch(@PathVariable String fileId) throws FileNotFoundException {
         logger.trace(format("fetch(fileId=%s) method called.", fileId));
 
         FileDetailsApi fileDetailsApi = fileStorageStrategy.getFileDetails(fileId)
@@ -86,7 +85,7 @@ public class FileTransferStreamingController {
     }
 
     @GetMapping(path = "/{fileId}/fetch-raw")
-    public ResponseEntity<InputStreamResource> fetchRaw(@PathVariable String fileId) throws FileNotFoundException, FileNotCleanException {
+    public ResponseEntity<InputStreamResource> fetchRaw(@PathVariable String fileId) throws FileNotFoundException {
         logger.trace(format("fetchRaw(fileId=%s) method called.", fileId));
 
         FileDetailsApi fileDetailsApi = fileStorageStrategy.getFileDetails(fileId)

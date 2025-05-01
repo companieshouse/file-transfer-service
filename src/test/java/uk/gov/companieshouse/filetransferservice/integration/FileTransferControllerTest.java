@@ -1,6 +1,5 @@
 package uk.gov.companieshouse.filetransferservice.integration;
 
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
