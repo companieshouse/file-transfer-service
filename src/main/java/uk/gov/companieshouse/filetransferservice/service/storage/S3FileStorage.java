@@ -4,11 +4,6 @@ import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.NOT_SCANNED;
 import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.valueOf;
 
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.Tag;
-
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -19,8 +14,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.Tag;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileLinksApi;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
@@ -40,9 +37,9 @@ public class S3FileStorage implements FileStorageStrategy {
     private static final String AV_STATUS_KEY = "av-status";
     private static final int AV_KEY_COUNT = 2;
     public static final String EXTENSION_METADATA_KEY = "extension";
-    private final Logger logger;
 
     private final AmazonFileTransfer amazonFileTransfer;
+    private final Logger logger;
 
     @Value("${service.path.prefix}")
     private String servicePathPrefix;
@@ -54,26 +51,6 @@ public class S3FileStorage implements FileStorageStrategy {
 
     private static String joinPathSegments(String... strings) {
         return String.join("/", strings).replaceAll("/{2,}", "/");
-    }
-
-    /**
-     * Upload a file to S3
-     *
-     * @param file to upload
-     * @return file id used in subsequent calls on the S3 file resource
-     */
-    @Override
-    public String save(final FileApi file) {
-        Map<String, String> metaData = new HashMap<>();
-        metaData.put(CONTENT_TYPE, file.getMimeType());
-        metaData.put(FILENAME_METADATA_KEY, file.getFileName());
-        metaData.put(EXTENSION_METADATA_KEY, file.getExtension());
-
-        String fileId = UUID.randomUUID().toString();
-
-        amazonFileTransfer.uploadFile(fileId, metaData, new ByteArrayInputStream(file.getBody()));
-
-        return fileId;
     }
 
     @Override
@@ -90,28 +67,9 @@ public class S3FileStorage implements FileStorageStrategy {
         return fileId;
     }
 
-    /**
-     * Download a file from S3
-     *
-     * @param fileId      of the file to retrieve
-     * @param fileDetails file meta data
-     * @return Empty, if there is no such file, otherwise the File wrapped in an optional
-     */
     @Override
-    @Deprecated(forRemoval = true)
-    public Optional<FileApi> load(final String fileId, final FileDetailsApi fileDetails) {
-        return amazonFileTransfer.downloadFile(fileId)
-                .map(bytes -> new FileApi(
-                        fileDetails.getName(),
-                        bytes,
-                        fileDetails.getContentType(),
-                        bytes.length,
-                        null));
-    }
-
-    @Override
-    public Optional<FileDownloadApi> fetch(final String fileId, final FileDetailsApi fileDetailsApi) {
-        Optional<InputStream> inputStream = amazonFileTransfer.downloadStream(fileId);
+    public Optional<FileDownloadApi> load(final FileDetailsApi fileDetailsApi) {
+        Optional<InputStream> inputStream = amazonFileTransfer.downloadStream(fileDetailsApi.getId());
 
         return inputStream.map(stream -> new FileDownloadApi(
                 fileDetailsApi.getName(),

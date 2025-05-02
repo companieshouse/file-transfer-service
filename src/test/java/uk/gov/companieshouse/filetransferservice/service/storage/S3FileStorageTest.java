@@ -31,6 +31,8 @@ import software.amazon.awssdk.services.s3.model.Tag;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
+import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 
 import java.io.InputStream;
@@ -64,7 +66,7 @@ class S3FileStorageTest {
         ArgumentCaptor<Map<String, String>> metaDataCapture = ArgumentCaptor.forClass(Map.class);
         doNothing().when(amazonFileTransfer).uploadFile(anyString(), metaDataCapture.capture(), any(InputStream.class));
 
-        String actual = underTest.save(createTestFileApi());
+        String actual = underTest.save(createTestFileUploadApi());
 
         assertNotNull(UUID.fromString(actual));
         verify(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
@@ -76,29 +78,31 @@ class S3FileStorageTest {
     void testSdkClientExceptionThrownFromFileSaveFailure() {
         doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
 
-        assertThrows(SdkClientException.class, () -> underTest.save(createTestFileApi()));
+        assertThrows(SdkClientException.class, () -> underTest.save(createTestFileUploadApi()));
     }
 
     @Test
     @DisplayName("Test successful File Load")
     void testLoadFileSuccess() {
-        when(amazonFileTransfer.downloadFile(anyString())).thenReturn(Optional.of("sdf".getBytes()));
+        when(amazonFileTransfer.downloadStream(anyString()))
+                .thenReturn(Optional.of(new ByteArrayInputStream("sdf".getBytes())));
 
-        Optional<FileApi> actual = underTest.load(TEST_FILE_NAME, createTestFileDetailsApi());
+        Optional<FileDownloadApi> actual = underTest.load(createTestFileDetailsApi());
+        verify(amazonFileTransfer).downloadStream(anyString());
 
         assertTrue(actual.isPresent());
-        verify(amazonFileTransfer).downloadFile(anyString());
     }
 
     @Test
     @DisplayName("Test SdkClientException thrown on unsuccessful File Load")
     void testLoadFileFailureReturnsEmptyObject() {
-        when(amazonFileTransfer.downloadFile(anyString())).thenReturn(Optional.empty());
+        when(amazonFileTransfer.downloadStream(anyString())).thenReturn(Optional.empty());
 
-        Optional<FileApi> actual = underTest.load(TEST_FILE_NAME, createTestFileDetailsApi());
+        Optional<FileDownloadApi> actual = underTest.load(createTestFileDetailsApi());
+
+        verify(amazonFileTransfer).downloadStream(anyString());
 
         assertTrue(actual.isEmpty());
-        verify(amazonFileTransfer).downloadFile(anyString());
     }
 
     @Test
@@ -199,9 +203,9 @@ class S3FileStorageTest {
         assertThrows(SdkClientException.class, () -> underTest.delete(TEST_FILE_NAME));
     }
 
-    private FileApi createTestFileApi() {
-        return new FileApi(TEST_FILE_NAME,
-                "test".getBytes(),
+    private FileUploadApi createTestFileUploadApi() {
+        return new FileUploadApi(TEST_FILE_NAME,
+                new ByteArrayInputStream("test".getBytes()),
                 "application/pdf",
                 4,
                 "pdf");

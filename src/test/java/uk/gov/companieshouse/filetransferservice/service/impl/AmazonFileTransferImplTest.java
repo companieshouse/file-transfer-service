@@ -1,30 +1,32 @@
 package uk.gov.companieshouse.filetransferservice.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.companieshouse.filetransferservice.service.storage.S3FileStorage.FILENAME_METADATA_KEY;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.SdkResponse;
 import software.amazon.awssdk.core.exception.SdkClientException;
-
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
@@ -33,28 +35,17 @@ import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3.model.S3Object;
-import software.amazon.awssdk.services.s3.model.Tag;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import uk.gov.companieshouse.filetransferservice.config.properties.AWSServiceProperties;
 import uk.gov.companieshouse.logging.Logger;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-import java.util.Optional;
-
 @ExtendWith(MockitoExtension.class)
 class AmazonFileTransferImplTest {
+
     private static final String TEST_FILE_NAME = "file.pdf";
     private static final String S3_PATH = "s3://s3av-cidev/ade";
     private static final String VALID_S3_PATH_PREFIX = "s3://";
     private static final String INVALID_S3_PATH_PREFIX = "anything";
     private static final String BUCKET_NAME = "s3av-cidev";
-    private static final String PATH_DIRECTORY = "ade/";
 
     @Mock
     private AWSServiceProperties properties;
@@ -133,19 +124,16 @@ class AmazonFileTransferImplTest {
     void testDownloadIsSuccessful() throws IOException {
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn(BUCKET_NAME);
-        when(client.headObject(any(HeadObjectRequest.class))).thenReturn(headObjectResponse);
-        when(headObjectResponse.sdkHttpResponse()).thenReturn(sdkHttpResponse);
-        when(sdkHttpResponse.isSuccessful()).thenReturn(true);
         when(client.getObject(any(GetObjectRequest.class))).thenReturn(responseInputStream);
-        when(responseInputStream.available()).thenReturn(10);
 
         AmazonFileTransferImpl amazonFileTransfer = new AmazonFileTransferImpl(client, properties, logger);
 
-        Optional<byte[]> actual = amazonFileTransfer.downloadFile("123");
+        Optional<InputStream> actual = amazonFileTransfer.downloadStream("123");
+
+        verify(client, times(1)).getObject(any(GetObjectRequest.class));
+        verify(client, times(0)).headObject(any(HeadObjectRequest.class));
 
         assertTrue(actual.isPresent());
-        verify(client).getObject(any(GetObjectRequest.class));
-        verify(client).headObject(any(HeadObjectRequest.class));
     }
 
     @Test
@@ -153,11 +141,13 @@ class AmazonFileTransferImplTest {
     void testDownloadFileWhenS3ObjectNotFound() {
         when(properties.getS3PathPrefix()).thenReturn(VALID_S3_PATH_PREFIX);
         when(properties.getBucketName()).thenReturn(BUCKET_NAME);
-        when(client.headObject(any(HeadObjectRequest.class))).thenThrow(S3Exception.builder().statusCode(404).build());
 
         AmazonFileTransferImpl amazonFileTransfer = new AmazonFileTransferImpl(client, properties, logger);
 
-        Optional<byte[]> actual = amazonFileTransfer.downloadFile("123");
+        Optional<InputStream> actual = amazonFileTransfer.downloadStream("123");
+
+        verify(client, times(1)).getObject(any(GetObjectRequest.class));
+        verify(client, times(0)).headObject(any(HeadObjectRequest.class));
 
         assertTrue(actual.isEmpty());
     }

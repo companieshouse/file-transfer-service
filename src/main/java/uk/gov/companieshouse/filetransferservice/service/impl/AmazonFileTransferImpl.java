@@ -4,7 +4,6 @@ import static java.lang.String.format;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -24,6 +23,7 @@ import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.Tag;
@@ -74,32 +74,10 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         } catch (SdkClientException ex) {
             logger.error("An SdkClientException occurred writing to bucket", ex);
             throw ex;
+
         } catch (IOException ex) {
             logger.error("An IOException occurred writing to bucket", ex);
             throw SdkClientException.create("An IOException occurred writing to bucket", ex);
-        }
-    }
-
-    /**
-     * Download a file from S3
-     */
-    @Override
-    @Deprecated(forRemoval = true)
-    public Optional<byte[]> downloadFile(final String fileId) {
-        logger.trace(format("downloadFile(fileId=%s) method called.", fileId));
-
-        try (ResponseInputStream<GetObjectResponse> responseInputStream = getObjectInS3(fileId)) {
-
-            logger.debug(format("Downloading file %s from %s...", fileId, S3_PATH_PREFIX));
-            byte[] readData = readBytesFromStream(responseInputStream);
-
-            logger.debug(format("The size of the file downloaded from S3 is: %d", readData.length));
-            return Optional.of(readData);
-
-        } catch (SdkClientException | IOException e) {
-            logger.errorContext(fileId, "Unable to fetch file from S3", e, loggedFileIdMap(fileId));
-
-            return Optional.empty();
         }
     }
 
@@ -107,17 +85,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     public Optional<InputStream> downloadStream(final String fileId) {
         logger.trace(format("downloadStream(fileId=%s) method called.", fileId));
 
-        return getFileObject(fileId)
-                .map(BufferedInputStream::new);
-    }
-
-    private byte[] readBytesFromStream(final InputStream input) throws IOException {
-        logger.debug(format("readBytesFromStream(%d bytes available) method called.", input.available()));
-
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        input.transferTo(output);
-
-        return output.toByteArray();
+        return getFileObject(fileId).map(BufferedInputStream::new);
     }
 
     /**
@@ -125,7 +93,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      */
     @Override
     public Optional<ResponseInputStream<GetObjectResponse>> getFileObject(final String fileId) {
-        logger.debug(format("getFileObject(fileId=%s) method called.", fileId));
+        logger.trace(format("getFileObject(fileId=%s) method called.", fileId));
 
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
@@ -137,8 +105,8 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
             return Optional.ofNullable(responseInputStream);
 
-        } catch (SdkClientException e) {
-            logger.errorContext(fileId, "Unable to fetch object from S3", e, loggedFileIdMap(fileId));
+        } catch(NoSuchKeyException ex) {
+            logger.errorContext(fileId, "Unable to fetch object from S3", ex, loggedFileIdMap(fileId));
             return Optional.empty();
         }
     }
@@ -148,15 +116,15 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      */
     @Override
     public Optional<List<Tag>> getFileTags(final String fileId) {
-        logger.debug(format("getFileTags(fileId=%s) method called.", fileId));
+        logger.trace(format("getFileTags(fileId=%s) method called.", fileId));
 
         try {
             GetObjectTaggingRequest getObjectTaggingRequest = GetObjectTaggingRequest.builder()
                     .bucket(properties.getBucketName())
                     .key(fileId)
                     .build();
-            List<Tag> tagSet = s3Client.getObjectTagging(getObjectTaggingRequest)
-                    .tagSet();
+
+            List<Tag> tagSet = s3Client.getObjectTagging(getObjectTaggingRequest).tagSet();
 
             return Optional.ofNullable(tagSet);
 
@@ -177,6 +145,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
                 .bucket(properties.getBucketName())
                 .key(fileId)
                 .build();
+
         s3Client.deleteObject(deleteObjectRequest);
     }
 
@@ -184,7 +153,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
      * Get an object from S3
      */
     private ResponseInputStream<GetObjectResponse> getObjectInS3(final String fileId) {
-        logger.trace(format("getObjectInS3(%s) method called.", fileId));
+        logger.trace(format("getObjectInS3(fileId=%s) method called.", fileId));
 
         if (!checkObjectExists(properties.getBucketName())) {
             throw SdkClientException.create("S3 Path does not exist: " + getObjectPath(fileId));
@@ -194,6 +163,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
                 .bucket(properties.getBucketName())
                 .key(fileId)
                 .build();
+
         return s3Client.getObject(getObjectRequest);
     }
 
@@ -213,6 +183,45 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         }
     }
 
+    private boolean checkObjectExists(final String fileId) {
+        logger.trace(format("checkObjectExists(fileId=%s) method called.", fileId));
+
+        try {
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                    .bucket(properties.getBucketName())
+                    .key(fileId)
+                    .build();
+
+            HeadObjectResponse response = s3Client.headObject(headObjectRequest);
+
+            return response.sdkHttpResponse().isSuccessful();
+
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) {
+                return false;
+            } else {
+                throw SdkClientException.create("S3 Path does not exist: " + getObjectPath(fileId), e);
+            }
+        }
+    }
+
+    private boolean checkBucketExists(final String bucket) {
+        logger.trace(format("checkBucketExists(bucket=%s) method called.", bucket));
+
+        try {
+            HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
+                .bucket(bucket)
+                .build();
+
+            s3Client.headBucket(headBucketRequest);
+
+            return true;
+
+        } catch (NoSuchBucketException e) {
+            return false;
+        }
+    }
+
     private String getS3Path() {
         return format("%s%s", properties.getS3PathPrefix(), properties.getBucketName());
     }
@@ -229,38 +238,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         return !StringUtils.isBlank(properties.getBucketName());
     }
 
-    private boolean checkObjectExists(String fileId) {
-        try {
-            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
-                    .bucket(properties.getBucketName())
-                    .key(fileId)
-                    .build();
-
-            HeadObjectResponse response = s3Client.headObject(headObjectRequest);
-            return response.sdkHttpResponse().isSuccessful();
-        } catch (S3Exception e) {
-            if (e.statusCode() == 404) {
-                return false;
-            } else {
-                throw SdkClientException.create("S3 Path does not exist: " + getObjectPath(fileId), e);
-            }
-        }
-    }
-
-    private boolean checkBucketExists(String bucket) {
-        HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
-                .bucket(bucket)
-                .build();
-
-        try {
-            s3Client.headBucket(headBucketRequest);
-            return true;
-        } catch (NoSuchBucketException e) {
-            return false;
-        }
-    }
-
-    private static Map<String, Object> loggedFileIdMap(String fileId) {
+    private static Map<String, Object> loggedFileIdMap(final String fileId) {
         Map<String, Object> map = new HashMap<>();
         map.put("fileId", fileId);
         return map;
