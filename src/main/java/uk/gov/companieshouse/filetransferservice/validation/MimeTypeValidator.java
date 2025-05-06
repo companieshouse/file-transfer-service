@@ -1,11 +1,10 @@
 package uk.gov.companieshouse.filetransferservice.validation;
 
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.logging.Logger;
-
-import java.util.List;
 
 @Component
 public class MimeTypeValidator {
@@ -17,7 +16,7 @@ public class MimeTypeValidator {
         this.logger = logger;
     }
 
-    public static final List<String> ALLOWED_MIME_TYPES = List.of(
+    public static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "text/plain",
             "image/png",
             "image/jpeg",
@@ -51,5 +50,4 @@ public class MimeTypeValidator {
 
         logger.debug(String.format("Accepted file type submitted: %s", mimeType));
     }
-
 }

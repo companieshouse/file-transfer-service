@@ -10,6 +10,8 @@ import uk.gov.companieshouse.filetransferservice.security.LoggingInterceptor;
 @Component
 public class WebMvcConfig implements WebMvcConfigurer {
 
+    private static final String HEALTH_CHECK_PATH = "/file-transfer-service/healthcheck";
+
     private final LoggingInterceptor loggingInterceptor;
     private final InternalUserInterceptor internalUserInterceptor;
 
@@ -21,9 +23,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(final InterceptorRegistry registry) {
-        String healthCheckPath = "/file-transfer-service/healthcheck";
-
-        registry.addInterceptor(loggingInterceptor).excludePathPatterns(healthCheckPath);
-        registry.addInterceptor(internalUserInterceptor).excludePathPatterns(healthCheckPath);
+        registry.addInterceptor(loggingInterceptor).excludePathPatterns(HEALTH_CHECK_PATH);
+        registry.addInterceptor(internalUserInterceptor).excludePathPatterns(HEALTH_CHECK_PATH);
     }
 }

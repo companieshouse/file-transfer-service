@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.filetransferservice.errors.ErrorResponseBuilder;
 import uk.gov.companieshouse.logging.Logger;
@@ -79,6 +80,22 @@ public class RestExceptionHandler {
                         "jsonPath",
                         "retrieval")
                 .build();
+    }
+
+    /**
+     * Handles {@link MaxUploadSizeExceededException} exceptions by logging an error message and returning a
+     * {@code ResponseEntity} with an HTTP status code of {@link HttpStatus#PAYLOAD_TOO_LARGE} and a message
+     * indicating that the uploaded file is too large.
+     *
+     * @param exception the {@code MaxUploadSizeExceededException} to handle
+     * @return a {@code ResponseEntity} with an HTTP status code of {@link HttpStatus#PAYLOAD_TOO_LARGE}
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<?> handleFileTooLarge(MaxUploadSizeExceededException exception) {
+        var loggedVars = new HashMap<String, Object>();
+        loggedVars.put("maxFileSize", exception.getMaxUploadSize());
+        logger.error("Uploaded file was too large", exception, loggedVars);
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
     }
 
 }

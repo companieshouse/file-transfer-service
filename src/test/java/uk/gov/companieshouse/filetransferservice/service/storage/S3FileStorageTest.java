@@ -15,10 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.companieshouse.filetransferservice.service.storage.S3FileStorage.FILENAME_METADATA_KEY;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.Tag;
+import java.io.ByteArrayInputStream;
+import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,29 +24,37 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.Tag;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
+import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 @ExtendWith(MockitoExtension.class)
-public class S3FileStorageTest {
+class S3FileStorageTest {
 
     private static final String TEST_FILE_NAME = "test.pdf";
+    private static final String SOME_CONTENT = "anything";
 
     @Mock
     private AmazonFileTransfer amazonFileTransfer;
+
+    @Mock
+    private ByteArrayInputStream mockInputStream;
 
     @InjectMocks
     private S3FileStorage underTest;
@@ -60,7 +66,7 @@ public class S3FileStorageTest {
         ArgumentCaptor<Map<String, String>> metaDataCapture = ArgumentCaptor.forClass(Map.class);
         doNothing().when(amazonFileTransfer).uploadFile(anyString(), metaDataCapture.capture(), any(InputStream.class));
 
-        String actual = underTest.save(createTestFileApi());
+        String actual = underTest.save(createTestFileUploadApi());
 
         assertNotNull(UUID.fromString(actual));
         verify(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
@@ -72,29 +78,31 @@ public class S3FileStorageTest {
     void testSdkClientExceptionThrownFromFileSaveFailure() {
         doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
 
-        assertThrows(SdkClientException.class, () -> underTest.save(createTestFileApi()));
+        assertThrows(SdkClientException.class, () -> underTest.save(createTestFileUploadApi()));
     }
 
     @Test
     @DisplayName("Test successful File Load")
     void testLoadFileSuccess() {
-        when(amazonFileTransfer.downloadFile(anyString())).thenReturn(Optional.of("sdf".getBytes()));
+        when(amazonFileTransfer.downloadStream(anyString()))
+                .thenReturn(Optional.of(new ByteArrayInputStream("sdf".getBytes())));
 
-        Optional<FileApi> actual = underTest.load(TEST_FILE_NAME, createTestFileDetailsApi());
+        Optional<FileDownloadApi> actual = underTest.load(createTestFileDetailsApi());
+        verify(amazonFileTransfer).downloadStream(anyString());
 
         assertTrue(actual.isPresent());
-        verify(amazonFileTransfer).downloadFile(anyString());
     }
 
     @Test
     @DisplayName("Test SdkClientException thrown on unsuccessful File Load")
     void testLoadFileFailureReturnsEmptyObject() {
-        when(amazonFileTransfer.downloadFile(anyString())).thenReturn(Optional.empty());
+        when(amazonFileTransfer.downloadStream(anyString())).thenReturn(Optional.empty());
 
-        Optional<FileApi> actual = underTest.load(TEST_FILE_NAME, createTestFileDetailsApi());
+        Optional<FileDownloadApi> actual = underTest.load(createTestFileDetailsApi());
+
+        verify(amazonFileTransfer).downloadStream(anyString());
 
         assertTrue(actual.isEmpty());
-        verify(amazonFileTransfer).downloadFile(anyString());
     }
 
     @Test
@@ -115,7 +123,9 @@ public class S3FileStorageTest {
     @Test
     @DisplayName("Test successful Get File Details with empty tags")
     void testGetFileDetailsSuccessWithNullTags() {
-        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(createTestS3ObjectWithNullTags());
+        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(Optional.of(
+                new ResponseInputStream<>(createTestS3ObjectWithNullTags().build(), mockInputStream)
+        ));
 
         Optional<FileDetailsApi> actual = underTest.getFileDetails(TEST_FILE_NAME);
 
@@ -193,9 +203,9 @@ public class S3FileStorageTest {
         assertThrows(SdkClientException.class, () -> underTest.delete(TEST_FILE_NAME));
     }
 
-    private FileApi createTestFileApi() {
-        return new FileApi(TEST_FILE_NAME,
-                "test".getBytes(),
+    private FileUploadApi createTestFileUploadApi() {
+        return new FileUploadApi(TEST_FILE_NAME,
+                new ByteArrayInputStream("test".getBytes()),
                 "application/pdf",
                 4,
                 "pdf");
@@ -213,43 +223,48 @@ public class S3FileStorageTest {
                 null);
     }
 
-    private Optional<S3Object> createTestS3ObjectWithNullTags() {
-        S3Object s3Object = new S3Object();
-        ObjectMetadata objectMetadata = new ObjectMetadata();
-
-        objectMetadata.setContentType("anything");
-        objectMetadata.setContentLength(objectMetadata.getContentType().length());
-        objectMetadata.setLastModified(new Date());
-
-        s3Object.setObjectMetadata(objectMetadata);
-
-        return Optional.of(s3Object);
+    private GetObjectResponse.Builder createTestS3ObjectWithNullTags() {
+        return GetObjectResponse.builder()
+                .contentType(SOME_CONTENT)
+                .contentLength((long) SOME_CONTENT.length())
+                .lastModified(Instant.now().minusSeconds(10));
     }
 
-    private Optional<S3Object> createTestS3ObjectTags(int tagCount) {
-        Optional<S3Object> s3Object = createTestS3ObjectWithNullTags();
+    private Optional<ResponseInputStream<GetObjectResponse>>  createTestS3ObjectTags(int tagCount) {
+        GetObjectResponse.Builder  objectResponseBuilder = createTestS3ObjectWithNullTags();
+        objectResponseBuilder.tagCount(tagCount);
 
-        s3Object.get().setTaggingCount(tagCount);
-
-        return s3Object;
+        return Optional.of(new ResponseInputStream<>(objectResponseBuilder.build(), mockInputStream));
     }
 
     private Optional<List<Tag>> createAvTags() {
-        return Optional.of(new ArrayList<>() {{
-            add(new Tag("av-timestamp", new Date().toString()));
-            add(new Tag("av-status", "clean"));
-        }});
+        return Optional.of(List.of(
+            Tag.builder()
+                    .key("av-timestamp")
+                    .value(new Date().toString())
+                    .build(),
+            Tag.builder()
+                    .key("av-status")
+                    .value("clean")
+                    .build()));
     }
 
     private Optional<List<Tag>> createNonAvTags() {
-        return Optional.of(new ArrayList<>() {{
-            add(new Tag("anything", "anything"));
-            add(new Tag("anything2", "anything2"));
-        }});
+        return Optional.of(List.of(
+                Tag.builder()
+                        .key("anything")
+                        .value("anything")
+                        .build(),
+                Tag.builder()
+                        .key("anything2")
+                        .value("anything2")
+                        .build()));
     }
 
     private Optional<List<Tag>> createMixedTags() {
-        return Optional.of(Stream.concat(createAvTags().get().stream(), createNonAvTags().get().stream())
-                .collect(Collectors.toList()));
+        return Optional.of(Stream.concat(
+                createAvTags().get().stream(),
+                createNonAvTags().get().stream())
+                .toList());
     }
 }

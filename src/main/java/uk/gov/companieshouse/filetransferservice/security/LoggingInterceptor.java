@@ -1,6 +1,5 @@
 package uk.gov.companieshouse.filetransferservice.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -23,7 +22,6 @@ public class LoggingInterceptor implements RequestLogger, HandlerInterceptor {
      *
      * @param logger the configured logger
      */
-    @Autowired
     public LoggingInterceptor(Logger logger) {
         this.logger = logger;
     }
