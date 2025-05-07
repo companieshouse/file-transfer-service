@@ -1,5 +1,8 @@
 package uk.gov.companieshouse.filetransferservice.config;
 
+import static java.lang.String.format;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -36,7 +39,7 @@ public class WebSecurityConfig {
      * Configure Web Security.
      */
     @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().requestMatchers("/file-transfer-service/healthcheck");
+    public WebSecurityCustomizer webSecurityCustomizer(@Value("${service.path.prefix}") String servicePathPrefix) {
+        return (web) -> web.ignoring().requestMatchers(format("%s/healthcheck", servicePathPrefix));
     }
 }
