@@ -1,17 +1,14 @@
 package uk.gov.companieshouse.filetransferservice.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.InputStream;
 import java.util.Objects;
-import uk.gov.companieshouse.filetransferservice.model.serialize.Base64ToInputStreamDeserializer;
 
 public class FileUploadApi {
 
     @JsonProperty("file_name")
     private String fileName;
 
-    @JsonDeserialize(using = Base64ToInputStreamDeserializer.class)
     @JsonProperty("body")
     private InputStream body;
 
@@ -25,7 +22,6 @@ public class FileUploadApi {
     private String extension;
 
     public FileUploadApi() {
-        super();
     }
 
     public FileUploadApi(String fileName, InputStream body, String mimeType, int size, String extension) {
@@ -88,8 +84,7 @@ public class FileUploadApi {
     }
 
     public int hashCode() {
-        int result = Objects.hash(this.fileName, this.mimeType, this.size, this.extension);
-        return result;
+        return Objects.hash(this.fileName, this.mimeType, this.size, this.extension);
     }
 
     public String toString() {

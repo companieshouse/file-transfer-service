@@ -1,17 +1,14 @@
 package uk.gov.companieshouse.filetransferservice.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.InputStream;
 import java.util.Objects;
-import uk.gov.companieshouse.filetransferservice.model.serialize.InputStreamToBase64Serializer;
 
 public class FileDownloadApi {
 
     @JsonProperty("file_name")
     private String fileName;
 
-    @JsonSerialize(using = InputStreamToBase64Serializer.class)
     @JsonProperty("body")
     private InputStream body;
 
@@ -25,7 +22,6 @@ public class FileDownloadApi {
     private String extension;
 
     public FileDownloadApi() {
-        super();
     }
 
     public FileDownloadApi(String fileName, InputStream body, String mimeType, int size, String extension) {
@@ -40,40 +36,20 @@ public class FileDownloadApi {
         return this.fileName;
     }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
     public InputStream getBody() {
         return this.body;
-    }
-
-    public void setBody(InputStream body) {
-        this.body = body;
     }
 
     public String getMimeType() {
         return this.mimeType;
     }
 
-    public void setMimeType(String mimeType) {
-        this.mimeType = mimeType;
-    }
-
     public int getSize() {
         return this.size;
     }
 
-    public void setSize(int size) {
-        this.size = size;
-    }
-
     public String getExtension() {
         return this.extension;
-    }
-
-    public void setExtension(String extension) {
-        this.extension = extension;
     }
 
     public boolean equals(Object o) {
@@ -88,12 +64,10 @@ public class FileDownloadApi {
     }
 
     public int hashCode() {
-        int result = Objects.hash(this.fileName, this.mimeType, this.size, this.extension);
-        return result;
+        return Objects.hash(this.fileName, this.mimeType, this.size, this.extension);
     }
 
     public String toString() {
         return "FileDownloadApi{fileName='" + this.fileName + '\'' + ", mimeType='" + this.mimeType + '\'' + ", size=" + this.size + ", extension='" + this.extension + '\'' + '}';
     }
-
 }

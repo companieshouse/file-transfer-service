@@ -35,8 +35,7 @@ import uk.gov.companieshouse.logging.Logger;
 @Component
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
-    private static final String S3_PATH_PREFIX = "s3://";
-
+    private final String s3PathPrefix;
     private final S3Client s3Client;
     private final AWSServiceProperties properties;
     private final Logger logger;
@@ -45,6 +44,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         this.s3Client = s3Client;
         this.logger = logger;
         this.properties = properties;
+        this.s3PathPrefix = properties.getS3PathPrefix();
 
         validateS3Details();
     }
@@ -57,9 +57,10 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         logger.trace(format("uploadFile(fileId=%s, metaData=%s) method called.", fileId, metadata));
 
         try {
-            logger.debug(format("Uploading file '%s' to '%s'...", fileId, S3_PATH_PREFIX));
+            logger.debug(format("Uploading file '%s' to '%s'...", fileId, s3PathPrefix));
 
             if (!metadata.containsKey(CONTENT_TYPE)) {
+                logger.error("Missing content-type");
                 throw SdkClientException.create("metadata does not contain Content-Type");
             }
 
@@ -70,10 +71,6 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
                     .build();
 
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, inputStream.available()));
-
-        } catch (SdkClientException ex) {
-            logger.error("An SdkClientException occurred writing to bucket", ex);
-            throw ex;
 
         } catch (IOException ex) {
             logger.error("An IOException occurred writing to bucket", ex);
@@ -174,7 +171,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             throw SdkClientException.create(format("S3 Path is invalid: [%s]", getS3Path()));
         }
 
-        if (!validateBucketName()) {
+        if (!validategetBucketName()) {
             throw SdkClientException.create(format("S3 Bucket Name is invalid: [%s]", properties.getBucketName()));
         }
 
@@ -227,14 +224,14 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     private String getObjectPath(String fileId) {
-        return format("%s%s/%s", S3_PATH_PREFIX, properties.getBucketName(), fileId);
+        return format("%s%s/%s", s3PathPrefix, properties.getBucketName(), fileId);
     }
 
     private boolean validateS3Path() {
-        return getS3Path().toLowerCase().startsWith(S3_PATH_PREFIX);
+        return getS3Path().toLowerCase().startsWith(s3PathPrefix);
     }
 
-    private boolean validateBucketName() {
+    private boolean validategetBucketName() {
         return !StringUtils.isBlank(properties.getBucketName());
     }
 

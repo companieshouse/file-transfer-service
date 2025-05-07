@@ -1,7 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.validation;
 
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.logging.Logger;
@@ -11,7 +10,6 @@ public class MimeTypeValidator {
 
     private final Logger logger;
 
-    @Autowired
     public MimeTypeValidator(final Logger logger){
         this.logger = logger;
     }

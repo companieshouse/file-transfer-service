@@ -1,6 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.exception;
 
-public class FileNotFoundException extends Exception {
+public class FileNotFoundException extends RuntimeException {
     private final String fileId;
 
     public FileNotFoundException(String fileId) {

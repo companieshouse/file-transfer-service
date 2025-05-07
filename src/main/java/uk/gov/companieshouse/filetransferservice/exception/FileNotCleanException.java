@@ -2,7 +2,7 @@ package uk.gov.companieshouse.filetransferservice.exception;
 
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 
-public class FileNotCleanException extends Exception {
+public class FileNotCleanException extends RuntimeException {
     private final AvStatusApi avStatus;
     private final String fileId;
 

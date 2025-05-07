@@ -36,17 +36,17 @@ public class S3FileStorage implements FileStorageStrategy {
     private static final String AV_TIMESTAMP_KEY = "av-timestamp";
     private static final String AV_STATUS_KEY = "av-status";
     private static final int AV_KEY_COUNT = 2;
-    public static final String EXTENSION_METADATA_KEY = "extension";
+    private static final String EXTENSION_METADATA_KEY = "extension";
 
     private final AmazonFileTransfer amazonFileTransfer;
     private final Logger logger;
+    private final String servicePathPrefix;
 
-    @Value("${service.path.prefix}")
-    private String servicePathPrefix;
-
-    public S3FileStorage(AmazonFileTransfer amazonFileTransfer, Logger logger) {
+    public S3FileStorage(AmazonFileTransfer amazonFileTransfer, Logger logger,
+            @Value("${service.path.prefix}") String servicePathPrefix) {
         this.amazonFileTransfer = amazonFileTransfer;
         this.logger = logger;
+        this.servicePathPrefix = servicePathPrefix;
     }
 
     private static String joinPathSegments(String... strings) {
