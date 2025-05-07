@@ -2,25 +2,31 @@ package uk.gov.companieshouse.filetransferservice.config;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Optional;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@TestConfiguration(proxyBeanMethods = false)
+@TestConfiguration
 public class TestContainersConfiguration {
 
-    @Autowired
-    private Environment env;
+    private final Environment env;
 
-    @Bean(name = "integrationTestClient")
+    public TestContainersConfiguration(Environment env) {
+        this.env = env;
+    }
+
+    @Primary
+    @Bean("localstack.s3.client")
     public S3Client s3Client() throws URISyntaxException {
         return S3Client.builder()
                 .credentialsProvider(getCredentialsProvider())
-                .endpointOverride(new URI(env.getProperty("spring.cloud.aws.s3.endpoint")))
+                .endpointOverride(new URI(Optional.ofNullable(env.getProperty("spring.cloud.aws.s3.endpoint"))
+                        .orElseThrow(() ->new IllegalArgumentException("Missing S3 endpoint"))))
                 .build();
     }
 
