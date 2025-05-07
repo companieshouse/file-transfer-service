@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import uk.gov.companieshouse.api.interceptor.InternalUserInterceptor;
-import uk.gov.companieshouse.filetransferservice.security.LoggingInterceptor;
+import uk.gov.companieshouse.filetransferservice.logging.LoggingInterceptor;
 
 @Component
 public class WebMvcConfig implements WebMvcConfigurer {

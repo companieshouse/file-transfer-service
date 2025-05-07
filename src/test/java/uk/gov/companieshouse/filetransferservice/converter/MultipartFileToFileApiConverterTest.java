@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,7 +63,7 @@ class MultipartFileToFileApiConverterTest {
         // Then
         assertEquals(filename, result.getFileName());
         assertEquals(contentType, result.getMimeType());
-        assertNotNull(result.getBody());
+        Assertions.assertNotNull(result.getBody());
         assertEquals(fileContent.length, result.getBody().readAllBytes().length);
         assertEquals(0, result.getSize());
         assertEquals("txt", result.getExtension());
