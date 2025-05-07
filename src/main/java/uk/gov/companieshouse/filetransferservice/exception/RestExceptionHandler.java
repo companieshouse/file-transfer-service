@@ -26,7 +26,7 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler({IOException.class})
-    ResponseEntity<ApiErrorResponse> handleIOException(IOException e) {
+    public ResponseEntity<ApiErrorResponse> handleIOException(IOException e) {
         logger.error("Error uploading file IOException when reading file contents.", e);
 
         return ErrorResponseBuilder
@@ -34,11 +34,12 @@ public class RestExceptionHandler {
                 .withError("Unable to upload file",
                         "getBytes",
                         "method",
-                        "upload").build();
+                        "upload")
+                .build();
     }
 
     @ExceptionHandler({InvalidMimeTypeException.class})
-    ResponseEntity<ApiErrorResponse> handleInvalidMimeType(InvalidMimeTypeException e) {
+    public ResponseEntity<ApiErrorResponse> handleInvalidMimeType(InvalidMimeTypeException e) {
         logger.error("File was uploaded with an invalid mime type", e);
         return ErrorResponseBuilder
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
@@ -51,8 +52,9 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler({FileNotCleanException.class})
-    ResponseEntity<ApiErrorResponse> handleFileNotCleanException(FileNotCleanException e) {
+    public ResponseEntity<ApiErrorResponse> handleFileNotCleanException(FileNotCleanException e) {
         String fileId = e.getFileId();
+
         Map<String, Object> loggedVars = new HashMap<>();
         loggedVars.put(FILE_ID_KEY, fileId);
         logger.infoContext(fileId, "Request for file denied as AV status is not clean", loggedVars);
@@ -67,12 +69,13 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler({FileNotFoundException.class})
-    ResponseEntity<ApiErrorResponse> handleFileNotFoundException(FileNotFoundException e) {
+    public ResponseEntity<ApiErrorResponse> handleFileNotFoundException(FileNotFoundException e) {
         String fileId = e.getFileId();
 
         Map<String, Object> loggedVars = new HashMap<>();
         loggedVars.put(FILE_ID_KEY, fileId);
         logger.errorContext(fileId, "Unable to find file with ID", e, loggedVars);
+
         return ErrorResponseBuilder
                 .status(HttpStatus.NOT_FOUND)
                 .withError(String.format("Unable to find file with id [%s]", fileId),
@@ -87,14 +90,14 @@ public class RestExceptionHandler {
      * {@code ResponseEntity} with an HTTP status code of {@link HttpStatus#PAYLOAD_TOO_LARGE} and a message
      * indicating that the uploaded file is too large.
      *
-     * @param exception the {@code MaxUploadSizeExceededException} to handle
+     * @param e the {@code MaxUploadSizeExceededException} to handle
      * @return a {@code ResponseEntity} with an HTTP status code of {@link HttpStatus#PAYLOAD_TOO_LARGE}
      */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    ResponseEntity<?> handleFileTooLarge(MaxUploadSizeExceededException exception) {
+    public ResponseEntity<?> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
         var loggedVars = new HashMap<String, Object>();
-        loggedVars.put("maxFileSize", exception.getMaxUploadSize());
-        logger.error("Uploaded file was too large", exception, loggedVars);
+        loggedVars.put("maxFileSize", e.getMaxUploadSize());
+        logger.error("Uploaded file was too large", e, loggedVars);
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
     }
 

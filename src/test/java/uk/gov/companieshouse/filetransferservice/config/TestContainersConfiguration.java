@@ -16,7 +16,7 @@ public class TestContainersConfiguration {
     @Autowired
     private Environment env;
 
-    @Bean
+    @Bean(name = "integrationTestClient")
     public S3Client s3Client() throws URISyntaxException {
         return S3Client.builder()
                 .credentialsProvider(getCredentialsProvider())
