@@ -1,5 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.integration;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -121,6 +122,92 @@ class FileTransferControllerIT {
             System.out.printf("Download complete for %s%n", downloadedFile.getCanonicalPath());
             System.out.printf("Bytes: %d%n", downloadResult.getContentLengthLong());
             System.out.printf("Mime-Type %s%n", mimeType);
+        }
+    }
+
+    @Test
+    void shouldUpLoadAndGetTestFileToS3() throws Exception {
+        try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
+
+            // Upload
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "large-file.pdf",
+                    "application/pdf",
+                    is.readAllBytes());
+
+            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("ERIC-Identity", "someone");
+            headers.add("ERIC-Identity-Type", "key");
+            headers.add("ERIC-Authorised-Key-Roles", "*");
+
+            MockHttpServletResponse uploadResult = mockMvc.perform(multipart("%s/".formatted(SERVICE_PATH))
+                            .file(file)
+                            .headers(headers))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse();
+
+            IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
+
+            MockHttpServletResponse getResult = mockMvc.perform(get("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
+                            .param("bypassAv", "true")
+                            .headers(headers))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse();
+
+            System.out.printf("Get complete for %s%n", fileId.getId());
+            System.out.printf("> Response: %s%n", getResult.getContentAsString());
+        }
+    }
+
+    @Test
+    void shouldUploadThenDeleteAndGetFailsFromS3() throws Exception {
+        try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
+
+            // Upload
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "large-file.pdf",
+                    "application/pdf",
+                    is.readAllBytes());
+
+            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("ERIC-Identity", "someone");
+            headers.add("ERIC-Identity-Type", "key");
+            headers.add("ERIC-Authorised-Key-Roles", "*");
+
+            MockHttpServletResponse uploadResult = mockMvc.perform(multipart("%s/".formatted(SERVICE_PATH))
+                            .file(file)
+                            .headers(headers))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse();
+
+            IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
+
+            MockHttpServletResponse deleteResult = mockMvc.perform(delete("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
+                            .headers(headers))
+                    .andExpect(status().isNoContent())
+                    .andReturn()
+                    .getResponse();
+
+            System.out.printf("Delete complete for %s%n", deleteResult.getContentAsString());
+
+            MockHttpServletResponse getResult = mockMvc.perform(get("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
+                            .param("bypassAv", "true")
+                            .headers(headers))
+                    .andExpect(status().isNotFound())
+                    .andReturn()
+                    .getResponse();
+
+            System.out.printf("Get complete for %s%n", fileId.getId());
+            System.out.printf("> Response: %s%n", getResult.getContentAsString());
         }
     }
 }

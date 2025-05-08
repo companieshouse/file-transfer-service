@@ -1,8 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
 import static java.util.Objects.requireNonNull;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -30,7 +28,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
-import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.api.model.filetransfer.IdApi;
@@ -145,7 +142,7 @@ class FileTransferControllerTest {
         FileDetailsApi expectedFileDetails = new FileDetailsApi(fileId, null, AvStatusApi.CLEAN, null, 0L, null, null, null);
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(expectedFileDetails));
 
-        ResponseEntity<FileDetailsApi> response = fileTransferController.getFileDetails(fileId);
+        ResponseEntity<FileDetailsApi> response = fileTransferController.get(fileId, false);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedFileDetails, response.getBody());
@@ -158,7 +155,7 @@ class FileTransferControllerTest {
         String fileId = "123";
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.empty());
 
-        assertThrows(FileNotFoundException.class, () -> fileTransferController.getFileDetails(fileId));
+        assertThrows(FileNotFoundException.class, () -> fileTransferController.get(fileId, false));
     }
 
     @Test
@@ -216,60 +213,4 @@ class FileTransferControllerTest {
         assertThrows(FileNotCleanException.class, () -> fileTransferController.download(fileId, false));
     }
 
-    @Test
-    @DisplayName("IOException should result in an internal server error")
-    void testIOException() {
-        // Given
-        IOException e = new IOException();
-
-        // When
-        ResponseEntity<ApiErrorResponse> response = fileTransferController.handleIOException(e);
-
-        // Then
-        assertThat(response.getStatusCode(), equalTo(HttpStatus.INTERNAL_SERVER_ERROR));
-    }
-
-    @Test
-    @DisplayName("FileNotFound exception should result in a not found response")
-    void testFileNotFoundException() {
-        // Given
-        String fileId = "fileId";
-        FileNotFoundException e = new FileNotFoundException(fileId);
-
-        // When
-        ResponseEntity<ApiErrorResponse> response = fileTransferController
-                .handleFileNotFoundException(e);
-
-        // Then
-        assertThat(response.getStatusCode(), equalTo(HttpStatus.NOT_FOUND));
-    }
-
-    @Test
-    @DisplayName("A FileNotCleanException should result in a forbidden response")
-    void handleFileNotCleanException() {
-        // Given
-        String fileId = "fileId";
-        FileNotCleanException e = new FileNotCleanException(AvStatusApi.INFECTED, fileId);
-
-        // When
-        ResponseEntity<ApiErrorResponse> response = fileTransferController
-                .handleFileNotCleanException(e);
-
-        // Then
-        assertThat(response.getStatusCode(), equalTo(HttpStatus.FORBIDDEN));
-    }
-
-    @Test
-    @DisplayName("InvalidMimeType exception should result an unsupported media type exception")
-    void testInvalidMimeTypeExceptionHandler() {
-        // Given
-        String mimeType = "mimeType";
-        InvalidMimeTypeException e = new InvalidMimeTypeException(mimeType);
-
-        // When
-        ResponseEntity<ApiErrorResponse> response = fileTransferController.handleInvalidMimeType(e);
-
-        // Then
-        assertThat(response.getStatusCode(), equalTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE));
-    }
 }

@@ -6,29 +6,24 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.api.model.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileUploadApiConverter;
-import uk.gov.companieshouse.filetransferservice.errors.ErrorResponseBuilder;
 import uk.gov.companieshouse.filetransferservice.exception.FileNotCleanException;
 import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
@@ -51,7 +46,6 @@ public class FileTransferController {
     private final FileUploadValidator fileUploadValidator;
     private final Logger logger;
 
-    @Autowired
     public FileTransferController(FileStorageStrategy fileStorageStrategy,
             MultipartFileToFileUploadApiConverter fileUploadConverter,
             MimeTypeValidator mimeTypeValidator,
@@ -75,6 +69,7 @@ public class FileTransferController {
     @PostMapping(value = "/", consumes = "multipart/form-data")
     public ResponseEntity<IdApi> upload(@RequestParam(value = "file") MultipartFile uploadedFile)
             throws InvalidMimeTypeException, IOException {
+
         logger.trace("upload(file) method called.");
 
         mimeTypeValidator.validate(uploadedFile.getContentType());
@@ -93,7 +88,7 @@ public class FileTransferController {
      * @return The details of the file resource that was retrieved.
      */
     @GetMapping(path = "/{fileId}")
-    public ResponseEntity<FileDetailsApi> getFileDetails(@PathVariable String fileId)
+    public ResponseEntity<FileDetailsApi> get(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
             throws FileNotFoundException, FileNotCleanException {
 
         logger.trace(format("getFileDetails(fileId=%s) method called.", fileId));
@@ -101,7 +96,7 @@ public class FileTransferController {
         FileDetailsApi fileDetails = fileStorageStrategy.getFileDetails(fileId)
                 .orElseThrow(() -> new FileNotFoundException(fileId));
 
-        checkAntiVirusStatus(fileDetails, false);
+        checkAntiVirusStatus(fileDetails, bypassAv);
 
         return ResponseEntity.ok(fileDetails);
     }
@@ -146,64 +141,6 @@ public class FileTransferController {
         logger.infoContext(fileId, "Deleted file", new HashMap<>(Map.of(FILE_ID_KEY, fileId)));
 
         return ResponseEntity.noContent().build();
-    }
-
-    @ExceptionHandler({IOException.class})
-    ResponseEntity<ApiErrorResponse> handleIOException(IOException e) {
-        logger.error("Error uploading file IOException when reading file contents.", e);
-
-        return ErrorResponseBuilder
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .withError("Unable to upload file",
-                        "getBytes",
-                        "method",
-                        "upload").build();
-    }
-
-    @ExceptionHandler({InvalidMimeTypeException.class})
-    ResponseEntity<ApiErrorResponse> handleInvalidMimeType(InvalidMimeTypeException e) {
-        logger.error("File was uploaded with an invalid mime type", e);
-        return ErrorResponseBuilder
-                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .withError("Invalid MIME type",
-                        "file",
-                        "body_parameter",
-                        "validation"
-                )
-                .build();
-    }
-
-    @ExceptionHandler({FileNotCleanException.class})
-    ResponseEntity<ApiErrorResponse> handleFileNotCleanException(FileNotCleanException e) {
-        String fileId = e.getFileId();
-        Map<String, Object> loggedVars = new HashMap<>();
-        loggedVars.put(FILE_ID_KEY, fileId);
-        logger.infoContext(fileId,
-                "Request for file denied as AV status is not clean",
-                loggedVars);
-        return ErrorResponseBuilder
-                .status(HttpStatus.FORBIDDEN)
-                .withError("File retrieval denied due to unclean antivirus status",
-                        fileId,
-                        FILE_ID_KEY,
-                        "retrieval")
-                .build();
-    }
-
-    @ExceptionHandler({FileNotFoundException.class})
-    ResponseEntity<ApiErrorResponse> handleFileNotFoundException(FileNotFoundException e) {
-        String fileId = e.getFileId();
-
-        Map<String, Object> loggedVars = new HashMap<>();
-        loggedVars.put(FILE_ID_KEY, fileId);
-        logger.errorContext(fileId, "Unable to find file with ID", e, loggedVars);
-        return ErrorResponseBuilder
-                .status(HttpStatus.NOT_FOUND)
-                .withError(String.format("Unable to find file with id [%s]", fileId),
-                        fileId,
-                        "jsonPath",
-                        "retrieval")
-                .build();
     }
 
     private void checkAntiVirusStatus(final FileDetailsApi fileDetails,  boolean bypassAv) throws FileNotCleanException {
