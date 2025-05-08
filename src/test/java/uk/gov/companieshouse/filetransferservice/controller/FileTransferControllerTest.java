@@ -142,7 +142,7 @@ class FileTransferControllerTest {
         FileDetailsApi expectedFileDetails = new FileDetailsApi(fileId, null, AvStatusApi.CLEAN, null, 0L, null, null, null);
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(expectedFileDetails));
 
-        ResponseEntity<FileDetailsApi> response = fileTransferController.get(fileId, false);
+        ResponseEntity<FileDetailsApi> response = fileTransferController.getFileDetails(fileId, false);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedFileDetails, response.getBody());
@@ -155,7 +155,7 @@ class FileTransferControllerTest {
         String fileId = "123";
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.empty());
 
-        assertThrows(FileNotFoundException.class, () -> fileTransferController.get(fileId, false));
+        assertThrows(FileNotFoundException.class, () -> fileTransferController.getFileDetails(fileId, false));
     }
 
     @Test

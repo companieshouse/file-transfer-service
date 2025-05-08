@@ -4,6 +4,7 @@ import static java.lang.String.format;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.core.io.InputStreamResource;
@@ -88,7 +89,7 @@ public class FileTransferController {
      * @return The details of the file resource that was retrieved.
      */
     @GetMapping(path = "/{fileId}")
-    public ResponseEntity<FileDetailsApi> get(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
+    public ResponseEntity<FileDetailsApi> getFileDetails(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
             throws FileNotFoundException, FileNotCleanException {
 
         logger.trace(format("getFileDetails(fileId=%s) method called.", fileId));
@@ -99,6 +100,26 @@ public class FileTransferController {
         checkAntiVirusStatus(fileDetails, bypassAv);
 
         return ResponseEntity.ok(fileDetails);
+    }
+
+    /**
+     * Get the file details for this object, so we can inspect the contents only.
+     *
+     * @param fileId The fileId of the resource to be retrieved.
+     * @return The details of the file resource that was retrieved.
+     */
+    @GetMapping(path = "/{fileId}/pre-signed-url")
+    public ResponseEntity<URL> getPresignedUrl(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
+            throws FileNotFoundException, FileNotCleanException {
+
+        logger.trace(format("getPresignedUrl(fileId=%s) method called.", fileId));
+
+        FileDetailsApi fileDetails = fileStorageStrategy.getFileDetails(fileId)
+                .orElseThrow(() -> new FileNotFoundException(fileId));
+
+        checkAntiVirusStatus(fileDetails, bypassAv);
+
+        return ResponseEntity.ok(fileStorageStrategy.getPresignedGetUrl(fileDetails.getId()));
     }
 
     @GetMapping(path = "/{fileId}/download")

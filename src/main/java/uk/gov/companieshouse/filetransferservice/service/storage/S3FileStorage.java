@@ -1,11 +1,13 @@
 package uk.gov.companieshouse.filetransferservice.service.storage;
 
+import static java.lang.String.format;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.NOT_SCANNED;
 import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.valueOf;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,8 @@ public class S3FileStorage implements FileStorageStrategy {
 
     @Override
     public String save(final FileUploadApi file) {
+        logger.trace(format("load(fileName=%s) method called.", file.getFileName()));
+
         Map<String, String> metaData = new HashMap<>();
         metaData.put(CONTENT_TYPE, file.getMimeType());
         metaData.put(FILENAME_METADATA_KEY, file.getFileName());
@@ -69,6 +73,8 @@ public class S3FileStorage implements FileStorageStrategy {
 
     @Override
     public Optional<FileDownloadApi> load(final FileDetailsApi fileDetailsApi) {
+        logger.trace(format("load(fileId=%s) method called.", fileDetailsApi.getId()));
+
         Optional<InputStream> inputStream = amazonFileTransfer.downloadStream(fileDetailsApi.getId());
 
         return inputStream.map(stream -> new FileDownloadApi(
@@ -87,6 +93,8 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public Optional<FileDetailsApi> getFileDetails(final String fileId) {
+        logger.trace(format("getFileDetails(fileId=%s) method called.", fileId));
+
         Optional<ResponseInputStream<GetObjectResponse>> optionalResponse = amazonFileTransfer.getFileObject(fileId);
 
         if (optionalResponse.isEmpty()) {
@@ -136,7 +144,16 @@ public class S3FileStorage implements FileStorageStrategy {
         }
     }
 
+    @Override
+    public URL getPresignedGetUrl(final String fileId) {
+        logger.trace(format("getPresignedGetUrl(fileId=%s) method called.", fileId));
+
+        return amazonFileTransfer.createPresignedGetUrl(fileId);
+    }
+
     private FileLinksApi getLinks(final String fileId) {
+        logger.trace(format("getLinks(fileId=%s) method called.", fileId));
+
         String selfLink = joinPathSegments(servicePathPrefix, fileId);
         String downloadLink = joinPathSegments(selfLink, "download");
         return new FileLinksApi(downloadLink, selfLink);
@@ -149,6 +166,8 @@ public class S3FileStorage implements FileStorageStrategy {
      */
     @Override
     public void delete(final String fileId) {
+        logger.trace(format("delete(fileId=%s) method called.", fileId));
+
         amazonFileTransfer.deleteFile(fileId);
     }
 

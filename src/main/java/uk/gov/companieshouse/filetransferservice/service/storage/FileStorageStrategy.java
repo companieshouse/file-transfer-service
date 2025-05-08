@@ -1,5 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.service.storage;
 
+import java.net.URL;
 import java.util.Optional;
 import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
@@ -34,6 +35,8 @@ public interface FileStorageStrategy {
      * @return Empty, if there is no such file, otherwise the File wrapped in an optional
      */
     Optional<FileDetailsApi> getFileDetails(String fileId);
+
+    URL getPresignedGetUrl(String fileId);
 
     /**
      * Delete a file with the given file id from a remote repository

@@ -6,6 +6,8 @@ import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,9 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.Tag;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.utils.StringUtils;
 import uk.gov.companieshouse.filetransferservice.config.properties.AWSServiceProperties;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
@@ -144,6 +149,31 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
                 .build();
 
         s3Client.deleteObject(deleteObjectRequest);
+    }
+
+    @Override
+    public URL createPresignedGetUrl(final String fileId) {
+        logger.trace(format("createPresignedGetUrl(fileId=%s) method called.", fileId));
+
+        try (S3Presigner presigner = S3Presigner.create()) {
+
+            GetObjectRequest objectRequest = GetObjectRequest.builder()
+                    .bucket(properties.getBucketName())
+                    .key(fileId)
+                    .build();
+
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofMinutes(10))  // The URL will expire in 10 minutes.
+                    .getObjectRequest(objectRequest)
+                    .build();
+
+            PresignedGetObjectRequest presignedRequest = presigner.presignGetObject(presignRequest);
+
+            logger.info(format("Presigned URL: [%s]", presignedRequest.url().toString()));
+            logger.info(format("HTTP method: [%s]", presignedRequest.httpRequest().method()));
+
+            return presignedRequest.url();
+        }
     }
 
     /**
