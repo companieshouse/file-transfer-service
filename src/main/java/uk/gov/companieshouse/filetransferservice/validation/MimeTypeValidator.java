@@ -1,25 +1,22 @@
 package uk.gov.companieshouse.filetransferservice.validation;
 
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.logging.Logger;
 
-import java.util.Arrays;
-import java.util.List;
-
 @Component
-public class UploadedFileValidator {
+public class MimeTypeValidator {
 
     private final Logger logger;
 
     @Autowired
-    public UploadedFileValidator(final Logger logger){
+    public MimeTypeValidator(final Logger logger){
         this.logger = logger;
     }
 
-    public static final List<String> ALLOWED_MIME_TYPES = Arrays.asList(
+    public static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "text/plain",
             "image/png",
             "image/jpeg",
@@ -44,16 +41,13 @@ public class UploadedFileValidator {
             "application/x-zip-compressed"
     );
 
-    private boolean isValidMimeType(final String mimeType) {
-        return ALLOWED_MIME_TYPES.contains(mimeType);
-    }
+    public void validate(final String mimeType) throws InvalidMimeTypeException {
+        logger.trace("Validating mime type " + mimeType);
 
-    public void validate(FileApi file) throws InvalidMimeTypeException {
-        var contentType = file.getMimeType();
-        if (isValidMimeType(contentType)) {
-            logger.debug(String.format("Accepted file type submitted: %s", contentType));
-        } else {
-            throw new InvalidMimeTypeException(contentType);
+        if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
+            throw new InvalidMimeTypeException(mimeType);
         }
+
+        logger.debug(String.format("Accepted file type submitted: %s", mimeType));
     }
 }

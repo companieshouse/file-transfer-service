@@ -2,6 +2,11 @@ package uk.gov.companieshouse.filetransferservice.validation;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -10,16 +15,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.gov.companieshouse.api.model.filetransfer.FileApi;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
+import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.logging.Logger;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
-
 @ExtendWith(MockitoExtension.class)
-public class UploadedFileValidatorTest {
+public class MimeTypeValidatorTest {
+
     private static final List<String> ALL_MIME_TYPES = Arrays.asList(
             "text/plain",
             "text/html",
@@ -71,25 +73,25 @@ public class UploadedFileValidatorTest {
 
 
     @InjectMocks
-    private UploadedFileValidator validator;
+    private MimeTypeValidator validator;
 
     @Mock
     private Logger logger;
 
     public static Stream<Arguments> getAllowedMimeTypes() {
-        return UploadedFileValidator.ALLOWED_MIME_TYPES.stream()
-                .map(Arguments::of);
+        return MimeTypeValidator.ALLOWED_MIME_TYPES.stream().map(Arguments::of);
     }
 
     public static Stream<Arguments> getDisallowedMimeTypes() {
         return ALL_MIME_TYPES.stream()
-                .filter(t -> !UploadedFileValidator.ALLOWED_MIME_TYPES.contains(t))
+                .filter(t -> !MimeTypeValidator.ALLOWED_MIME_TYPES.contains(t))
                 .map(Arguments::of);
     }
 
-    private static FileApi createMockMultipartFile(final String mimeType) {
-        byte[] content = "file content".getBytes();
-        return new FileApi("filename.jpg", content, mimeType, content.length, "jpg");
+    private static FileUploadApi createMockMultipartFile(final String mimeType) {
+        byte[] bytes = "file content".getBytes();
+        InputStream content = new ByteArrayInputStream(bytes);
+        return new FileUploadApi("filename.jpg", content, mimeType, bytes.length, "jpg");
     }
 
     @ParameterizedTest(name = "{index} {0}")
@@ -97,9 +99,9 @@ public class UploadedFileValidatorTest {
     @DisplayName("Given a MultipartFile with a valid mime type, when validated by the validator, then no exception should be thrown")
     void testAllowedMimeTypePassesValidation(String mimeType) throws InvalidMimeTypeException {
         // Create a mock MultipartFile object with the given mime type
-        FileApi file = createMockMultipartFile(mimeType);
+        FileUploadApi file = createMockMultipartFile(mimeType);
 
-        validator.validate(file);
+        validator.validate(file.getMimeType());
     }
 
     @ParameterizedTest(name = "{index} {0}")
@@ -107,9 +109,9 @@ public class UploadedFileValidatorTest {
     @DisplayName("Given a MultipartFile with an in-valid mime type, when validated by the validator, an exception should be thrown")
     void testDisallowedMimeTypeThrowsException(String mimeType) {
         // Create a mock MultipartFile object with the given mime type
-        FileApi file = createMockMultipartFile(mimeType);
+        FileUploadApi file = createMockMultipartFile(mimeType);
 
         // Verify that an exception is thrown when the validator is used to validate the file
-        assertThrows(InvalidMimeTypeException.class, () -> validator.validate(file));
+        assertThrows(InvalidMimeTypeException.class, () -> validator.validate(file.getMimeType()));
     }
 }

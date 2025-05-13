@@ -7,6 +7,10 @@ See the [a3-av-scanner](https://github.com/companieshouse/s3-av-scanner) repo fo
 ## Dependencies
 The [file-transfer-api](https://github.com/companieshouse/file-transfer-api) infrastructure is creating S3 bucket and KMS keys. Those S3 buckets and KMS keys are referred in `file-transfer-service` running in Mesos & ECS.
 
+## Authentication
+This service uses Basic Authentication to perform operations. Each endpoint needs to receive an Authorization header pre-configured for each environment.
+
+
 ## Terraform deployment
 This is an ECS Service so terraform is used to make all the necessary changes for Infrastructure
 
