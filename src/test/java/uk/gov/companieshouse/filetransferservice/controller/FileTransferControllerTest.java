@@ -166,10 +166,10 @@ class FileTransferControllerTest {
         String mimeType = "text/plain";
         String fileName = "file.txt";
 
-        var fileDetails = new FileDetailsApi();
-        ReflectionTestUtils.setField(fileDetails, "id", fileId);
-        ReflectionTestUtils.setField(fileDetails, "contentType", mimeType);
-        ReflectionTestUtils.setField(fileDetails, "avStatus", AvStatus.CLEAN);
+        FileDetailsApi fileDetails = new FileDetailsApi()
+                .id(fileId)
+                .contentType(mimeType)
+                .avStatus(AvStatus.CLEAN);
 
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(fileDetails));
 
