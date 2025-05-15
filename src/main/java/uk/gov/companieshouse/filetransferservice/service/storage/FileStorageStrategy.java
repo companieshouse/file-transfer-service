@@ -1,7 +1,7 @@
 package uk.gov.companieshouse.filetransferservice.service.storage;
 
 import java.util.Optional;
-import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 
@@ -41,4 +41,5 @@ public interface FileStorageStrategy {
      * @param fileId of the file to delete
      */
     void delete(String fileId);
+
 }

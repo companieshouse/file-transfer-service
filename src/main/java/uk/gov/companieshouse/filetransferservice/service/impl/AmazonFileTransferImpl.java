@@ -86,7 +86,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     /**
-     * Get file metadata
+     * Get an object from S3
      */
     @Override
     public Optional<ResponseInputStream<GetObjectResponse>> getFileObject(final String fileId) {
@@ -149,21 +149,6 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     /**
      * Get an object from S3
      */
-    private ResponseInputStream<GetObjectResponse> getObjectInS3(final String fileId) {
-        logger.trace(format("getObjectInS3(fileId=%s) method called.", fileId));
-
-        if (!checkObjectExists(properties.getBucketName())) {
-            throw SdkClientException.create("S3 Path does not exist: " + getObjectPath(fileId));
-        }
-
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(properties.getBucketName())
-                .key(fileId)
-                .build();
-
-        return s3Client.getObject(getObjectRequest);
-    }
-
     private void validateS3Details() {
         logger.trace("validateS3Details() method called.");
 
@@ -171,7 +156,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             throw SdkClientException.create(format("S3 Path is invalid: [%s]", getS3Path()));
         }
 
-        if (!validategetBucketName()) {
+        if (!validateBucketName()) {
             throw SdkClientException.create(format("S3 Bucket Name is invalid: [%s]", properties.getBucketName()));
         }
 
@@ -231,7 +216,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         return getS3Path().toLowerCase().startsWith(s3PathPrefix);
     }
 
-    private boolean validategetBucketName() {
+    private boolean validateBucketName() {
         return !StringUtils.isBlank(properties.getBucketName());
     }
 

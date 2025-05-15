@@ -16,7 +16,14 @@ import static org.mockito.Mockito.when;
 import static uk.gov.companieshouse.filetransferservice.service.storage.S3FileStorage.FILENAME_METADATA_KEY;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.time.Instant;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,20 +35,11 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.Tag;
-import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.api.filetransfer.AvStatus;
+import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
-
-import java.io.InputStream;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Stream;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 @ExtendWith(MockitoExtension.class)
@@ -115,7 +113,7 @@ class S3FileStorageTest {
 
         assertTrue(actual.isPresent());
         assertNotNull(actual.get().getAvTimestamp());
-        assertNotNull(actual.get().getAvStatusApi());
+        assertNotNull(actual.get().getAvStatus());
         verify(amazonFileTransfer).getFileObject(anyString());
         verify(amazonFileTransfer).getFileTags(anyString());
     }
@@ -215,7 +213,7 @@ class S3FileStorageTest {
         return new FileDetailsApi(
                 "id",
                 "avTimestamp",
-                AvStatusApi.CLEAN,
+                AvStatus.CLEAN,
                 "contentType",
                 123L,
                 "name",

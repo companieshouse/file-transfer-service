@@ -19,7 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import uk.gov.companieshouse.api.error.ApiError;
 import uk.gov.companieshouse.api.error.ApiErrorResponse;
-import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
+import uk.gov.companieshouse.api.filetransfer.AvStatus;
 import uk.gov.companieshouse.logging.Logger;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,7 +70,7 @@ public class RestExceptionHandlerTest {
     @Test
     void testHandleFileNotCleanException() {
         ResponseEntity<ApiErrorResponse> response = underTest.handleFileNotCleanException(
-                new FileNotCleanException(AvStatusApi.CLEAN, "fileId"));
+                new FileNotCleanException(AvStatus.CLEAN, "fileId"));
 
         ApiError apiError = new ApiError("File retrieval denied due to unclean antivirus status",
                 "fileId",

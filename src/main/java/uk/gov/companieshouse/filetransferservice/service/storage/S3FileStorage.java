@@ -1,8 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.service.storage;
 
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
-import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.NOT_SCANNED;
-import static uk.gov.companieshouse.api.model.filetransfer.AvStatusApi.valueOf;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,9 +15,9 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.Tag;
-import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileLinksApi;
+import uk.gov.companieshouse.api.filetransfer.AvStatus;
+import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.api.filetransfer.FileLinksApi;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
@@ -42,7 +40,8 @@ public class S3FileStorage implements FileStorageStrategy {
     private final Logger logger;
     private final String servicePathPrefix;
 
-    public S3FileStorage(AmazonFileTransfer amazonFileTransfer, Logger logger,
+    public S3FileStorage(AmazonFileTransfer amazonFileTransfer,
+            Logger logger,
             @Value("${service.path.prefix}") String servicePathPrefix) {
         this.amazonFileTransfer = amazonFileTransfer;
         this.logger = logger;
@@ -97,7 +96,7 @@ public class S3FileStorage implements FileStorageStrategy {
 
             GetObjectResponse objectResponse = responseInputStream.response();
 
-            AvStatusApi avStatus = NOT_SCANNED;
+            AvStatus avStatus = AvStatus.NOT_SCANNED;
             String avCreatedOn = "";
 
             Integer tagCount = objectResponse.tagCount();
@@ -112,7 +111,7 @@ public class S3FileStorage implements FileStorageStrategy {
                     return Optional.empty();
                 }
 
-                avStatus = valueOf(avTags.get(AV_STATUS_KEY).toUpperCase());
+                avStatus = AvStatus.valueOf(avTags.get(AV_STATUS_KEY).toUpperCase());
                 avCreatedOn = avTags.get(AV_TIMESTAMP_KEY);
             }
 

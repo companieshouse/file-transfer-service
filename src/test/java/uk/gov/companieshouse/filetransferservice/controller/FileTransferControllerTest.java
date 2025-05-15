@@ -28,9 +28,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
-import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
-import uk.gov.companieshouse.api.model.filetransfer.IdApi;
+import uk.gov.companieshouse.api.filetransfer.AvStatus;
+import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.api.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileUploadApiConverter;
 import uk.gov.companieshouse.filetransferservice.exception.FileNotCleanException;
 import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException;
@@ -139,7 +139,7 @@ class FileTransferControllerTest {
     void testGetFileDetailsSuccess() throws FileNotFoundException, FileNotCleanException {
         String fileId = "123";
 
-        FileDetailsApi expectedFileDetails = new FileDetailsApi(fileId, null, AvStatusApi.CLEAN, null, 0L, null, null, null);
+        FileDetailsApi expectedFileDetails = new FileDetailsApi(fileId, null, AvStatus.CLEAN, null, 0L, null, null, null);
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(expectedFileDetails));
 
         ResponseEntity<FileDetailsApi> response = fileTransferController.get(fileId, false);
@@ -169,7 +169,7 @@ class FileTransferControllerTest {
         var fileDetails = new FileDetailsApi();
         ReflectionTestUtils.setField(fileDetails, "id", fileId);
         ReflectionTestUtils.setField(fileDetails, "contentType", mimeType);
-        ReflectionTestUtils.setField(fileDetails, "avStatus", AvStatusApi.CLEAN);
+        ReflectionTestUtils.setField(fileDetails, "avStatus", AvStatus.CLEAN);
 
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(fileDetails));
 
@@ -206,7 +206,7 @@ class FileTransferControllerTest {
         String fileId = "123";
 
         var fileDetailsApi = new FileDetailsApi();
-        ReflectionTestUtils.setField(fileDetailsApi, "avStatus", AvStatusApi.INFECTED);
+        ReflectionTestUtils.setField(fileDetailsApi, "avStatus", AvStatus.INFECTED);
 
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(fileDetailsApi));
 

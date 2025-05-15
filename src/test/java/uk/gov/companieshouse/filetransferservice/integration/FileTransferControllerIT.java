@@ -31,7 +31,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
-import uk.gov.companieshouse.api.model.filetransfer.IdApi;
+import uk.gov.companieshouse.api.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.config.TestContainersConfiguration;
 
 @Import(TestContainersConfiguration.class)

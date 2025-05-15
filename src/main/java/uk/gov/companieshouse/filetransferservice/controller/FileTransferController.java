@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import uk.gov.companieshouse.api.model.filetransfer.AvStatusApi;
-import uk.gov.companieshouse.api.model.filetransfer.FileDetailsApi;
-import uk.gov.companieshouse.api.model.filetransfer.IdApi;
+import uk.gov.companieshouse.api.filetransfer.AvStatus;
+import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
+import uk.gov.companieshouse.api.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileUploadApiConverter;
 import uk.gov.companieshouse.filetransferservice.exception.FileNotCleanException;
 import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException;
@@ -146,8 +146,8 @@ public class FileTransferController {
     private void checkAntiVirusStatus(final FileDetailsApi fileDetails,  boolean bypassAv) throws FileNotCleanException {
         logger.trace(format("getFileApi(fileId=%s, bypassAv=%s) method called.", fileDetails.getId(), bypassAv));
 
-        if (!bypassAv && fileDetails.getAvStatusApi() != AvStatusApi.CLEAN) {
-            throw new FileNotCleanException(fileDetails.getAvStatusApi(), fileDetails.getId());
+        if (!bypassAv && fileDetails.getAvStatus() != AvStatus.CLEAN) {
+            throw new FileNotCleanException(fileDetails.getAvStatus(), fileDetails.getId());
         }
     }
 }
