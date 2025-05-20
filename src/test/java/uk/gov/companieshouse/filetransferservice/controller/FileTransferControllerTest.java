@@ -65,7 +65,7 @@ class FileTransferControllerTest {
     @BeforeEach
     void beforeEach() {
         fileTransferController = new FileTransferController(
-                fileStorageStrategy, converter, mimeTypeValidator, fileUploadValidator, logger);
+                fileStorageStrategy, converter, mimeTypeValidator, fileUploadValidator, logger, false);
     }
 
     @Test
@@ -142,7 +142,7 @@ class FileTransferControllerTest {
         FileDetailsApi expectedFileDetails = new FileDetailsApi(fileId, null, AvStatus.CLEAN, null, 0L, null, null, null);
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(expectedFileDetails));
 
-        ResponseEntity<FileDetailsApi> response = fileTransferController.get(fileId, false);
+        ResponseEntity<FileDetailsApi> response = fileTransferController.get(fileId);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedFileDetails, response.getBody());
@@ -155,7 +155,7 @@ class FileTransferControllerTest {
         String fileId = "123";
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.empty());
 
-        assertThrows(FileNotFoundException.class, () -> fileTransferController.get(fileId, false));
+        assertThrows(FileNotFoundException.class, () -> fileTransferController.get(fileId));
     }
 
     @Test
@@ -177,7 +177,7 @@ class FileTransferControllerTest {
 
         when(fileStorageStrategy.load(fileDetails)).thenReturn(Optional.of(file));
 
-        ResponseEntity<Resource> response = fileTransferController.download(fileId, false);
+        ResponseEntity<Resource> response = fileTransferController.download(fileId);
 
         requireNonNull(response.getBody());
         byte[] responseContent = response.getBody().getContentAsByteArray();
@@ -197,7 +197,7 @@ class FileTransferControllerTest {
 
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.empty());
 
-        assertThrows(FileNotFoundException.class, () -> fileTransferController.download(fileId, false));
+        assertThrows(FileNotFoundException.class, () -> fileTransferController.download(fileId));
     }
 
     @Test
@@ -210,7 +210,7 @@ class FileTransferControllerTest {
 
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(fileDetailsApi));
 
-        assertThrows(FileNotCleanException.class, () -> fileTransferController.download(fileId, false));
+        assertThrows(FileNotCleanException.class, () -> fileTransferController.download(fileId));
     }
 
 }

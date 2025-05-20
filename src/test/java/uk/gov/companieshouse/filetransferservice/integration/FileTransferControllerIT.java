@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,6 +25,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.ResourceUtils;
@@ -35,6 +37,7 @@ import uk.gov.companieshouse.api.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.config.TestContainersConfiguration;
 
 @Import(TestContainersConfiguration.class)
+@TestPropertySource(properties = "filetransfer.bypass_av_check:true")
 @SpringBootTest
 @AutoConfigureMockMvc
 class FileTransferControllerIT {
@@ -46,7 +49,7 @@ class FileTransferControllerIT {
 
     @Container
     private static final LocalStackContainer localStack = new LocalStackContainer(
-            DockerImageName.parse("localstack/localstack:3") )
+            DockerImageName.parse("localstack/localstack:3"))
             .withServices(LocalStackContainer.Service.S3)
             .withEnv("DEFAULT_REGION", "eu-west-2")
             .withEnv("AWS_ACCESS_KEY_ID", "noop")
@@ -81,11 +84,7 @@ class FileTransferControllerIT {
         try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
 
             // Upload
-            MockMultipartFile file = new MockMultipartFile(
-                    "file",
-                    "large-file.pdf",
-                    "application/pdf",
-                    is.readAllBytes());
+            MockMultipartFile file = new MockMultipartFile("file", "large-file.pdf", "application/pdf", is);
 
             MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
             HttpHeaders headers = new HttpHeaders();
@@ -102,16 +101,19 @@ class FileTransferControllerIT {
 
             IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
-            MockHttpServletResponse downloadResult = mockMvc.perform(get("%s/%s/download".formatted(SERVICE_PATH, fileId.getId()))
-                            .param("bypassAv", "true")
-                            .headers(headers))
+            MockHttpServletResponse downloadResult = mockMvc.perform(
+                            get("%s/%s/download".formatted(SERVICE_PATH, fileId.getId()))
+                                    .headers(headers))
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse();
 
             byte[] content = downloadResult.getContentAsByteArray();
             String mimeType = downloadResult.getContentType();
-            Matcher matcher = FILENAME_PATTERN.matcher(downloadResult.getHeader(HttpHeaders.CONTENT_DISPOSITION));
+            String contentDisposition = Optional.ofNullable(downloadResult.getHeader(HttpHeaders.CONTENT_DISPOSITION))
+                    .orElseThrow(() -> new IllegalArgumentException("Missing Content-Disposition header"));
+
+            Matcher matcher = FILENAME_PATTERN.matcher(contentDisposition);
             String filename = matcher.find() ? matcher.group(1) : "unknown";
             File downloadedFile = new File(filename);
 
@@ -153,7 +155,6 @@ class FileTransferControllerIT {
             IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
             MockHttpServletResponse getResult = mockMvc.perform(get("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
-                            .param("bypassAv", "true")
                             .headers(headers))
                     .andExpect(status().isOk())
                     .andReturn()
@@ -191,8 +192,9 @@ class FileTransferControllerIT {
 
             IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
-            MockHttpServletResponse deleteResult = mockMvc.perform(delete("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
-                            .headers(headers))
+            MockHttpServletResponse deleteResult = mockMvc.perform(
+                            delete("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
+                                    .headers(headers))
                     .andExpect(status().isNoContent())
                     .andReturn()
                     .getResponse();
@@ -200,7 +202,6 @@ class FileTransferControllerIT {
             System.out.printf("Delete complete for %s%n", deleteResult.getContentAsString());
 
             MockHttpServletResponse getResult = mockMvc.perform(get("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
-                            .param("bypassAv", "true")
                             .headers(headers))
                     .andExpect(status().isNotFound())
                     .andReturn()

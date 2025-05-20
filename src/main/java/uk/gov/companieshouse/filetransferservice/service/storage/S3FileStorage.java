@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
@@ -115,15 +116,16 @@ public class S3FileStorage implements FileStorageStrategy {
                 avCreatedOn = avTags.get(AV_TIMESTAMP_KEY);
             }
 
-            Map<String, String> metadata = objectResponse.metadata();
-            String fileName = metadata.get(FILENAME_METADATA_KEY);
+            // Ensure metadata is case insensitive
+            Map<String, String> metadata = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            metadata.putAll(objectResponse.metadata());
 
             FileDetailsApi fileDetailsApi = new FileDetailsApi(fileId,
                     avCreatedOn,
                     avStatus,
-                    objectResponse.contentType(),
+                    metadata.get(CONTENT_TYPE),
                     objectResponse.contentLength(),
-                    fileName,
+                    metadata.get(FILENAME_METADATA_KEY),
                     objectResponse.lastModified().toString(),
                     getLinks(fileId));
 

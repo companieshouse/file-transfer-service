@@ -6,6 +6,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
@@ -45,17 +46,20 @@ public class FileTransferController {
     private final MimeTypeValidator mimeTypeValidator;
     private final FileUploadValidator fileUploadValidator;
     private final Logger logger;
+    private final boolean bypassAv;
 
     public FileTransferController(FileStorageStrategy fileStorageStrategy,
             MultipartFileToFileUploadApiConverter fileUploadConverter,
             MimeTypeValidator mimeTypeValidator,
             FileUploadValidator fileUploadValidator,
-            Logger logger) {
+            Logger logger,
+            @Value("${filetransfer.bypass_av_check:false}") boolean bypassAv) {
         this.fileStorageStrategy = fileStorageStrategy;
         this.fileUploadConverter = fileUploadConverter;
         this.mimeTypeValidator = mimeTypeValidator;
         this.fileUploadValidator = fileUploadValidator;
         this.logger = logger;
+        this.bypassAv = bypassAv;
     }
 
     /**
@@ -72,7 +76,9 @@ public class FileTransferController {
 
         logger.trace("upload(file) method called.");
 
-        mimeTypeValidator.validate(uploadedFile.getContentType());
+        mimeTypeValidator.validate(uploadedFile.
+
+                getContentType());
         fileUploadValidator.validate(uploadedFile);
 
         FileUploadApi file = fileUploadConverter.convert(uploadedFile);
@@ -88,7 +94,7 @@ public class FileTransferController {
      * @return The details of the file resource that was retrieved.
      */
     @GetMapping(path = "/{fileId}")
-    public ResponseEntity<FileDetailsApi> get(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
+    public ResponseEntity<FileDetailsApi> get(@PathVariable String fileId)
             throws FileNotFoundException, FileNotCleanException {
 
         logger.trace(format("getFileDetails(fileId=%s) method called.", fileId));
@@ -96,13 +102,11 @@ public class FileTransferController {
         FileDetailsApi fileDetails = fileStorageStrategy.getFileDetails(fileId)
                 .orElseThrow(() -> new FileNotFoundException(fileId));
 
-        checkAntiVirusStatus(fileDetails, bypassAv);
-
         return ResponseEntity.ok(fileDetails);
     }
 
     @GetMapping(path = "/{fileId}/download")
-    public ResponseEntity<Resource> download(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
+    public ResponseEntity<Resource> download(@PathVariable String fileId)
             throws FileNotFoundException, FileNotCleanException {
 
         logger.trace(format("download(fileId=%s) method called.", fileId));
@@ -110,7 +114,7 @@ public class FileTransferController {
         FileDetailsApi fileDetailsApi = fileStorageStrategy.getFileDetails(fileId)
                 .orElseThrow(() -> new FileNotFoundException(fileId));
 
-        checkAntiVirusStatus(fileDetailsApi, bypassAv);
+        checkAntiVirusStatus(fileDetailsApi);
 
         FileDownloadApi fileDownload = fileStorageStrategy.load(fileDetailsApi)
                 .orElseThrow(() -> new FileNotFoundException(fileId));
@@ -143,7 +147,7 @@ public class FileTransferController {
         return ResponseEntity.noContent().build();
     }
 
-    private void checkAntiVirusStatus(final FileDetailsApi fileDetails,  boolean bypassAv) throws FileNotCleanException {
+    private void checkAntiVirusStatus(final FileDetailsApi fileDetails) throws FileNotCleanException {
         logger.trace(format("getFileApi(fileId=%s, bypassAv=%s) method called.", fileDetails.getId(), bypassAv));
 
         if (!bypassAv && fileDetails.getAvStatus() != AvStatus.CLEAN) {

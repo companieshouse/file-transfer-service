@@ -12,7 +12,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @TestConfiguration
-public class TestContainersConfiguration {
+public class  TestContainersConfiguration {
 
     private final Environment env;
 
@@ -32,7 +32,7 @@ public class TestContainersConfiguration {
 
     private StaticCredentialsProvider getCredentialsProvider() {
         return StaticCredentialsProvider.create(AwsBasicCredentials.create(
-                env.getProperty("spring.cloud.aws.credentials.access-key"),
-                env.getProperty("spring.cloud.aws.credentials.secret-key")));
+                env.getProperty("aws.accessKeyId"),
+                env.getProperty("aws.secretAccessKey")));
     }
 }
