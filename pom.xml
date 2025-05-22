@@ -90,6 +90,19 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- Fix for spring-security-core-6.4.5.jar: CVE-2025-41232(9.3) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>6.4.6</version>
+        </dependency>
+
+        <!--        Fix for CVE-2025-22233 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>6.2.7</version>
+        </dependency>
         <dependency>
             <groupId>uk.gov.companieshouse</groupId>
             <artifactId>api-security-java</artifactId>
