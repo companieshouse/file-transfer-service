@@ -1,6 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.exception;
 
-public class InvalidMimeTypeException extends Exception {
+public class InvalidMimeTypeException extends RuntimeException {
     private final String mimeType;
 
     public InvalidMimeTypeException(String mimeType) {

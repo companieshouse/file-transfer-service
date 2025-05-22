@@ -1,0 +1,28 @@
+package uk.gov.companieshouse.filetransferservice.validation;
+
+import java.io.IOException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+import uk.gov.companieshouse.logging.Logger;
+
+@Component
+public class FileUploadValidator {
+
+    private final Logger logger;
+
+    @Autowired
+    public FileUploadValidator(final Logger logger){
+        this.logger = logger;
+    }
+
+    public void validate(final MultipartFile file) throws IOException {
+        logger.debug(String.format("Validating file: %s", file.getOriginalFilename()));
+
+        if (file.isEmpty()) {
+            throw new IOException(String.format("Uploaded file has no content: %s", file.getOriginalFilename()));
+        }
+
+        file.getInputStream().close();
+    }
+}
