@@ -47,6 +47,8 @@
         <sonar.token>${CODE_ANALYSIS_TOKEN}</sonar.token>
         <sonar.projectKey>uk.gov.companieshouse:${project.name}</sonar.projectKey>
         <sonar.projectName>${project.name}</sonar.projectName>
+        <sonar.login></sonar.login>
+        <sonar.password></sonar.password>
         <sonar.coverage.exclusions/>
     </properties>
 
