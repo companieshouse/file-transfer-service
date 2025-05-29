@@ -42,12 +42,7 @@
         <jaxb-api.version>2.3.1</jaxb-api.version>
 
         <!--sonar configuration-->
-        <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
-        <sonar.java.binaries>${project.basedir}/target,${project.basedir}/target/*</sonar.java.binaries>
-        <sonar.token>${CODE_ANALYSIS_TOKEN}</sonar.token>
-        <sonar.projectKey>uk.gov.companieshouse:${project.name}</sonar.projectKey>
-        <sonar.projectName>${project.name}</sonar.projectName>
-        <sonar.coverage.exclusions/>
+        <sonar.jacoco.reports>${project.basedir}/target/site</sonar.jacoco.reports>
     </properties>
 
     <dependencyManagement>
@@ -320,7 +315,6 @@
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
-                <version>${sonar-maven-plugin.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
