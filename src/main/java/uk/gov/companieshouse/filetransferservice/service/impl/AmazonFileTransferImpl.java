@@ -165,41 +165,21 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         }
     }
 
-    private boolean checkObjectExists(final String fileId) {
-        logger.trace(format("checkObjectExists(fileId=%s) method called.", fileId));
-
-        try {
-            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
-                    .bucket(properties.getBucketName())
-                    .key(fileId)
-                    .build();
-
-            HeadObjectResponse response = s3Client.headObject(headObjectRequest);
-
-            return response.sdkHttpResponse().isSuccessful();
-
-        } catch (S3Exception e) {
-            if (e.statusCode() == 404) {
-                return false;
-            } else {
-                throw SdkClientException.create("S3 Path does not exist: " + getObjectPath(fileId), e);
-            }
-        }
-    }
-
     private boolean checkBucketExists(final String bucket) {
         logger.trace(format("checkBucketExists(bucket=%s) method called.", bucket));
 
         try {
             HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
-                .bucket(bucket)
-                .build();
+                    .bucket(bucket)
+                    .build();
 
             s3Client.headBucket(headBucketRequest);
 
+            logger.trace(format("Bucket exists. [%s]", bucket));
+
             return true;
 
-        } catch (NoSuchBucketException e) {
+        } catch (Exception e) {
             logger.errorContext("Unable to verify that S3 bucket exists", e, loggedFileIdMap(bucket));
             return false;
         }
@@ -207,10 +187,6 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
     private String getS3Path() {
         return format("%s%s", properties.getS3PathPrefix(), properties.getBucketName());
-    }
-
-    private String getObjectPath(String fileId) {
-        return format("%s%s/%s", s3PathPrefix, properties.getBucketName(), fileId);
     }
 
     private boolean validateS3Path() {
