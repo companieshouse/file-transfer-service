@@ -55,7 +55,11 @@ data "aws_iam_policy_document" "file_transfer_ecs_execution" {
       "s3:PutAccountPublicAccessBlock",
       "s3:GetAccountPublicAccessBlock",
       "s3:ListAllMyBuckets",
-      "s3:HeadBucket"
+      "s3:HeadBucket",
+      "s3:ListObjects",
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:DeleteObject"
     ]
 
     resources = [
