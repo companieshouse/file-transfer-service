@@ -93,7 +93,7 @@ data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
     actions = [
       "s3:PutAccountPublicAccessBlock",
       "s3:GetAccountPublicAccessBlock",
-      "s3:ListAllMyBuckets",
+      "s3:ListBucket",
       "s3:HeadBucket"
     ]
 
