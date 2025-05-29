@@ -200,6 +200,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
             return true;
 
         } catch (NoSuchBucketException e) {
+            logger.errorContext("Unable to verify that S3 bucket exists", e, loggedFileIdMap(bucket));
             return false;
         }
     }
