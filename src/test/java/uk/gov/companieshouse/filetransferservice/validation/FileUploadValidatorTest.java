@@ -18,7 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.logging.Logger;
 
 @ExtendWith(MockitoExtension.class)
-public class FileUploadValidatorTest {
+class FileUploadValidatorTest {
 
     @Mock
     private Logger logger;
@@ -27,7 +27,7 @@ public class FileUploadValidatorTest {
     private FileUploadValidator underTest;
 
     @Test
-    public void testFileUploadValid() throws IOException {
+    void testFileUploadValid() throws IOException {
         MultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "hello".getBytes());
 
         underTest.validate(file);
@@ -36,7 +36,7 @@ public class FileUploadValidatorTest {
     }
 
     @Test
-    public void testFileUploadEmpty() throws IOException {
+    void testFileUploadEmpty() {
         MultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "".getBytes());
 
         IOException raisedException = assertThrows(IOException.class, () -> underTest.validate(file));

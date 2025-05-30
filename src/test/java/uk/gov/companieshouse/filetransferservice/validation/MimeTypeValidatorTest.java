@@ -20,7 +20,7 @@ import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.logging.Logger;
 
 @ExtendWith(MockitoExtension.class)
-public class MimeTypeValidatorTest {
+class MimeTypeValidatorTest {
 
     private static final List<String> ALL_MIME_TYPES = Arrays.asList(
             "text/plain",

@@ -40,6 +40,6 @@ public class WebSecurityConfig {
      */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer(@Value("${service.path.prefix}") String servicePathPrefix) {
-        return (web) -> web.ignoring().requestMatchers(format("%s/healthcheck", servicePathPrefix));
+        return web -> web.ignoring().requestMatchers(format("%s/healthcheck", servicePathPrefix));
     }
 }

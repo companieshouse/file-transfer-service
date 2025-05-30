@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.io.IOException;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,18 +22,13 @@ import uk.gov.companieshouse.api.filetransfer.AvStatus;
 import uk.gov.companieshouse.logging.Logger;
 
 @ExtendWith(MockitoExtension.class)
-public class RestExceptionHandlerTest {
+class RestExceptionHandlerTest {
 
     @Mock
     private Logger logger;
 
     @InjectMocks
     private RestExceptionHandler underTest;
-
-    @BeforeEach
-    void setUp() {
-        //underTest = new RestExceptionHandler();
-    }
 
     @Test
     void testHandleIOException() {

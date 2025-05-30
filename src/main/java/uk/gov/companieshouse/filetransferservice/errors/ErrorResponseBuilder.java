@@ -1,12 +1,11 @@
 package uk.gov.companieshouse.filetransferservice.errors;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import uk.gov.companieshouse.api.error.ApiError;
 import uk.gov.companieshouse.api.error.ApiErrorResponse;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class ErrorResponseBuilder {
     private final List<ApiError> errors;

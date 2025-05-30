@@ -16,7 +16,7 @@ import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 
 @ExtendWith(MockitoExtension.class)
-public class WebSecurityConfigTest {
+class WebSecurityConfigTest {
 
     @Mock
     private HttpSecurity httpSecurity;
