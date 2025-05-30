@@ -13,9 +13,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
+import uk.gov.companieshouse.logging.Logger;
 
 @ExtendWith(MockitoExtension.class)
 class MimeTypeValidatorTest {
@@ -72,6 +74,9 @@ class MimeTypeValidatorTest {
 
     @InjectMocks
     private MimeTypeValidator validator;
+
+    @Mock
+    private Logger logger;
 
     public static Stream<Arguments> getAllowedMimeTypes() {
         return MimeTypeValidator.ALLOWED_MIME_TYPES.stream().map(Arguments::of);
