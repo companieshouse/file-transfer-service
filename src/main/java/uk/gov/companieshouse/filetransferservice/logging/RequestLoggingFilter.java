@@ -2,17 +2,15 @@ package uk.gov.companieshouse.filetransferservice.logging;
 
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 
-import java.io.IOException;
-
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 import uk.gov.companieshouse.logging.Logger;
 import uk.gov.companieshouse.logging.util.RequestLogger;
 

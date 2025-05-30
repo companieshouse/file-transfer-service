@@ -7,11 +7,9 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.io.IOException;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -20,21 +18,12 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import uk.gov.companieshouse.api.error.ApiError;
 import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.api.filetransfer.AvStatus;
-import uk.gov.companieshouse.logging.Logger;
 
 @ExtendWith(MockitoExtension.class)
-public class RestExceptionHandlerTest {
-
-    @Mock
-    private Logger logger;
+class RestExceptionHandlerTest {
 
     @InjectMocks
     private RestExceptionHandler underTest;
-
-    @BeforeEach
-    void setUp() {
-        //underTest = new RestExceptionHandler();
-    }
 
     @Test
     void testHandleIOException() {

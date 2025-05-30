@@ -1,9 +1,8 @@
 package uk.gov.companieshouse.filetransferservice.config.properties;
 
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
-
-import jakarta.validation.constraints.NotBlank;
 
 @Component
 @ConfigurationProperties(prefix = "aws")
