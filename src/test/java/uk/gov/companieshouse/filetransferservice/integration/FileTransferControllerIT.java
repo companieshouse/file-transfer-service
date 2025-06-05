@@ -15,12 +15,14 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -35,6 +37,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
 import uk.gov.companieshouse.api.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.config.TestContainersConfiguration;
+import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
 
 @Import(TestContainersConfiguration.class)
 @TestPropertySource(properties = "filetransfer.bypass_av_check:true")
@@ -80,7 +83,64 @@ class FileTransferControllerIT {
     }
 
     @Test
-    void shouldUpLoadAndDownloadTestFileToS3() throws Exception {
+    @DisplayName("Deprecated - Should Upload and Download a Test File to S3")
+    void deprecatedShouldUploadAndDownloadTestFileToS3() throws Exception {
+        try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
+
+            // Upload
+            FileApi fileApi = new FileApi();
+            fileApi.setFileName("test.txt");
+            fileApi.setBody("test content".getBytes());
+            fileApi.setSize(12);
+            fileApi.setMimeType("text/plain");
+            fileApi.setExtension("txt");
+
+            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("ERIC-Identity", "someone");
+            headers.add("ERIC-Identity-Type", "key");
+            headers.add("ERIC-Authorised-Key-Roles", "*");
+
+            MockHttpServletResponse uploadResult = mockMvc.perform(multipart("%s/upload".formatted(SERVICE_PATH))
+                            .content(new ObjectMapper().writeValueAsBytes(fileApi))
+                            .headers(headers)
+                            .contentType(MediaType.APPLICATION_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse();
+
+            IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
+
+            MockHttpServletResponse downloadResult = mockMvc.perform(
+                            get("%s/%s/download".formatted(SERVICE_PATH, fileId.getId()))
+                                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                    .headers(headers))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse();
+
+            byte[] content = downloadResult.getContentAsByteArray();
+            String mimeType = downloadResult.getContentType();
+            String contentDisposition = Optional.ofNullable(downloadResult.getHeader(HttpHeaders.CONTENT_DISPOSITION))
+                    .orElseThrow(() -> new IllegalArgumentException("Missing Content-Disposition header"));
+
+            Matcher matcher = FILENAME_PATTERN.matcher(contentDisposition);
+            String filename = matcher.find() ? matcher.group(1) : "unknown";
+            File downloadedFile = new File(filename);
+
+            try (FileOutputStream os = new FileOutputStream(downloadedFile)) {
+                os.write(content);
+            }
+
+            System.out.printf("Download complete for %s%n", downloadedFile.getCanonicalPath());
+            System.out.printf("Bytes: %d%n", downloadResult.getContentLengthLong());
+            System.out.printf("Mime-Type %s%n", mimeType);
+        }
+    }
+
+    @Test
+    @DisplayName("Should Upload and Download a Test File to S3")
+    void shouldUploadAndDownloadTestFileToS3() throws Exception {
         try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
 
             // Upload
@@ -128,7 +188,8 @@ class FileTransferControllerIT {
     }
 
     @Test
-    void shouldUpLoadAndGetTestFileToS3() throws Exception {
+    @DisplayName("Should Upload and Get a Test File from S3")
+    void shouldUploadAndGetTestFileToS3() throws Exception {
         try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
 
             // Upload
@@ -166,6 +227,7 @@ class FileTransferControllerIT {
     }
 
     @Test
+    @DisplayName("Should Upload and Delete and Get Fails from S3")
     void shouldUploadThenDeleteAndGetFailsFromS3() throws Exception {
         try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
 

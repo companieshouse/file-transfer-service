@@ -37,6 +37,7 @@ import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
+import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
 import uk.gov.companieshouse.filetransferservice.service.storage.FileStorageStrategy;
 import uk.gov.companieshouse.filetransferservice.validation.FileUploadValidator;
 import uk.gov.companieshouse.filetransferservice.validation.MimeTypeValidator;
@@ -66,6 +67,27 @@ class FileTransferControllerTest {
     void beforeEach() {
         fileTransferController = new FileTransferController(
                 fileStorageStrategy, converter, mimeTypeValidator, fileUploadValidator, logger, false);
+    }
+
+    @Test
+    @DisplayName("Test deprecated uploading a FileAPI model with allowed MIME type")
+    @Deprecated
+    void testDeprecatedUploadFileWithAllowedMimeType() throws IOException, InvalidMimeTypeException {
+        FileApi fileApi = new FileApi();
+        fileApi.setFileName("test.txt");
+        fileApi.setMimeType("text/plain");
+        fileApi.setBody("test content".getBytes());
+        fileApi.setSize(12);
+        fileApi.setExtension("txt");
+
+        when(fileStorageStrategy.save(any(FileUploadApi.class))).thenReturn("123");
+
+        ResponseEntity<?> response = fileTransferController.uploadJson(fileApi);
+
+        verify(fileStorageStrategy, times(1)).save(any(FileUploadApi.class));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(new IdApi("123"), response.getBody());
     }
 
     @Test
@@ -156,6 +178,39 @@ class FileTransferControllerTest {
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.empty());
 
         assertThrows(FileNotFoundException.class, () -> fileTransferController.get(fileId));
+    }
+
+    @Test
+    @DisplayName("Test deprecated successful file download")
+    void testDeprecatedDownloadSuccess() throws FileNotFoundException, FileNotCleanException, IOException {
+        String fileId = "123";
+        byte[] content = "test content".getBytes();
+        String mimeType = "text/plain";
+        String fileName = "file.txt";
+
+        FileDetailsApi fileDetails = new FileDetailsApi()
+                .id(fileId)
+                .name(fileName)
+                .size((long) content.length)
+                .contentType(mimeType)
+                .avStatus(AvStatus.CLEAN);
+
+        when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(fileDetails));
+
+        var file = new FileDownloadApi(fileName, new ByteArrayInputStream(content), mimeType, content.length, "txt");
+
+        when(fileStorageStrategy.load(fileDetails)).thenReturn(Optional.of(file));
+
+        ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> response = fileTransferController.downloadAsJson(fileId);
+
+        FileApi fileApi = requireNonNull(response.getBody());
+        byte[] responseContent = fileApi.getBody();
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(content.length, responseContent.length);
+        assertArrayEquals(content, responseContent);
+        assertEquals(mimeType, fileApi.getMimeType());
+        assertEquals(0, response.getHeaders().size());
     }
 
     @Test
