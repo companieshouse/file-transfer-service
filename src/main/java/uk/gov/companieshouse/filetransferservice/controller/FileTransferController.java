@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.api.filetransfer.AvStatus;
-import uk.gov.companieshouse.api.filetransfer.FileApi;
 import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.api.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileUploadApiConverter;
@@ -68,7 +67,7 @@ public class FileTransferController {
 
     @PostMapping(value = "/upload", consumes = "application/json")
     @Deprecated(since = "0.2.16", forRemoval = true)
-    public ResponseEntity<IdApi> uploadJson(@RequestBody FileApi file)
+    public ResponseEntity<IdApi> uploadJson(@RequestBody uk.gov.companieshouse.filetransferservice.model.legacy.FileApi file)
             throws InvalidMimeTypeException, IOException {
 
         logger.trace("uploadJson(file) method called.");
@@ -129,7 +128,7 @@ public class FileTransferController {
 
     @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
     @Deprecated(since = "0.2.16", forRemoval = true)
-    public ResponseEntity<FileApi> downloadAsJson(@PathVariable String fileId)
+    public ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> downloadAsJson(@PathVariable String fileId)
             throws FileNotFoundException, FileNotCleanException, IOException {
 
         logger.trace(format("downloadAsJson(fileId=%s) method called.", fileId));
@@ -144,8 +143,10 @@ public class FileTransferController {
         String originalFilename = fileDetailsApi.getName();
         String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
 
-        FileApi fileApi = new FileApi(originalFilename, fileResource.getContentAsByteArray(),
-                fileDetailsApi.getContentType(), fileDetailsApi.getSize().intValue(), fileExtension);
+        uk.gov.companieshouse.filetransferservice.model.legacy.FileApi fileApi =
+                new uk.gov.companieshouse.filetransferservice.model.legacy.FileApi(originalFilename,
+                        fileResource.getContentAsByteArray(), fileDetailsApi.getContentType(),
+                        fileDetailsApi.getSize().intValue(), fileExtension);
 
         return ResponseEntity.ok(fileApi);
     }

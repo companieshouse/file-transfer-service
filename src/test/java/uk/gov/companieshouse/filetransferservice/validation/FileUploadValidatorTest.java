@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -28,11 +29,12 @@ class FileUploadValidatorTest {
 
     @Test
     void testFileUploadValid() throws IOException {
+        doNothing().when(logger).trace(anyString());
         MultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "hello".getBytes());
 
         underTest.validate(file);
 
-        verify(logger, times(1)).debug(anyString());
+        verify(logger, times(1)).trace(anyString());
     }
 
     @Test
@@ -41,7 +43,7 @@ class FileUploadValidatorTest {
 
         IOException raisedException = assertThrows(IOException.class, () -> underTest.validate(file));
 
-        verify(logger, times(1)).debug(anyString());
+        verify(logger, times(1)).trace(anyString());
 
         assertThat(raisedException.getMessage(), is("Uploaded file has no content: test.txt"));
     }
