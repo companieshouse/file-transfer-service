@@ -1,6 +1,7 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
 import static java.lang.String.format;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -124,6 +125,29 @@ public class FileTransferController {
                 .orElseThrow(() -> new FileNotFoundException(fileId));
 
         return ResponseEntity.ok(fileDetails);
+    }
+
+    @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
+    @Deprecated(since = "0.2.16", forRemoval = true)
+    public ResponseEntity<FileApi> downloadAsJson(@PathVariable String fileId)
+            throws FileNotFoundException, FileNotCleanException, IOException {
+
+        logger.trace(format("downloadAsJson(fileId=%s) method called.", fileId));
+
+        FileDetailsApi fileDetailsApi = get(fileId).getBody();
+        Resource fileResource = download(fileId).getBody();
+
+        if (fileDetailsApi == null || fileResource == null) {
+            throw new FileNotFoundException(fileId);
+        }
+
+        String originalFilename = fileDetailsApi.getName();
+        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+
+        FileApi fileApi = new FileApi(originalFilename, fileResource.getContentAsByteArray(),
+                fileDetailsApi.getContentType(), fileDetailsApi.getSize().intValue(), fileExtension);
+
+        return ResponseEntity.ok(fileApi);
     }
 
     @GetMapping(path = "/{fileId}/download")
