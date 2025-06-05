@@ -17,7 +17,7 @@ public class FileUploadValidator {
     }
 
     public void validate(final MultipartFile file) throws IOException {
-        logger.debug(String.format("Validating file: %s", file.getOriginalFilename()));
+        logger.trace(String.format("Validating file: %s", file.getOriginalFilename()));
 
         if (file.isEmpty()) {
             throw new IOException(String.format("Uploaded file has no content: %s", file.getOriginalFilename()));

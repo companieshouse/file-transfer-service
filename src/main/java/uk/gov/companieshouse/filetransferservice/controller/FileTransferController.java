@@ -3,6 +3,7 @@ package uk.gov.companieshouse.filetransferservice.controller;
 import static java.lang.String.format;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,10 +19,12 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.api.filetransfer.AvStatus;
+import uk.gov.companieshouse.api.filetransfer.FileApi;
 import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.api.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.converter.MultipartFileToFileUploadApiConverter;
@@ -62,6 +65,26 @@ public class FileTransferController {
         this.bypassAv = bypassAv;
     }
 
+    @PostMapping(value = "/upload", consumes = "application/json")
+    @Deprecated(since = "0.2.16", forRemoval = true)
+    public ResponseEntity<IdApi> uploadJson(@RequestBody FileApi file)
+            throws InvalidMimeTypeException, IOException {
+
+        logger.trace("uploadJson(file) method called.");
+
+        mimeTypeValidator.validate(file.getMimeType());
+
+        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(file.getBody())) {
+            FileUploadApi fileUploadApi = new FileUploadApi(file.getFileName(),
+                    inputStream, file.getMimeType(), file.getSize(), file.getExtension());
+
+            String fileId = fileStorageStrategy.save(fileUploadApi);
+            logger.infoContext(fileId, "File uploaded successfully", new HashMap<>(Map.of(FILE_ID_KEY, fileId)));
+
+            return ResponseEntity.ok(new IdApi(fileId));
+        }
+    }
+
     /**
      * Uploads the specified file to the file transfer service. The uploaded file must be of a valid MIME type and
      * within size limits. If the upload is successful, the ID of the uploaded file is returned in a ResponseEntity.
@@ -76,9 +99,7 @@ public class FileTransferController {
 
         logger.trace("upload(file) method called.");
 
-        mimeTypeValidator.validate(uploadedFile.
-
-                getContentType());
+        mimeTypeValidator.validate(uploadedFile.getContentType());
         fileUploadValidator.validate(uploadedFile);
 
         FileUploadApi file = fileUploadConverter.convert(uploadedFile);
