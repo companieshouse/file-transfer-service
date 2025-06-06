@@ -1,8 +1,10 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
 import static java.lang.String.format;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -62,6 +65,26 @@ public class FileTransferController {
         this.bypassAv = bypassAv;
     }
 
+    @PostMapping(value = "/upload", consumes = "application/json")
+    @Deprecated(since = "0.2.16", forRemoval = true)
+    public ResponseEntity<IdApi> uploadJson(@RequestBody uk.gov.companieshouse.filetransferservice.model.legacy.FileApi file)
+            throws InvalidMimeTypeException, IOException {
+
+        logger.trace("uploadJson(file) method called.");
+
+        mimeTypeValidator.validate(file.getMimeType());
+
+        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(file.getBody())) {
+            FileUploadApi fileUploadApi = new FileUploadApi(file.getFileName(),
+                    inputStream, file.getMimeType(), file.getSize(), file.getExtension());
+
+            String fileId = fileStorageStrategy.save(fileUploadApi);
+            logger.infoContext(fileId, "File uploaded successfully", new HashMap<>(Map.of(FILE_ID_KEY, fileId)));
+
+            return ResponseEntity.ok(new IdApi(fileId));
+        }
+    }
+
     /**
      * Uploads the specified file to the file transfer service. The uploaded file must be of a valid MIME type and
      * within size limits. If the upload is successful, the ID of the uploaded file is returned in a ResponseEntity.
@@ -76,9 +99,7 @@ public class FileTransferController {
 
         logger.trace("upload(file) method called.");
 
-        mimeTypeValidator.validate(uploadedFile.
-
-                getContentType());
+        mimeTypeValidator.validate(uploadedFile.getContentType());
         fileUploadValidator.validate(uploadedFile);
 
         FileUploadApi file = fileUploadConverter.convert(uploadedFile);
@@ -103,6 +124,31 @@ public class FileTransferController {
                 .orElseThrow(() -> new FileNotFoundException(fileId));
 
         return ResponseEntity.ok(fileDetails);
+    }
+
+    @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
+    @Deprecated(since = "0.2.16", forRemoval = true)
+    public ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> downloadAsJson(@PathVariable String fileId)
+            throws FileNotFoundException, FileNotCleanException, IOException {
+
+        logger.trace(format("downloadAsJson(fileId=%s) method called.", fileId));
+
+        FileDetailsApi fileDetailsApi = get(fileId).getBody();
+        Resource fileResource = download(fileId).getBody();
+
+        if (fileDetailsApi == null || fileResource == null) {
+            throw new FileNotFoundException(fileId);
+        }
+
+        String originalFilename = fileDetailsApi.getName();
+        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+
+        uk.gov.companieshouse.filetransferservice.model.legacy.FileApi fileApi =
+                new uk.gov.companieshouse.filetransferservice.model.legacy.FileApi(originalFilename,
+                        fileResource.getContentAsByteArray(), fileDetailsApi.getContentType(),
+                        fileDetailsApi.getSize().intValue(), fileExtension);
+
+        return ResponseEntity.ok(fileApi);
     }
 
     @GetMapping(path = "/{fileId}/download")
