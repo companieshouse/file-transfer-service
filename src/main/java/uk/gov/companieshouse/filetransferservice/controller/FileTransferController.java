@@ -1,6 +1,7 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNullElse;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.io.BufferedInputStream;
@@ -149,6 +150,28 @@ public class FileTransferController {
                         fileDetailsApi.getSize().intValue(), fileExtension);
 
         return ResponseEntity.ok(fileApi);
+    }
+
+    @GetMapping(path = "/{fileId}/downloadbinary")
+    @Deprecated(since = "0.2.16", forRemoval = true)
+    public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
+            throws FileNotFoundException, FileNotCleanException, IOException {
+
+        logger.trace(format("downloadAsBinary(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
+
+        var file = downloadAsJson(fileId).getBody();
+        var data = file.getBody();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
+        headers.setContentDisposition(ContentDisposition.builder("attachment")
+                .filename(file.getFileName())
+                .build());
+        headers.setContentLength(data.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 
     @GetMapping(path = "/{fileId}/download")
