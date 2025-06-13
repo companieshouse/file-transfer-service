@@ -23,7 +23,9 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -211,6 +213,41 @@ class FileTransferControllerTest {
         assertArrayEquals(content, responseContent);
         assertEquals(mimeType, fileApi.getMimeType());
         assertEquals(0, response.getHeaders().size());
+    }
+
+    @Test
+    @DisplayName("Test deprecated successful binary file download")
+    void testDeprecatedDownloadBinarySuccess() throws FileNotFoundException, FileNotCleanException, IOException {
+        String fileId = "123";
+        byte[] content = "test content".getBytes();
+        MediaType mimeType = MediaType.TEXT_PLAIN;
+        String fileName = "file.txt";
+
+        FileDetailsApi fileDetails = new FileDetailsApi()
+                .id(fileId)
+                .name(fileName)
+                .size((long) content.length)
+                .contentType(mimeType.toString())
+                .avStatus(AvStatus.CLEAN);
+
+        when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(fileDetails));
+
+        var file = new FileDownloadApi(fileName, new ByteArrayInputStream(content), mimeType.toString(), content.length, "txt");
+
+        when(fileStorageStrategy.load(fileDetails)).thenReturn(Optional.of(file));
+
+        ResponseEntity<byte[]> response = fileTransferController.downloadAsBinary(fileId, true);
+        byte[] responseContent = requireNonNull(response.getBody());
+        HttpHeaders responseHeaders = response.getHeaders();
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(content.length, responseContent.length);
+        assertArrayEquals(content, responseContent);
+
+        assertEquals(3, response.getHeaders().size());
+        assertEquals(mimeType, responseHeaders.getContentType());
+        assertEquals("attachment; filename=\"file.txt\"", responseHeaders.getContentDisposition().toString());
+        assertEquals(12L, responseHeaders.getContentLength());
     }
 
     @Test
