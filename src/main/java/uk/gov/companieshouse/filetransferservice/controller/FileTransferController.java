@@ -1,7 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
 import static java.lang.String.format;
-import static java.util.Objects.requireNonNullElse;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.io.BufferedInputStream;
