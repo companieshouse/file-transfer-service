@@ -30,6 +30,7 @@ public class MimeTypeValidator {
             "image/gif",
             "application/x-rar-compressed",
             "application/x-tar",
+            "application/vnd.rar",
             "application/x-7z-compressed",
             "application/xhtml+xml",
             "application/zip",
