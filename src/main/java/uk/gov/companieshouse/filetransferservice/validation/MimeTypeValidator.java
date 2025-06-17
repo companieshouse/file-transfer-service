@@ -33,6 +33,7 @@ public class MimeTypeValidator {
             "application/x-7z-compressed",
             "application/xhtml+xml",
             "application/zip",
+            "application/xml",
             "multipart/x-zip",
             "application/octet-stream",
             "application/zip-compressed",
