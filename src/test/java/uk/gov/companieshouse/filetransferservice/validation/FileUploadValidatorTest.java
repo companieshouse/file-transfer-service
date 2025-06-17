@@ -38,13 +38,13 @@ class FileUploadValidatorTest {
     }
 
     @Test
-    void testFileUploadEmpty() {
-        MultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "".getBytes());
+    void testFileUploadFilenameEmpty() {
+        MultipartFile file = new MockMultipartFile("file", "", "text/plain", "".getBytes());
 
         IOException raisedException = assertThrows(IOException.class, () -> underTest.validate(file));
 
         verify(logger, times(1)).trace(anyString());
 
-        assertThat(raisedException.getMessage(), is("Uploaded file has no content: test.txt"));
+        assertThat(raisedException.getMessage(), is("Uploaded file has no filename: "));
     }
 }
