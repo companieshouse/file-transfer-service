@@ -154,19 +154,21 @@ public class FileTransferController {
         logger.trace(format("downloadAsBinary(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
 
         FileDetailsApi fileDetailsApi = get(fileId).getBody();
+        logger.info(format("Download binary file with details: %s", fileDetailsApi));
+
         checkAntiVirusStatus(fileDetailsApi);
 
         var file = downloadAsJson(fileId).getBody();
         var data = file.getBody();
 
-        HttpHeaders headers = new HttpHeaders();
+        var headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
         headers.setContentDisposition(ContentDisposition.builder("attachment")
                 .filename(file.getFileName())
                 .build());
         headers.setContentLength(data.length);
 
-        logger.info(format("Generating response for file download: %s", headers.asSingleValueMap()));
+        logger.info(format("Generating response for file download with headers: %s", headers));
 
         return ResponseEntity.ok()
                 .headers(headers)
