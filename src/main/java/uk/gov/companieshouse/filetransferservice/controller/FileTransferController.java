@@ -2,7 +2,6 @@ package uk.gov.companieshouse.filetransferservice.controller;
 
 import static java.lang.String.format;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -34,6 +33,7 @@ import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
+import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
 import uk.gov.companieshouse.filetransferservice.service.storage.FileStorageStrategy;
 import uk.gov.companieshouse.filetransferservice.validation.FileUploadValidator;
 import uk.gov.companieshouse.filetransferservice.validation.MimeTypeValidator;
@@ -141,33 +141,34 @@ public class FileTransferController {
             throw new FileNotFoundException(fileId);
         }
 
-        String originalFilename = fileDetailsApi.getName();
-        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
-
-        uk.gov.companieshouse.filetransferservice.model.legacy.FileApi fileApi =
-                new uk.gov.companieshouse.filetransferservice.model.legacy.FileApi(originalFilename,
-                        fileResource.getContentAsByteArray(), fileDetailsApi.getContentType(),
-                        fileDetailsApi.getSize().intValue(), fileExtension);
+        FileApi fileApi = getFileApi(fileDetailsApi, fileResource);
 
         return ResponseEntity.ok(fileApi);
     }
 
-    @GetMapping(path = "/{fileId}/downloadbinary", produces = APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping(path = "/{fileId}/downloadbinary")
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
             throws FileNotFoundException, FileNotCleanException, IOException {
 
         logger.trace(format("downloadAsBinary(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
 
+        FileDetailsApi fileDetailsApi = get(fileId).getBody();
+        logger.info(format("Download binary file with details: %s", fileDetailsApi));
+
+        checkAntiVirusStatus(fileDetailsApi);
+
         var file = downloadAsJson(fileId).getBody();
         var data = file.getBody();
 
-        HttpHeaders headers = new HttpHeaders();
+        var headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
         headers.setContentDisposition(ContentDisposition.builder("attachment")
                 .filename(file.getFileName())
                 .build());
         headers.setContentLength(data.length);
+
+        logger.info(format("Generating response for file download with headers: %s", headers));
 
         return ResponseEntity.ok()
                 .headers(headers)
@@ -216,9 +217,21 @@ public class FileTransferController {
         return ResponseEntity.noContent().build();
     }
 
-    private void checkAntiVirusStatus(final FileDetailsApi fileDetails) throws FileNotCleanException {
-        logger.trace(format("getFileApi(fileId=%s, bypassAv=%s) method called.", fileDetails.getId(), bypassAv));
+    @SuppressWarnings("deprecation")
+    private FileApi getFileApi(final FileDetailsApi fileDetailsApi, final Resource fileResource) throws IOException {
+        logger.trace(format("getFileApi(fileId=%s) method called.", fileDetailsApi.getId()));
 
+        String originalFilename = fileDetailsApi.getName();
+        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+
+        return new FileApi(originalFilename, fileResource.getContentAsByteArray(), fileDetailsApi.getContentType(),
+                fileDetailsApi.getSize().intValue(), fileExtension);
+    }
+
+    private void checkAntiVirusStatus(final FileDetailsApi fileDetails) throws FileNotCleanException {
+        logger.trace(format("checkAntiVirusStatus(fileId=%s, bypassAv=%s) method called.", fileDetails.getId(), bypassAv));
+
+        logger.info(format("AV Status: %s", fileDetails.getAvStatus()));
         if (!bypassAv && fileDetails.getAvStatus() != AvStatus.CLEAN) {
             throw new FileNotCleanException(fileDetails.getAvStatus(), fileDetails.getId());
         }
