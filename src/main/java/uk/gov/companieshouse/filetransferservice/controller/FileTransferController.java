@@ -2,7 +2,6 @@ package uk.gov.companieshouse.filetransferservice.controller;
 
 import static java.lang.String.format;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -152,12 +151,15 @@ public class FileTransferController {
         return ResponseEntity.ok(fileApi);
     }
 
-    @GetMapping(path = "/{fileId}/downloadbinary", produces = APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping(path = "/{fileId}/downloadbinary")
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
             throws FileNotFoundException, FileNotCleanException, IOException {
 
         logger.trace(format("downloadAsBinary(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
+
+        FileDetailsApi fileDetailsApi = get(fileId).getBody();
+        checkAntiVirusStatus(fileDetailsApi);
 
         var file = downloadAsJson(fileId).getBody();
         var data = file.getBody();
@@ -168,6 +170,8 @@ public class FileTransferController {
                 .filename(file.getFileName())
                 .build());
         headers.setContentLength(data.length);
+
+        logger.info(format("Generating response for file download: %s", headers.asSingleValueMap()));
 
         return ResponseEntity.ok()
                 .headers(headers)
