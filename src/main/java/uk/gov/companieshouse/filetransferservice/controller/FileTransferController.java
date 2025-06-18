@@ -33,6 +33,7 @@ import uk.gov.companieshouse.filetransferservice.exception.FileNotFoundException
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
+import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
 import uk.gov.companieshouse.filetransferservice.service.storage.FileStorageStrategy;
 import uk.gov.companieshouse.filetransferservice.validation.FileUploadValidator;
 import uk.gov.companieshouse.filetransferservice.validation.MimeTypeValidator;
@@ -140,13 +141,7 @@ public class FileTransferController {
             throw new FileNotFoundException(fileId);
         }
 
-        String originalFilename = fileDetailsApi.getName();
-        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
-
-        uk.gov.companieshouse.filetransferservice.model.legacy.FileApi fileApi =
-                new uk.gov.companieshouse.filetransferservice.model.legacy.FileApi(originalFilename,
-                        fileResource.getContentAsByteArray(), fileDetailsApi.getContentType(),
-                        fileDetailsApi.getSize().intValue(), fileExtension);
+        FileApi fileApi = getFileApi(fileDetailsApi, fileResource);
 
         return ResponseEntity.ok(fileApi);
     }
@@ -220,9 +215,21 @@ public class FileTransferController {
         return ResponseEntity.noContent().build();
     }
 
-    private void checkAntiVirusStatus(final FileDetailsApi fileDetails) throws FileNotCleanException {
-        logger.trace(format("getFileApi(fileId=%s, bypassAv=%s) method called.", fileDetails.getId(), bypassAv));
+    @SuppressWarnings("deprecation")
+    private FileApi getFileApi(final FileDetailsApi fileDetailsApi, final Resource fileResource) throws IOException {
+        logger.trace(format("getFileApi(fileId=%s) method called.", fileDetailsApi.getId()));
 
+        String originalFilename = fileDetailsApi.getName();
+        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+
+        return new FileApi(originalFilename, fileResource.getContentAsByteArray(), fileDetailsApi.getContentType(),
+                fileDetailsApi.getSize().intValue(), fileExtension);
+    }
+
+    private void checkAntiVirusStatus(final FileDetailsApi fileDetails) throws FileNotCleanException {
+        logger.trace(format("checkAntiVirusStatus(fileId=%s, bypassAv=%s) method called.", fileDetails.getId(), bypassAv));
+
+        logger.info(format("AV Status: %s", fileDetails.getAvStatus()));
         if (!bypassAv && fileDetails.getAvStatus() != AvStatus.CLEAN) {
             throw new FileNotCleanException(fileDetails.getAvStatus(), fileDetails.getId());
         }
