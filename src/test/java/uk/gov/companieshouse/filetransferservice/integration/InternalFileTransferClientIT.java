@@ -90,7 +90,7 @@ class InternalFileTransferClientIT {
     }
 
     @Test
-    void shouldUpLoadAndDownloadTestFile() throws Exception {
+    void shouldUploadAndDownloadTestFile() throws Exception {
         ApiResponse<FileApi> downloadResponse = internalFileTransferClient.privateFileTransferHandler()
                 .download(idApi.getId())
                 .execute();
@@ -115,7 +115,6 @@ class InternalFileTransferClientIT {
 
     @Test
     void shouldDeleteTestFileFromS3() throws Exception {
-
         ApiResponse<Void> deleteResponse = internalFileTransferClient.privateFileTransferHandler()
                 .delete(idApi.getId())
                 .execute();
@@ -129,7 +128,6 @@ class InternalFileTransferClientIT {
 
     @Test
     void shouldGetTestFileDetails() throws Exception {
-
         ApiResponse<FileDetailsApi> detailsResponse = internalFileTransferClient.privateFileTransferHandler()
                 .details(idApi.getId())
                 .execute();
@@ -143,9 +141,25 @@ class InternalFileTransferClientIT {
         assertNotNull( fileDetailsApi.getLinks().getDownload());
     }
 
+    @Test
+    void shouldDeprecatedUploadAndDownloadTestFile() throws Exception {
+        ApiResponse<FileDetailsApi> detailsResponse = internalFileTransferClient.privateFileTransferHandler()
+                .details(idApi.getId())
+                .execute();
+        assertEquals(200, detailsResponse.getStatusCode());
+
+        FileDetailsApi fileDetailsApi = detailsResponse.getData();
+        assertEquals(AvStatus.NOT_SCANNED, fileDetailsApi.getAvStatus());
+        assertEquals("application/pdf", fileDetailsApi.getContentType());
+        assertEquals(idApi.getId(), fileDetailsApi.getId());
+        assertEquals("large-file.pdf", fileDetailsApi.getName());
+        assertNotNull( fileDetailsApi.getLinks().getSelf());
+        assertNotNull( fileDetailsApi.getLinks().getDownload());
+    }
+
+
     private IdApi uploadFile() throws IOException, URIValidationException {
         try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
-
             ApiResponse<IdApi> uploadResponse = internalFileTransferClient.privateFileTransferHandler()
                     .upload(is, "application/pdf", "large-file.pdf")
                     .execute();

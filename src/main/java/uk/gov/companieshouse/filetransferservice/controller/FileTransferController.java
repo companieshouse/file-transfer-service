@@ -163,7 +163,7 @@ public class FileTransferController {
 
         var headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(file.getMimeType()));
-        headers.setContentDisposition(ContentDisposition.builder("attachment")
+        headers.setContentDisposition(ContentDisposition.attachment()
                 .filename(file.getFileName())
                 .build());
         headers.setContentLength(data.length);
