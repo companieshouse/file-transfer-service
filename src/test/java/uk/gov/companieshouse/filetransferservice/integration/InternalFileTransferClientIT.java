@@ -3,6 +3,7 @@ package uk.gov.companieshouse.filetransferservice.integration;
 import static com.google.common.net.HttpHeaders.CONTENT_DISPOSITION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 import static org.testcontainers.shaded.com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
@@ -90,9 +91,9 @@ class InternalFileTransferClientIT {
     }
 
     @Test
-    void shouldUploadAndDownloadTestFile() throws Exception {
+    void shouldUploadFileAndDownloadAsStream() throws Exception {
         ApiResponse<FileApi> downloadResponse = internalFileTransferClient.privateFileTransferHandler()
-                .download(idApi.getId())
+                .downloadAsStream(idApi.getId())
                 .execute();
         assertEquals(200, downloadResponse.getStatusCode());
 
@@ -114,7 +115,7 @@ class InternalFileTransferClientIT {
     }
 
     @Test
-    void shouldDeleteTestFileFromS3() throws Exception {
+    void shouldUploadFileAndDeleteFileFromS3() throws Exception {
         ApiResponse<Void> deleteResponse = internalFileTransferClient.privateFileTransferHandler()
                 .delete(idApi.getId())
                 .execute();
@@ -127,11 +128,12 @@ class InternalFileTransferClientIT {
     }
 
     @Test
-    void shouldGetTestFileDetails() throws Exception {
+    void shouldUploadFileAndGetFileDetails() throws Exception {
         ApiResponse<FileDetailsApi> detailsResponse = internalFileTransferClient.privateFileTransferHandler()
                 .details(idApi.getId())
                 .execute();
         assertEquals(200, detailsResponse.getStatusCode());
+
         FileDetailsApi fileDetailsApi = detailsResponse.getData();
         assertEquals(AvStatus.NOT_SCANNED, fileDetailsApi.getAvStatus());
         assertEquals("application/pdf", fileDetailsApi.getContentType());
@@ -142,7 +144,7 @@ class InternalFileTransferClientIT {
     }
 
     @Test
-    void shouldDeprecatedUploadAndDownloadTestFile() throws Exception {
+    void shouldDeprecatedUploadAndDownloadAsStream() throws Exception {
         ApiResponse<FileDetailsApi> detailsResponse = internalFileTransferClient.privateFileTransferHandler()
                 .details(idApi.getId())
                 .execute();
@@ -155,8 +157,59 @@ class InternalFileTransferClientIT {
         assertEquals("large-file.pdf", fileDetailsApi.getName());
         assertNotNull( fileDetailsApi.getLinks().getSelf());
         assertNotNull( fileDetailsApi.getLinks().getDownload());
+
+        ApiResponse<FileApi> downloadResponse = internalFileTransferClient.privateFileTransferHandler()
+                .downloadAsStream(idApi.getId())
+                .execute();
+
+        assertEquals(200, downloadResponse.getStatusCode());
+        assertEquals(13, downloadResponse.getHeaders().size());
+
+        assertEquals("application/pdf", ((List<?>)downloadResponse.getHeaders().get("Content-Type")).getFirst());
+        assertEquals("attachment; filename=\"large-file.pdf\"", ((List<?>)downloadResponse.getHeaders().get("Content-Disposition")).getFirst());
+        assertNull(downloadResponse.getHeaders().get("Content-Length"));
+
+        FileApi responseBody = downloadResponse.getData();
+
+        assertEquals("large-file.pdf", responseBody.getFileName());
+        assertEquals(19510707, responseBody.getBody().length);
+        assertEquals("application/pdf", responseBody.getMimeType());
+        assertEquals(19510707, responseBody.getSize());
+        assertEquals("pdf", responseBody.getExtension());
     }
 
+    @Test
+    void shouldDeprecatedUploadAndDownloadAsModel() throws Exception {
+        ApiResponse<FileDetailsApi> detailsResponse = internalFileTransferClient.privateFileTransferHandler()
+                .details(idApi.getId())
+                .execute();
+        assertEquals(200, detailsResponse.getStatusCode());
+
+        FileDetailsApi fileDetailsApi = detailsResponse.getData();
+        assertEquals(AvStatus.NOT_SCANNED, fileDetailsApi.getAvStatus());
+        assertEquals("application/pdf", fileDetailsApi.getContentType());
+        assertEquals(idApi.getId(), fileDetailsApi.getId());
+        assertEquals("large-file.pdf", fileDetailsApi.getName());
+        assertNotNull( fileDetailsApi.getLinks().getSelf());
+        assertNotNull( fileDetailsApi.getLinks().getDownload());
+
+        ApiResponse<FileApi> downloadResponse = internalFileTransferClient.privateFileTransferHandler()
+                .download(idApi.getId())
+                .execute();
+
+        assertEquals(200, downloadResponse.getStatusCode());
+        assertEquals(12, downloadResponse.getHeaders().size());
+        assertEquals("application/json", ((List<?>)downloadResponse.getHeaders().get("Content-Type")).getFirst());
+        assertNull(downloadResponse.getHeaders().get("Content-Disposition"));
+
+        FileApi responseBody = downloadResponse.getData();
+
+        assertEquals("large-file.pdf", responseBody.getFileName());
+        assertEquals(19510707, responseBody.getBody().length);
+        assertEquals("application/pdf", responseBody.getMimeType());
+        assertEquals(19510707, responseBody.getSize());
+        assertEquals("pdf", responseBody.getExtension());
+    }
 
     private IdApi uploadFile() throws IOException, URIValidationException {
         try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {

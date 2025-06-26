@@ -127,25 +127,6 @@ public class FileTransferController {
         return ResponseEntity.ok(fileDetails);
     }
 
-    @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
-    @Deprecated(since = "0.2.16", forRemoval = true)
-    public ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> downloadAsJson(@PathVariable String fileId)
-            throws FileNotFoundException, FileNotCleanException, IOException {
-
-        logger.trace(format("downloadAsJson(fileId=%s) method called.", fileId));
-
-        FileDetailsApi fileDetailsApi = get(fileId).getBody();
-        Resource fileResource = download(fileId).getBody();
-
-        if (fileDetailsApi == null || fileResource == null) {
-            throw new FileNotFoundException(fileId);
-        }
-
-        FileApi fileApi = getFileApi(fileDetailsApi, fileResource);
-
-        return ResponseEntity.ok(fileApi);
-    }
-
     @GetMapping(path = "/{fileId}/downloadbinary")
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
@@ -173,6 +154,25 @@ public class FileTransferController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(data);
+    }
+
+    @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
+    @Deprecated(since = "0.2.16", forRemoval = true)
+    public ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> downloadAsJson(@PathVariable String fileId)
+            throws FileNotFoundException, FileNotCleanException, IOException {
+
+        logger.trace(format("downloadAsJson(fileId=%s) method called.", fileId));
+
+        FileDetailsApi fileDetailsApi = get(fileId).getBody();
+        Resource fileResource = download(fileId).getBody();
+
+        if (fileDetailsApi == null || fileResource == null) {
+            throw new FileNotFoundException(fileId);
+        }
+
+        FileApi fileApi = getFileApi(fileDetailsApi, fileResource);
+
+        return ResponseEntity.ok(fileApi);
     }
 
     @GetMapping(path = "/{fileId}/download")
