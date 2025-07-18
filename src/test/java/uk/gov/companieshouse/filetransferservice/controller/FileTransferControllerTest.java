@@ -84,7 +84,7 @@ class FileTransferControllerTest {
 
         when(fileStorageStrategy.save(any(FileUploadApi.class))).thenReturn("123");
 
-        ResponseEntity<?> response = fileTransferController.uploadJson(fileApi);
+        ResponseEntity<?> response = fileTransferController.upload(fileApi);
 
         verify(fileStorageStrategy, times(1)).save(any(FileUploadApi.class));
 

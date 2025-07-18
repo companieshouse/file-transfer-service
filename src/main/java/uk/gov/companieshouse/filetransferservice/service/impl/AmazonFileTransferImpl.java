@@ -31,7 +31,6 @@ import uk.gov.companieshouse.logging.Logger;
 @Component
 public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
-    private final String s3PathPrefix;
     private final S3Client s3Client;
     private final AWSServiceProperties properties;
     private final Logger logger;
@@ -40,7 +39,6 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         this.s3Client = s3Client;
         this.logger = logger;
         this.properties = properties;
-        this.s3PathPrefix = properties.getS3PathPrefix();
 
         validateS3Details();
     }
@@ -53,7 +51,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
         logger.trace(format("uploadFile(fileId=%s, metaData=%s) method called.", fileId, metadata));
 
         try {
-            logger.debug(format("Uploading file '%s' to '%s'...", fileId, s3PathPrefix));
+            logger.debug(format("Uploading file '%s' to '%s'...", fileId, properties.getS3PathPrefix()));
 
             if (!metadata.containsKey(CONTENT_TYPE)) {
                 logger.error("Missing content-type");
@@ -171,7 +169,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
 
             s3Client.headBucket(headBucketRequest);
 
-            logger.trace(format("Bucket exists. [%s]", bucket));
+            logger.debug(format("Bucket exists: [%s]", bucket));
 
             return true;
 
@@ -186,7 +184,7 @@ public class AmazonFileTransferImpl implements AmazonFileTransfer {
     }
 
     private boolean validateS3Path() {
-        return getS3Path().toLowerCase().startsWith(s3PathPrefix);
+        return getS3Path().toLowerCase().startsWith(properties.getS3PathPrefix());
     }
 
     private boolean validateBucketName() {
