@@ -42,6 +42,8 @@ public class DefaultContentTypeFilter implements Filter {
 
         // If Content-Type is missing and it's a POST wrap it (for legacy/deprecated client
         if (request.getContentType() == null && ("POST".equalsIgnoreCase(request.getMethod()))) {
+            logger.debug("Content-Type not detected within POST request, to preserve legacy client functionality "
+                    + "we are wrapping request to set default Content-Type to application/json");
 
             HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
 
