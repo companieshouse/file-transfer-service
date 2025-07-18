@@ -12,7 +12,19 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import uk.gov.companieshouse.logging.Logger;
 
+/**
+ * A filter that sets a default Content-Type of application/json for POST requests
+ * that do not have a Content-Type header set. This is intended for legacy clients
+ * that may not set the Content-Type header.
+ *
+ * This can be removed in future versions as it is a workaround for legacy clients.
+ * It is recommended that clients set the Content-Type header explicitly, and
+ * updating the private-api-sdk-java dependence > 4.0.315 should resolve this issue.
+ *
+ * @deprecated This filter is deprecated and will be removed in future versions.
+ */
 @Component
+@Deprecated(since = "0.2.16", forRemoval = true)
 public class DefaultContentTypeFilter implements Filter {
 
     private final Logger logger;
