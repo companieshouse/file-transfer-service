@@ -135,10 +135,9 @@ public class S3FileStorage implements FileStorageStrategy {
 
             // Ensure metadata is case insensitive
             Map<String, String> metadata = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            //metadata.putAll(decodedMap);
-            metadata.putAll(objectResponse.metadata());
+            metadata.putAll(decodedMap);
 
-            logger.info(format("Retrieved file metadata from S3: %s", metadata));
+            logger.info(format("Retrieved and decoded file metadata from S3: %s", metadata));
 
             FileDetailsApi fileDetailsApi = new FileDetailsApi(fileId,
                     avCreatedOn,
