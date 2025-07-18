@@ -66,12 +66,12 @@ public class FileTransferController {
         this.bypassAv = bypassAv;
     }
 
-    @PostMapping(value = "/upload", consumes = "application/json")
+    @PostMapping(value = "/upload", consumes = "application/json", produces = "application/json")
     @Deprecated(since = "0.2.16", forRemoval = true)
-    public ResponseEntity<IdApi> uploadJson(@RequestBody uk.gov.companieshouse.filetransferservice.model.legacy.FileApi file)
+    public ResponseEntity<IdApi> upload(@RequestBody uk.gov.companieshouse.filetransferservice.model.legacy.FileApi file)
             throws InvalidMimeTypeException, IOException {
 
-        logger.trace("uploadJson(file) method called.");
+        logger.trace("upload(json) method called.");
 
         mimeTypeValidator.validate(file.getMimeType());
 

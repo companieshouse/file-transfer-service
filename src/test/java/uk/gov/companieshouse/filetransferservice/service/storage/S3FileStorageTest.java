@@ -24,11 +24,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -40,6 +40,10 @@ import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
+import uk.gov.companieshouse.filetransferservice.service.converter.MetadataDecoder;
+import uk.gov.companieshouse.filetransferservice.service.converter.MetadataEncoder;
+import uk.gov.companieshouse.logging.Logger;
+import uk.gov.companieshouse.logging.LoggerFactory;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 @ExtendWith(MockitoExtension.class)
@@ -54,8 +58,15 @@ class S3FileStorageTest {
     @Mock
     private ByteArrayInputStream mockInputStream;
 
-    @InjectMocks
     private S3FileStorage underTest;
+
+    @BeforeEach
+    void setUp() {
+        Logger logger = LoggerFactory.getLogger("S3FileStorageTest");
+
+        underTest = new S3FileStorage(amazonFileTransfer, new MetadataEncoder(), new MetadataDecoder(),
+                logger, "test-service-path");
+    }
 
     @Test
     @DisplayName("Test successful File Save")

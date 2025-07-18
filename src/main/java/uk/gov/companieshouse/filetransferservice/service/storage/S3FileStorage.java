@@ -1,5 +1,6 @@
 package uk.gov.companieshouse.filetransferservice.service.storage;
 
+import static java.lang.String.format;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
 import java.io.IOException;
@@ -7,6 +8,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -22,6 +24,8 @@ import uk.gov.companieshouse.api.filetransfer.FileLinksApi;
 import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.service.AmazonFileTransfer;
+import uk.gov.companieshouse.filetransferservice.service.converter.MetadataDecoder;
+import uk.gov.companieshouse.filetransferservice.service.converter.MetadataEncoder;
 import uk.gov.companieshouse.logging.Logger;
 
 /**
@@ -38,13 +42,19 @@ public class S3FileStorage implements FileStorageStrategy {
     private static final String EXTENSION_METADATA_KEY = "extension";
 
     private final AmazonFileTransfer amazonFileTransfer;
+    private final MetadataEncoder metadataEncoder;
+    private final MetadataDecoder metadataDecoder;
     private final Logger logger;
     private final String servicePathPrefix;
 
     public S3FileStorage(AmazonFileTransfer amazonFileTransfer,
+            MetadataEncoder metadataEncoder,
+            MetadataDecoder metadataDecoder,
             Logger logger,
             @Value("${service.path.prefix}") String servicePathPrefix) {
         this.amazonFileTransfer = amazonFileTransfer;
+        this.metadataEncoder = metadataEncoder;
+        this.metadataDecoder = metadataDecoder;
         this.logger = logger;
         this.servicePathPrefix = servicePathPrefix;
     }
@@ -57,7 +67,7 @@ public class S3FileStorage implements FileStorageStrategy {
     public String save(final FileUploadApi file) {
         Map<String, String> metaData = new HashMap<>();
         metaData.put(CONTENT_TYPE, file.getMimeType());
-        metaData.put(FILENAME_METADATA_KEY, file.getFileName());
+        metaData.put(FILENAME_METADATA_KEY, metadataEncoder.convert(file.getFileName()));
         metaData.put(EXTENSION_METADATA_KEY, file.getExtension());
 
         String fileId = UUID.randomUUID().toString();
@@ -94,7 +104,6 @@ public class S3FileStorage implements FileStorageStrategy {
         }
 
         try (ResponseInputStream<GetObjectResponse> responseInputStream = optionalResponse.get()) {
-
             GetObjectResponse objectResponse = responseInputStream.response();
 
             AvStatus avStatus = AvStatus.NOT_SCANNED;
@@ -116,9 +125,20 @@ public class S3FileStorage implements FileStorageStrategy {
                 avCreatedOn = avTags.get(AV_TIMESTAMP_KEY);
             }
 
+            // Decode metadata values as S3 restricts the values that can be stored as metadata.
+            Map<String, String> decodedMap = objectResponse.metadata()
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            Entry::getKey,entry -> metadataDecoder.convert(entry.getValue())
+                    ));
+
             // Ensure metadata is case insensitive
             Map<String, String> metadata = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            //metadata.putAll(decodedMap);
             metadata.putAll(objectResponse.metadata());
+
+            logger.info(format("Retrieved file metadata from S3: %s", metadata));
 
             FileDetailsApi fileDetailsApi = new FileDetailsApi(fileId,
                     avCreatedOn,
