@@ -2,6 +2,7 @@ package uk.gov.companieshouse.filetransferservice.controller;
 
 import static java.lang.String.format;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -76,7 +77,7 @@ public class FileTransferController {
      * @throws InvalidMimeTypeException if the MIME type of the uploaded file is unsupported
      * @throws IOException if an I/O error occurs during the upload process
      */
-    @PostMapping(value = {"/", "/upload"}, consumes = "application/json", produces = "application/json")
+    @PostMapping(value = "/upload", consumes = "application/json", produces = "application/json")
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<IdApi> upload(@RequestBody uk.gov.companieshouse.filetransferservice.model.legacy.FileApi file)
             throws InvalidMimeTypeException, IOException {

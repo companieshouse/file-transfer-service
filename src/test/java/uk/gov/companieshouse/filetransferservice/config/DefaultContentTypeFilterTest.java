@@ -31,7 +31,7 @@ public class DefaultContentTypeFilterTest {
     }
 
     @Test
-    @DisplayName("Test HttpServletRequest without a valid content-type header")
+    @DisplayName("Test HttpServletRequest POST with a valid content-type header")
     void testDoFilterWithPostAndContentType() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setContentType("application/json");
@@ -46,7 +46,7 @@ public class DefaultContentTypeFilterTest {
     }
 
     @Test
-    @DisplayName("Test HttpServletRequest without a valid content-type header")
+    @DisplayName("Test HttpServletRequest POST without a valid content-type header")
     void testDoFilterWithPostWithoutContentType() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setContentType(null);
@@ -62,7 +62,7 @@ public class DefaultContentTypeFilterTest {
     }
 
     @Test
-    @DisplayName("Test HttpServletRequest without a valid content-type header")
+    @DisplayName("Test HttpServletRequest GET with a valid content-type header")
     void testDoFilterWithGetAndContentType() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setContentType("application/json");
@@ -78,7 +78,7 @@ public class DefaultContentTypeFilterTest {
 
 
     @Test
-    @DisplayName("Test HttpServletRequest without a valid content-type header")
+    @DisplayName("Test HttpServletRequest GET without a valid content-type header")
     void testDoFilterWithGetWithoutContentType() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setContentType(null);
