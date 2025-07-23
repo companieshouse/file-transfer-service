@@ -1,6 +1,8 @@
 package uk.gov.companieshouse.filetransferservice.controller;
 
 import static java.util.Objects.requireNonNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,7 +70,7 @@ class FileTransferControllerTest {
     @BeforeEach
     void beforeEach() {
         fileTransferController = new FileTransferController(
-                fileStorageStrategy, converter, mimeTypeValidator, fileUploadValidator, logger, false);
+                fileStorageStrategy, converter, mimeTypeValidator, fileUploadValidator, logger, true);
     }
 
     @Test
@@ -203,7 +205,8 @@ class FileTransferControllerTest {
 
         when(fileStorageStrategy.load(fileDetails)).thenReturn(Optional.of(file));
 
-        ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> response = fileTransferController.downloadAsJson(fileId);
+        ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> response =
+                fileTransferController.downloadAsJson(fileId, true);
 
         FileApi fileApi = requireNonNull(response.getBody());
         byte[] responseContent = fileApi.getBody();
@@ -269,7 +272,7 @@ class FileTransferControllerTest {
 
         when(fileStorageStrategy.load(fileDetails)).thenReturn(Optional.of(file));
 
-        ResponseEntity<Resource> response = fileTransferController.download(fileId);
+        ResponseEntity<Resource> response = fileTransferController.download(fileId, true);
 
         requireNonNull(response.getBody());
         byte[] responseContent = response.getBody().getContentAsByteArray();
@@ -289,7 +292,7 @@ class FileTransferControllerTest {
 
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.empty());
 
-        assertThrows(FileNotFoundException.class, () -> fileTransferController.download(fileId));
+        assertThrows(FileNotFoundException.class, () -> fileTransferController.download(fileId, true));
     }
 
     @Test
@@ -298,11 +301,19 @@ class FileTransferControllerTest {
         String fileId = "123";
 
         var fileDetailsApi = new FileDetailsApi();
-        ReflectionTestUtils.setField(fileDetailsApi, "avStatus", AvStatus.INFECTED);
+        fileDetailsApi.setId(fileId);
+        fileDetailsApi.setAvStatus(AvStatus.INFECTED);
 
         when(fileStorageStrategy.getFileDetails(fileId)).thenReturn(Optional.of(fileDetailsApi));
 
-        assertThrows(FileNotCleanException.class, () -> fileTransferController.download(fileId));
+        FileNotCleanException expectedException = assertThrows(FileNotCleanException.class, () -> {
+            fileTransferController.download(fileId, false);
+        });
+
+        verify(fileStorageStrategy, times(1)).getFileDetails(fileId);
+
+        assertThat(expectedException.getFileId(), is(fileId));
+        assertThat(expectedException.getAvStatus(), is(AvStatus.INFECTED));
     }
 
 }

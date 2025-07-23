@@ -50,20 +50,20 @@ public class FileTransferController {
     private final MimeTypeValidator mimeTypeValidator;
     private final FileUploadValidator fileUploadValidator;
     private final Logger logger;
-    private final boolean bypassAv;
+    private final boolean antiVirusCheckingEnabled;
 
     public FileTransferController(FileStorageStrategy fileStorageStrategy,
             MultipartFileToFileUploadApiConverter fileUploadConverter,
             MimeTypeValidator mimeTypeValidator,
             FileUploadValidator fileUploadValidator,
             Logger logger,
-            @Value("${filetransfer.bypass_av_check:false}") boolean bypassAv) {
+            @Value("${antivirus.checking.enabled:true}") boolean antiVirusCheckEnabled) {
         this.fileStorageStrategy = fileStorageStrategy;
         this.fileUploadConverter = fileUploadConverter;
         this.mimeTypeValidator = mimeTypeValidator;
         this.fileUploadValidator = fileUploadValidator;
         this.logger = logger;
-        this.bypassAv = bypassAv;
+        this.antiVirusCheckingEnabled = antiVirusCheckEnabled;
     }
 
     /**
@@ -80,7 +80,6 @@ public class FileTransferController {
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<IdApi> upload(@RequestBody uk.gov.companieshouse.filetransferservice.model.legacy.FileApi file)
             throws InvalidMimeTypeException, IOException {
-
         logger.trace("upload(json) method called.");
 
         mimeTypeValidator.validate(file.getMimeType());
@@ -107,7 +106,6 @@ public class FileTransferController {
     @PostMapping(value = "/", consumes = "multipart/form-data")
     public ResponseEntity<IdApi> upload(@RequestParam(value = "file") MultipartFile uploadedFile)
             throws InvalidMimeTypeException, IOException {
-
         logger.trace("upload(file) method called.");
 
         mimeTypeValidator.validate(uploadedFile.getContentType());
@@ -128,7 +126,6 @@ public class FileTransferController {
     @GetMapping(path = "/{fileId}")
     public ResponseEntity<FileDetailsApi> get(@PathVariable String fileId)
             throws FileNotFoundException, FileNotCleanException {
-
         logger.trace(format("getFileDetails(fileId=%s) method called.", fileId));
 
         FileDetailsApi fileDetails = fileStorageStrategy.getFileDetails(fileId)
@@ -139,13 +136,13 @@ public class FileTransferController {
 
     @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
     @Deprecated(since = "0.2.16", forRemoval = true)
-    public ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> downloadAsJson(@PathVariable String fileId)
+    public ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> downloadAsJson(
+            @PathVariable String fileId, @RequestParam(name = "bypassAv", defaultValue = "false") boolean bypassAv)
             throws FileNotFoundException, FileNotCleanException, IOException {
-
-        logger.trace(format("downloadAsJson(fileId=%s) method called.", fileId));
+        logger.trace(format("downloadAsJson(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
 
         FileDetailsApi fileDetailsApi = get(fileId).getBody();
-        Resource fileResource = download(fileId).getBody();
+        Resource fileResource = download(fileId, bypassAv).getBody();
 
         if (fileDetailsApi == null || fileResource == null) {
             throw new FileNotFoundException(fileId);
@@ -158,17 +155,16 @@ public class FileTransferController {
 
     @GetMapping(path = "/{fileId}/downloadbinary")
     @Deprecated(since = "0.2.16", forRemoval = true)
-    public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
-            throws FileNotFoundException, FileNotCleanException, IOException {
-
+    public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId,
+            @RequestParam(name = "bypassAv", defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException, IOException {
         logger.trace(format("downloadAsBinary(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
 
         FileDetailsApi fileDetailsApi = get(fileId).getBody();
         logger.info(format("Download binary file with details: %s", fileDetailsApi));
 
-        checkAntiVirusStatus(fileDetailsApi);
+        checkAntiVirusStatus(fileDetailsApi, bypassAv);
 
-        var file = downloadAsJson(fileId).getBody();
+        var file = downloadAsJson(fileId, bypassAv).getBody();
         var data = file.getBody();
 
         var headers = new HttpHeaders();
@@ -186,15 +182,14 @@ public class FileTransferController {
     }
 
     @GetMapping(path = "/{fileId}/download")
-    public ResponseEntity<Resource> download(@PathVariable String fileId)
-            throws FileNotFoundException, FileNotCleanException {
-
-        logger.trace(format("download(fileId=%s) method called.", fileId));
+    public ResponseEntity<Resource> download(@PathVariable String fileId,
+            @RequestParam(name = "bypassAv", defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
+        logger.trace(format("download(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
 
         FileDetailsApi fileDetailsApi = fileStorageStrategy.getFileDetails(fileId)
                 .orElseThrow(() -> new FileNotFoundException(fileId));
 
-        checkAntiVirusStatus(fileDetailsApi);
+        checkAntiVirusStatus(fileDetailsApi, bypassAv);
 
         FileDownloadApi fileDownload = fileStorageStrategy.load(fileDetailsApi)
                 .orElseThrow(() -> new FileNotFoundException(fileId));
@@ -238,11 +233,19 @@ public class FileTransferController {
                 fileDetailsApi.getSize().intValue(), fileExtension);
     }
 
-    private void checkAntiVirusStatus(final FileDetailsApi fileDetails) throws FileNotCleanException {
+    private void checkAntiVirusStatus(final FileDetailsApi fileDetails, boolean bypassAv) throws FileNotCleanException {
         logger.trace(format("checkAntiVirusStatus(fileId=%s, bypassAv=%s) method called.", fileDetails.getId(), bypassAv));
 
-        logger.info(format("AV Status: %s", fileDetails.getAvStatus()));
-        if (!bypassAv && fileDetails.getAvStatus() != AvStatus.CLEAN) {
+        logger.info(format("AV Checking Enabled: %s (AV Status: %s)", antiVirusCheckingEnabled, fileDetails.getAvStatus()));
+
+        // If AV checking is disabled (for integration testing), or the file is being bypassed, skip the AV check
+        if(!antiVirusCheckingEnabled || bypassAv) {
+            logger.info(format("> Bypassing AV check for fileId: %s", fileDetails.getId()));
+            return;
+        }
+
+        // If the file is not clean, throw an exception
+        if(fileDetails.getAvStatus() != AvStatus.CLEAN) {
             throw new FileNotCleanException(fileDetails.getAvStatus(), fileDetails.getId());
         }
     }
