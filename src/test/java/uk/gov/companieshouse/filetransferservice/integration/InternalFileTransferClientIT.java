@@ -87,6 +87,8 @@ class InternalFileTransferClientIT {
         registry.add("aws.accessKeyId", localStack::getAccessKey);
         registry.add("aws.secretAccessKey", localStack::getSecretKey);
         registry.add("aws.bucketName", () -> BUCKET_NAME);
+
+        registry.add("antivirus.checking.enabled", () -> Boolean.FALSE);
     }
 
     @Test

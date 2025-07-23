@@ -23,7 +23,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- tests -->
-        <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
+        <jib-maven-plugin.version>3.4.6</jib-maven-plugin.version>
         <test-containers.version>1.16.3</test-containers.version>
         <junit.version>5.9.0</junit.version>
         <mockito.version>4.8.0</mockito.version>
