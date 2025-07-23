@@ -137,7 +137,7 @@ public class FileTransferController {
     @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> downloadAsJson(
-            @PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
+            @PathVariable String fileId, @RequestParam(name = "bypassAv", defaultValue = "false") boolean bypassAv)
             throws FileNotFoundException, FileNotCleanException, IOException {
         logger.trace(format("downloadAsJson(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
 
@@ -155,8 +155,8 @@ public class FileTransferController {
 
     @GetMapping(path = "/{fileId}/downloadbinary")
     @Deprecated(since = "0.2.16", forRemoval = true)
-    public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
-            throws FileNotFoundException, FileNotCleanException, IOException {
+    public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId,
+            @RequestParam(name = "bypassAv", defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException, IOException {
         logger.trace(format("downloadAsBinary(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
 
         FileDetailsApi fileDetailsApi = get(fileId).getBody();
@@ -182,9 +182,9 @@ public class FileTransferController {
     }
 
     @GetMapping(path = "/{fileId}/download")
-    public ResponseEntity<Resource> download(@PathVariable String fileId, @RequestParam(defaultValue = "false") boolean bypassAv)
-            throws FileNotFoundException, FileNotCleanException {
-        logger.trace(format("download(fileId=%s) method called.", fileId));
+    public ResponseEntity<Resource> download(@PathVariable String fileId,
+            @RequestParam(name = "bypassAv", defaultValue = "false") boolean bypassAv) throws FileNotFoundException, FileNotCleanException {
+        logger.trace(format("download(fileId=%s, bypassAv=%s) method called.", fileId, bypassAv));
 
         FileDetailsApi fileDetailsApi = fileStorageStrategy.getFileDetails(fileId)
                 .orElseThrow(() -> new FileNotFoundException(fileId));
@@ -233,14 +233,13 @@ public class FileTransferController {
                 fileDetailsApi.getSize().intValue(), fileExtension);
     }
 
-    private void checkAntiVirusStatus(final FileDetailsApi fileDetails, boolean bypassAV) throws FileNotCleanException {
-        logger.trace(format("checkAntiVirusStatus(fileId=%s, bypassAv=%s) method called.", fileDetails.getId(),
-                antiVirusCheckingEnabled));
+    private void checkAntiVirusStatus(final FileDetailsApi fileDetails, boolean bypassAv) throws FileNotCleanException {
+        logger.trace(format("checkAntiVirusStatus(fileId=%s, bypassAv=%s) method called.", fileDetails.getId(), bypassAv));
 
-        logger.info(format("AV Checking Enabled: %s, AV Status: %s", antiVirusCheckingEnabled, fileDetails.getAvStatus()));
+        logger.info(format("AV Checking Enabled: %s (AV Status: %s)", antiVirusCheckingEnabled, fileDetails.getAvStatus()));
 
         // If AV checking is disabled (for integration testing), or the file is being bypassed, skip the AV check
-        if(!antiVirusCheckingEnabled || bypassAV) {
+        if(!antiVirusCheckingEnabled || bypassAv) {
             logger.info(format("> Bypassing AV check for fileId: %s", fileDetails.getId()));
             return;
         }
