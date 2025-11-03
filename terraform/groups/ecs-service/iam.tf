@@ -10,8 +10,8 @@ resource "aws_iam_role" "task_role" {
 resource "aws_iam_policy" "task_policy" {
   count = var.file_transfer_create_ecs ? 1 : 0
 
-  name        = "${var.environment}-${local.service_name}-task-policy"
-  policy      = data.aws_iam_policy_document.file_transfer_ecs_execution[0].json
+  name   = "${var.environment}-${local.service_name}-task-policy"
+  policy = data.aws_iam_policy_document.file_transfer_ecs_execution[0].json
 }
 
 
@@ -34,8 +34,8 @@ resource "aws_iam_role" "task_role_secure" {
 resource "aws_iam_policy" "task_policy_secure" {
   count = var.secure_file_transfer_create_ecs ? 1 : 0
 
-  name        = "${var.environment}-${local.service_name_secure}-task-policy"
-  policy      = data.aws_iam_policy_document.file_transfer_secure_ecs_execution[0].json
+  name   = "${var.environment}-${local.service_name_secure}-task-policy"
+  policy = data.aws_iam_policy_document.file_transfer_secure_ecs_execution[0].json
 }
 
 resource "aws_iam_role_policy_attachment" "task_role_secure_attachment" {

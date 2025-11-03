@@ -81,13 +81,13 @@ data "vault_generic_secret" "shared_s3" {
 data "aws_kms_alias" "file_transfer_encryption_key_alias_secure" {
   count = var.secure_file_transfer_create_ecs ? 1 : 0
 
-  name          = var.file_transfer_kms_alias_secure
+  name = var.file_transfer_kms_alias_secure
 }
 
 data "aws_kms_alias" "file_transfer_encryption_key_alias" {
   count = var.file_transfer_create_ecs ? 1 : 0
 
-  name          = var.file_transfer_kms_alias
+  name = var.file_transfer_kms_alias
 }
 
 data "aws_s3_bucket" "file_transfer_bucket" {
@@ -208,7 +208,7 @@ data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
   }
 
   statement {
-    sid = "AllowAccessForKeyFile"
+    sid       = "AllowAccessForKeyFile"
     effect    = "Allow"
     actions   = ["kms:*"]
     resources = [data.aws_kms_alias.file_transfer_encryption_key_alias_secure[0].target_key_arn]
