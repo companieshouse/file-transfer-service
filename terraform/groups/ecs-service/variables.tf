@@ -5,11 +5,13 @@ variable "environment" {
   type        = string
   description = "The environment name, defined in envrionments vars."
 }
+
 variable "aws_region" {
   default     = "eu-west-2"
   type        = string
   description = "The AWS region for deployment."
 }
+
 variable "aws_profile" {
   default     = "development-eu-west-2"
   type        = string
@@ -28,20 +30,20 @@ variable "docker_registry" {
 # Service performance and scaling configs
 # ------------------------------------------------------------------------------
 variable "desired_task_count" {
-  type = number
+  type        = number
   description = "The desired ECS task count for this service"
-  default = 1 # defaulted low for dev environments, override for production
+  default     = 1 # defaulted low for dev environments, override for production
 }
 variable "required_cpus" {
-  type = number
+  type        = number
   description = "The required cpu resource for this service. 1024 here is 1 vCPU"
-  default = 256 # defaulted low for dev environments, override for production
+  default     = 256 # defaulted low for dev environments, override for production
 }
 
 variable "required_memory" {
-  type = number
+  type        = number
   description = "The required memory for this service"
-  default = 512 # defaulted low for node service in dev environments, override for production
+  default     = 512 # defaulted low for node service in dev environments, override for production
 }
 
 variable "min_task_count" {
@@ -82,7 +84,7 @@ variable "service_scaledown_schedule" {
   # Typically used to stop all tasks in a service to save resource costs overnight.
   # E.g. a value of '55 19 * * ? *' would be Mon-Sun 7:55pm.  An empty string indicates that no schedule should be created.
 
-  default     = ""
+  default = ""
 }
 variable "service_scaleup_schedule" {
   type        = string
@@ -90,7 +92,7 @@ variable "service_scaleup_schedule" {
   # Typically used to start all tasks in a service after it has been shutdown overnight.
   # E.g. a value of '5 6 * * ? *' would be Mon-Sun 6:05am.  An empty string indicates that no schedule should be created.
 
-  default     = ""
+  default = ""
 }
 
 # ----------------------------------------------------------------------
@@ -126,14 +128,14 @@ variable "file_transfer_service_version" {
 }
 
 variable "eric_cpus" {
-  type = number
+  type        = number
   description = "The required cpu resource for eric. 1024 here is 1 vCPU"
-  default = 256
+  default     = 256
 }
 variable "eric_memory" {
-  type = number
+  type        = number
   description = "The required memory for eric"
-  default = 512
+  default     = 512
 }
 variable "eric_version" {
   type        = string
@@ -155,16 +157,35 @@ variable "secure_file_transfer_create_ecs" {
 variable "file_transfer_kms_alias" {
   type        = string
   description = "The kms alias for encryption."
+  default     = ""
 }
+
 variable "file_transfer_bucket" {
   type        = string
   description = "The s3 bucket to store object."
+  default     = ""
 }
+
 variable "file_transfer_bucket_secure" {
   type        = string
   description = "The s3 bucket to store object for secure instance."
+  default     = ""
 }
+
 variable "file_transfer_kms_alias_secure" {
   type        = string
   description = "The kms alias for encryption for secure instance."
+  default     = ""
+}
+
+variable "protect_regime" {
+  type        = bool
+  description = "Whether the deployment is in a protect regime environment."
+  default     = false
+}
+
+variable "protect_account" {
+  type        = string
+  description = "The AWS account name for protect regime."
+  default     = ""
 }
