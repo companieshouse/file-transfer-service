@@ -86,13 +86,13 @@ variable "service_autoscale_target_value_cpu" {
 variable "service_scaledown_schedule" {
   type        = string
   description = "The schedule to use when scaling down the number of tasks to zero."
-  default = ""
+  default     = ""
 }
 
 variable "service_scaleup_schedule" {
   type        = string
   description = "The schedule to use when scaling up the number of tasks to their normal desired level."
-  default = ""
+  default     = ""
 }
 
 # ----------------------------------------------------------------------

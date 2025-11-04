@@ -169,7 +169,7 @@ data "aws_iam_policy_document" "file_transfer_ecs_execution" {
   statement {
     sid       = "AllowAccessForKeyFile"
     effect    = "Allow"
-    actions   = ["kms:*"]
+    actions   = ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"]
     resources = [data.aws_kms_alias.file_transfer_encryption_key_alias[0].target_key_arn]
   }
 }
@@ -210,7 +210,7 @@ data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
   statement {
     sid       = "AllowAccessForKeyFile"
     effect    = "Allow"
-    actions   = ["kms:*"]
+    actions   = ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"]
     resources = [data.aws_kms_alias.file_transfer_encryption_key_alias_secure[0].target_key_arn]
   }
 }
