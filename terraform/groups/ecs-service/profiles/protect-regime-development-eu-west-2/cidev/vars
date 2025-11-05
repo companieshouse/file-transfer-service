@@ -1,0 +1,15 @@
+environment = "cidev"
+aws_profile = "protect-regime-development-eu-west-2"
+
+# service configs
+file_transfer_bucket_secure = "s3av-protect-secure"
+file_transfer_kms_alias_secure = "alias/secure-file-transfer"
+file_transfer_create_ecs = false
+use_set_environment_files = false
+
+# No default but value doesn't matter as we're not creating ECS
+file_transfer_service_version = "latest"
+
+# build time configs
+protect_regime = true
+protect_account = "protectdev"
