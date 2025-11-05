@@ -141,8 +141,7 @@ data "aws_iam_policy_document" "file_transfer_ecs_execution" {
     effect = "Allow"
 
     actions = [
-      "s3:ListBucket",
-      "s3:HeadBucket"
+      "s3:ListBucket"
     ]
 
     resources = [
@@ -158,9 +157,7 @@ data "aws_iam_policy_document" "file_transfer_ecs_execution" {
       "s3:PutObject",
       "s3:GetObject",
       "s3:DeleteObject",
-      "s3:HeadObject",
       "s3:GetObjectAcl",
-      "s3:PutObjectAcl",
       "s3:GetObjectTagging",
       "s3:PutObjectTagging"
     ]
@@ -192,8 +189,7 @@ data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
     effect = "Allow"
 
     actions = [
-      "s3:ListBucket",
-      "s3:HeadBucket"
+      "s3:ListBucket"
     ]
 
     resources = [
@@ -209,9 +205,7 @@ data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
       "s3:PutObject",
       "s3:GetObject",
       "s3:DeleteObject",
-      "s3:HeadObject",
       "s3:GetObjectAcl",
-      "s3:PutObjectAcl",
       "s3:GetObjectTagging",
       "s3:PutObjectTagging"
     ]
