@@ -32,7 +32,7 @@ module "ecs-service" {
   task_role_arn           = aws_iam_role.task_role[0].arn
 
   # Load balancer configuration
-  lb_listener_arn           = data.aws_lb_listener.service_lb_listener.arn
+  lb_listener_arn           = data.aws_lb_listener.service_lb_listener[0].arn
   lb_listener_rule_priority = local.lb_listener_rule_priority
   lb_listener_paths         = local.lb_listener_paths
 
@@ -97,7 +97,7 @@ module "ecs-service-secure" {
   task_role_arn           = aws_iam_role.task_role_secure[0].arn
 
   # Load balancer configuration
-  lb_listener_arn           = data.aws_lb_listener.service_lb_listener_secure.arn
+  lb_listener_arn           = data.aws_lb_listener.service_lb_listener_secure[0].arn
   lb_listener_rule_priority = local.lb_listener_rule_priority_secure
   lb_listener_paths         = local.lb_listener_paths
 
@@ -134,7 +134,7 @@ module "ecs-service-secure" {
   cloudwatch_alarms_enabled = var.cloudwatch_alarms_enabled
 
   # eric options for eric running API module
-  use_eric_reverse_proxy    = true
+  use_eric_reverse_proxy    = !var.protect_regime
   eric_version              = var.eric_version
   eric_cpus                 = var.eric_cpus
   eric_memory               = var.eric_memory

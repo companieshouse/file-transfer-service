@@ -34,21 +34,29 @@ data "aws_iam_role" "ecs_cluster_iam_role" {
 }
 
 data "aws_lb" "service_lb" {
+  count = var.file_transfer_create_ecs ? 1 : 0
+
   name = "alb-${var.environment}-file-transfer"
 }
 
 data "aws_lb_listener" "service_lb_listener" {
-  load_balancer_arn = data.aws_lb.service_lb.arn
+  count = var.file_transfer_create_ecs ? 1 : 0
+
+  load_balancer_arn = data.aws_lb.service_lb[0].arn
   port              = 443
 }
 
 
 data "aws_lb" "service_lb_secure" {
+  count = var.secure_file_transfer_create_ecs ? 1 : 0
+
   name = "alb-${var.environment}-secure-file-transfer"
 }
 
 data "aws_lb_listener" "service_lb_listener_secure" {
-  load_balancer_arn = data.aws_lb.service_lb_secure.arn
+  count = var.secure_file_transfer_create_ecs ? 1 : 0
+
+  load_balancer_arn = data.aws_lb.service_lb_secure[0].arn
   port              = 443
 }
 

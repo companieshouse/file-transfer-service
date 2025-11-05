@@ -63,7 +63,7 @@ locals {
     }
   ]
 
-  eric_secrets = [
+  eric_secrets = var.protect_regime ? [] : [
     { "name" : "API_KEY", "valueFrom" : local.global_secrets_arn_map.eric_api_key },
     { "name" : "AES256_KEY", "valueFrom" : local.global_secrets_arn_map.eric_aes256_key }
   ]
