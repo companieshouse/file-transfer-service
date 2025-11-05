@@ -137,39 +137,49 @@ data "aws_iam_policy_document" "file_transfer_ecs_execution" {
   count = var.file_transfer_create_ecs ? 1 : 0
 
   statement {
+    sid    = "S3RootBucketAllow"
     effect = "Allow"
 
     actions = [
-      "s3:PutAccountPublicAccessBlock",
-      "s3:GetAccountPublicAccessBlock",
       "s3:ListBucket",
       "s3:HeadBucket"
     ]
 
     resources = [
-      data.aws_s3_bucket.file_transfer_bucket[0].arn,
-      "${data.aws_s3_bucket.file_transfer_bucket[0].arn}/*"
+      data.aws_s3_bucket.file_transfer_bucket[0].arn
     ]
   }
 
   statement {
+    sid    = "AllowS3ObjectActions"
     effect = "Allow"
 
     actions = [
-      "s3:*",
-      "logs:*"
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:DeleteObject",
+      "s3:HeadObject",
+      "s3:GetObjectAcl",
+      "s3:PutObjectAcl",
+      "s3:GetObjectTagging",
+      "s3:PutObjectTagging"
     ]
 
     resources = [
-      "arn:aws:logs:*:*:log-group:*:*:*",
       "${data.aws_s3_bucket.file_transfer_bucket[0].arn}/*"
     ]
   }
 
   statement {
-    sid       = "AllowAccessForKeyFile"
-    effect    = "Allow"
-    actions   = ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"]
+    sid    = "AllowAccessForKeyFile"
+    effect = "Allow"
+
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:GenerateDataKey"
+    ]
+
     resources = [data.aws_kms_alias.file_transfer_encryption_key_alias[0].target_key_arn]
   }
 }
@@ -178,39 +188,49 @@ data "aws_iam_policy_document" "file_transfer_secure_ecs_execution" {
   count = var.secure_file_transfer_create_ecs ? 1 : 0
 
   statement {
+    sid    = "S3RootBucketAllow"
     effect = "Allow"
 
     actions = [
-      "s3:PutAccountPublicAccessBlock",
-      "s3:GetAccountPublicAccessBlock",
       "s3:ListBucket",
       "s3:HeadBucket"
     ]
 
     resources = [
-      data.aws_s3_bucket.file_transfer_bucket_secure[0].arn,
-      "${data.aws_s3_bucket.file_transfer_bucket_secure[0].arn}/*"
+      data.aws_s3_bucket.file_transfer_bucket_secure[0].arn
     ]
   }
 
   statement {
+    sid    = "AllowS3ObjectActions"
     effect = "Allow"
 
     actions = [
-      "s3:*",
-      "logs:*"
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:DeleteObject",
+      "s3:HeadObject",
+      "s3:GetObjectAcl",
+      "s3:PutObjectAcl",
+      "s3:GetObjectTagging",
+      "s3:PutObjectTagging"
     ]
 
     resources = [
-      "arn:aws:logs:*:*:log-group:*:*:*",
       "${data.aws_s3_bucket.file_transfer_bucket_secure[0].arn}/*"
     ]
   }
 
   statement {
-    sid       = "AllowAccessForKeyFile"
-    effect    = "Allow"
-    actions   = ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"]
+    sid    = "AllowAccessForKeyFile"
+    effect = "Allow"
+
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:GenerateDataKey"
+    ]
+
     resources = [data.aws_kms_alias.file_transfer_encryption_key_alias_secure[0].target_key_arn]
   }
 }
