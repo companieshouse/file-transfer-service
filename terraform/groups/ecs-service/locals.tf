@@ -15,7 +15,7 @@ locals {
   healthcheck_path                 = "/file-transfer-service/healthcheck" # healthcheck path for file-transfer-service
   healthcheck_matcher              = "200"
   kms_alias                        = var.protect_regime ? "alias/${var.protect_account}/euw2/ssm" : "alias/${var.aws_profile}/environment-services-kms"
-  vpc_name                         = local.service_secrets["vpc_name"]
+  vpc_name                         = local.stack_secrets["vpc_name"]
   s3_config_bucket                 = data.vault_generic_secret.shared_s3.data["config_bucket_name"]
   app_environment_filename         = "file-transfer-service.env"
   app_environment_filename_secure  = "file-transfer-service-secure.env"
