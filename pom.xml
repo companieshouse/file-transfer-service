@@ -37,7 +37,7 @@
 
         <!-- internal -->
         <structured-logging.version>3.0.46</structured-logging.version>
-        <private-api-sdk-java.version>4.0.436</private-api-sdk-java.version>
+        <private-api-sdk-java.version>4.0.444</private-api-sdk-java.version>
         <software.amazon.awssdk-s3.version>2.31.51</software.amazon.awssdk-s3.version>
         <api-security-java-version>2.0.19</api-security-java-version>
 
