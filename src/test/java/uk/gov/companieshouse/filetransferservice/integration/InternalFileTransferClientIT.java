@@ -105,7 +105,7 @@ class InternalFileTransferClientIT {
         Map<String, Object> metadata = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         metadata.putAll(downloadResponse.getHeaders());
 
-        String mimeType = ((List)metadata.get(CONTENT_TYPE)).getFirst().toString();
+        String mimeType = ((List<?>)metadata.get(CONTENT_TYPE)).getFirst().toString();
         String contentDisposition = Optional.ofNullable(metadata.get(CONTENT_DISPOSITION))
                 .orElseThrow(() -> new IllegalArgumentException("Missing Content-Disposition header")).toString();
 
@@ -113,6 +113,17 @@ class InternalFileTransferClientIT {
         String filename = matcher.find() ? matcher.group(1) : "unknown";
         assertEquals("application/pdf", mimeType);
         assertEquals("large-file.pdf", filename);
+    }
+
+    @Test
+    void shouldFailUploadingTestFileWithInvalidMimeType() throws Exception {
+        try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
+            final String contentType = "application/zip";
+            ApiResponse<IdApi> uploadResponse = internalFileTransferClient.privateFileTransferHandler()
+                    .upload(is, contentType, "large-file.pdf")
+                    .execute();
+            assertEquals(406, uploadResponse.getStatusCode());
+        }
     }
 
     @Test

@@ -8,6 +8,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.tika.mime.MimeTypeException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -35,7 +37,6 @@ import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
 import uk.gov.companieshouse.filetransferservice.service.storage.FileStorageStrategy;
-import uk.gov.companieshouse.filetransferservice.validation.FileUploadValidator;
 import uk.gov.companieshouse.filetransferservice.validation.MimeTypeValidator;
 import uk.gov.companieshouse.logging.Logger;
 
@@ -48,20 +49,17 @@ public class FileTransferController {
     private final FileStorageStrategy fileStorageStrategy;
     private final MultipartFileToFileUploadApiConverter fileUploadConverter;
     private final MimeTypeValidator mimeTypeValidator;
-    private final FileUploadValidator fileUploadValidator;
     private final Logger logger;
     private final boolean antiVirusCheckingEnabled;
 
     public FileTransferController(FileStorageStrategy fileStorageStrategy,
             MultipartFileToFileUploadApiConverter fileUploadConverter,
             MimeTypeValidator mimeTypeValidator,
-            FileUploadValidator fileUploadValidator,
             Logger logger,
             @Value("${antivirus.checking.enabled:true}") boolean antiVirusCheckEnabled) {
         this.fileStorageStrategy = fileStorageStrategy;
         this.fileUploadConverter = fileUploadConverter;
         this.mimeTypeValidator = mimeTypeValidator;
-        this.fileUploadValidator = fileUploadValidator;
         this.logger = logger;
         this.antiVirusCheckingEnabled = antiVirusCheckEnabled;
     }
@@ -79,10 +77,10 @@ public class FileTransferController {
     @PostMapping(value = {"/", "/upload"}, consumes = "application/json", produces = "application/json")
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<IdApi> upload(@RequestBody uk.gov.companieshouse.filetransferservice.model.legacy.FileApi file)
-            throws InvalidMimeTypeException, IOException {
+            throws InvalidMimeTypeException, IOException, MimeTypeException {
         logger.trace("upload(json) method called.");
 
-        mimeTypeValidator.validate(file.getMimeType());
+        mimeTypeValidator.validate(file);
 
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(file.getBody())) {
             FileUploadApi fileUploadApi = new FileUploadApi(file.getFileName(),
@@ -105,11 +103,10 @@ public class FileTransferController {
      */
     @PostMapping(value = "/", consumes = "multipart/form-data")
     public ResponseEntity<IdApi> upload(@RequestParam(value = "file") MultipartFile uploadedFile)
-            throws InvalidMimeTypeException, IOException {
+            throws InvalidMimeTypeException, IOException, MimeTypeException {
         logger.trace("upload(file) method called.");
 
-        mimeTypeValidator.validate(uploadedFile.getContentType());
-        fileUploadValidator.validate(uploadedFile);
+        mimeTypeValidator.validate(uploadedFile);
 
         FileUploadApi file = fileUploadConverter.convert(uploadedFile);
         String fileId = fileStorageStrategy.save(file);

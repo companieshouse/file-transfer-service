@@ -3,12 +3,15 @@ package uk.gov.companieshouse.filetransferservice.exception;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.tika.mime.MimeTypeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+
 import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.filetransferservice.errors.ErrorResponseBuilder;
 import uk.gov.companieshouse.logging.Logger;
@@ -43,6 +46,58 @@ public class RestExceptionHandler {
         logger.error("File was uploaded with an invalid mime type", e);
         return ErrorResponseBuilder
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .withError("Invalid MIME type",
+                        "file",
+                        "body_parameter",
+                        "validation"
+                )
+                .build();
+    }
+
+    @ExceptionHandler({InvalidFileTypeException.class})
+    public ResponseEntity<ApiErrorResponse> handleInvalidFileType(InvalidFileTypeException e) {
+        logger.error("File was uploaded with an invalid file type", e);
+        return ErrorResponseBuilder
+                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .withError("Invalid file type",
+                        "file",
+                        "body_parameter",
+                        "validation"
+                )
+                .build();
+    }
+
+    @ExceptionHandler({MismatchingContentTypeException.class})
+    public ResponseEntity<ApiErrorResponse> handleMismatchingContentTypeException(MismatchingContentTypeException e) {
+        logger.error("File was uploaded with a mismatching type to content-type", e);
+        return ErrorResponseBuilder
+                .status(HttpStatus.NOT_ACCEPTABLE)
+                .withError("Mismatching file type",
+                        "file",
+                        "body_parameter",
+                        "validation"
+                )
+                .build();
+    }
+
+    @ExceptionHandler({MismatchFileExtensionException.class})
+    public ResponseEntity<ApiErrorResponse> handleMismatchFileExtensionException(MismatchFileExtensionException e) {
+        logger.error("File was uploaded with a mismatching extension to detected MIME type", e);
+        return ErrorResponseBuilder
+                .status(HttpStatus.NOT_ACCEPTABLE)
+                .withError("Mismatching file extension",
+                        "file",
+                        "body_parameter",
+                        "validation"
+                )
+                .build();
+    }
+
+    @ExceptionHandler({MimeTypeException.class})
+    public ResponseEntity<ApiErrorResponse> handleMimeTypeException(MimeTypeException e) {
+        logger.error("Error processing MIME type", e);
+        return ErrorResponseBuilder
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .withError("Invalid MIME type",
                         "file",
                         "body_parameter",
