@@ -3,18 +3,24 @@ package uk.gov.companieshouse.filetransferservice.exception;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+
 import uk.gov.companieshouse.api.error.ApiErrorResponse;
 import uk.gov.companieshouse.filetransferservice.errors.ErrorResponseBuilder;
 import uk.gov.companieshouse.logging.Logger;
 
 @ControllerAdvice
 public class RestExceptionHandler {
+
+    private static final String VALIDATION = "validation";
+
+    private static final String BODY_PARAMETER = "body_parameter";
 
     public static final String FILE_ID_KEY = "fileId";
 
@@ -40,13 +46,39 @@ public class RestExceptionHandler {
 
     @ExceptionHandler({InvalidMimeTypeException.class})
     public ResponseEntity<ApiErrorResponse> handleInvalidMimeType(InvalidMimeTypeException e) {
-        logger.error("File was uploaded with an invalid mime type", e);
+        logger.error("File was uploaded with an invalid requested/ detected mime type", e);
         return ErrorResponseBuilder
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .withError("Invalid MIME type",
                         "file",
-                        "body_parameter",
-                        "validation"
+                        BODY_PARAMETER,
+                        VALIDATION
+                )
+                .build();
+    }
+
+    @ExceptionHandler({MismatchingContentTypeException.class})
+    public ResponseEntity<ApiErrorResponse> handleMismatchingContentTypeException(MismatchingContentTypeException e) {
+        logger.error("File was uploaded with a mismatching type to content-type", e);
+        return ErrorResponseBuilder
+                .status(HttpStatus.NOT_ACCEPTABLE)
+                .withError("Mismatching file type",
+                        "file",
+                        BODY_PARAMETER,
+                        VALIDATION
+                )
+                .build();
+    }
+
+    @ExceptionHandler({MismatchFileExtensionException.class})
+    public ResponseEntity<ApiErrorResponse> handleMismatchFileExtensionException(MismatchFileExtensionException e) {
+        logger.error("File was uploaded with a mismatching extension to detected MIME type", e);
+        return ErrorResponseBuilder
+                .status(HttpStatus.NOT_ACCEPTABLE)
+                .withError("Mismatching file extension",
+                        "file",
+                        BODY_PARAMETER,
+                        VALIDATION
                 )
                 .build();
     }
@@ -94,7 +126,7 @@ public class RestExceptionHandler {
      * @return a {@code ResponseEntity} with an HTTP status code of {@link HttpStatus#PAYLOAD_TOO_LARGE}
      */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<?> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
         Map<String, Object> loggedVars = new HashMap<>();
         loggedVars.put("maxFileSize", e.getMaxUploadSize());
         logger.error("Uploaded file was too large", e, loggedVars);

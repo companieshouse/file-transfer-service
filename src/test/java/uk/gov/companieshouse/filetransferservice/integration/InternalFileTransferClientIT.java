@@ -31,6 +31,7 @@ import org.springframework.util.ResourceUtils;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
+
 import uk.gov.companieshouse.api.filetransfer.AvStatus;
 import uk.gov.companieshouse.api.filetransfer.FileApi;
 import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
@@ -94,6 +95,30 @@ class InternalFileTransferClientIT {
     @Test
     void shouldUpLoadAndDownloadTestFile() throws Exception {
         ApiResponse<FileApi> downloadResponse = internalFileTransferClient.privateFileTransferHandler()
+                .downloadAsStream(idApi.getId())
+                .execute();
+        assertEquals(200, downloadResponse.getStatusCode());
+
+        FileApi content = downloadResponse.getData();
+        assertEquals("application/pdf", content.getMimeType());
+        assertEquals("large-file.pdf", content.getFileName());
+
+        Map<String, Object> metadata = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        metadata.putAll(downloadResponse.getHeaders());
+
+        String mimeType = ((List<?>)metadata.get(CONTENT_TYPE)).getFirst().toString();
+        String contentDisposition = Optional.ofNullable(metadata.get(CONTENT_DISPOSITION))
+                .orElseThrow(() -> new IllegalArgumentException("Missing Content-Disposition header")).toString();
+
+        Matcher matcher = FILENAME_PATTERN.matcher(contentDisposition);
+        String filename = matcher.find() ? matcher.group(1) : "unknown";
+        assertEquals("application/pdf", mimeType);
+        assertEquals("large-file.pdf", filename);
+    }
+
+    @Test
+    void shouldUpLoadAndApiFileDownloadTestFile() throws Exception {
+        ApiResponse<FileApi> downloadResponse = internalFileTransferClient.privateFileTransferHandler()
                 .download(idApi.getId())
                 .execute();
         assertEquals(200, downloadResponse.getStatusCode());
@@ -105,14 +130,10 @@ class InternalFileTransferClientIT {
         Map<String, Object> metadata = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         metadata.putAll(downloadResponse.getHeaders());
 
-        String mimeType = ((List)metadata.get(CONTENT_TYPE)).getFirst().toString();
-        String contentDisposition = Optional.ofNullable(metadata.get(CONTENT_DISPOSITION))
-                .orElseThrow(() -> new IllegalArgumentException("Missing Content-Disposition header")).toString();
+        String mimeType = ((List<?>)metadata.get(CONTENT_TYPE)).getFirst().toString();
 
-        Matcher matcher = FILENAME_PATTERN.matcher(contentDisposition);
-        String filename = matcher.find() ? matcher.group(1) : "unknown";
-        assertEquals("application/pdf", mimeType);
-        assertEquals("large-file.pdf", filename);
+        assertEquals("application/json", mimeType);
+
     }
 
     @Test

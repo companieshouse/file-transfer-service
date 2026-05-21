@@ -21,3 +21,17 @@ The pipeline is capable of deploying everything so manual deployment should not 
 The lambda function requires a role with several policies attached.
 - S3 - upload/download from the file transfer bucket
 - Cloudwatch - publish logs to cloudwatch
+
+## Endpoints
+
+| Endpoint | Method | Notes |
+|---|---:|---|
+| `/file-transfer-service/` | POST | Preferred multipart upload. Consumes `multipart/form-data`. Form parameter: `file`. Returns `IdApi` (JSON with `id`). Also accepts legacy JSON (`application/json`) for backwards compatibility, but that variant is deprecated. |
+| `/file-transfer-service/upload` | POST | Legacy JSON upload **(deprecated)**. Consumes `application/json` and accepts the legacy `FileApi` JSON payload — do NOT send `multipart/form-data` here. |
+| `/file-transfer-service/{fileId}` | GET | Retrieve file metadata. Returns `FileDetailsApi` (JSON). Throws 404 if not found. |
+| `/file-transfer-service/{fileId}/download` | GET | Download file stream. Query param: `bypassAv`. Returns file `Resource` with appropriate `Content-Type` and `Content-Disposition: attachment; filename=...`. There is also a deprecated variant that produces `application/json` and returns the legacy `FileApi` JSON when requested. |
+| `/file-transfer-service/{fileId}/downloadbinary` | GET | Deprecated. |
+| `/file-transfer-service/{fileId}` | DELETE | Delete the file. Returns `204 No Content` on success. |
+| `/file-transfer-service/healthcheck` | GET | Returns service health status. |
+
+
