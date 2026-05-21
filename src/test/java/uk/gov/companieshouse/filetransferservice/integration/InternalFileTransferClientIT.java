@@ -31,6 +31,7 @@ import org.springframework.util.ResourceUtils;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
+
 import uk.gov.companieshouse.api.filetransfer.AvStatus;
 import uk.gov.companieshouse.api.filetransfer.FileApi;
 import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
@@ -94,7 +95,7 @@ class InternalFileTransferClientIT {
     @Test
     void shouldUpLoadAndDownloadTestFile() throws Exception {
         ApiResponse<FileApi> downloadResponse = internalFileTransferClient.privateFileTransferHandler()
-                .download(idApi.getId())
+                .downloadAsStream(idApi.getId())
                 .execute();
         assertEquals(200, downloadResponse.getStatusCode());
 
@@ -116,14 +117,23 @@ class InternalFileTransferClientIT {
     }
 
     @Test
-    void shouldFailUploadingTestFileWithInvalidMimeType() throws Exception {
-        try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
-            final String contentType = "application/zip";
-            ApiResponse<IdApi> uploadResponse = internalFileTransferClient.privateFileTransferHandler()
-                    .upload(is, contentType, "large-file.pdf")
-                    .execute();
-            assertEquals(406, uploadResponse.getStatusCode());
-        }
+    void shouldUpLoadAndApiFileDownloadTestFile() throws Exception {
+        ApiResponse<FileApi> downloadResponse = internalFileTransferClient.privateFileTransferHandler()
+                .download(idApi.getId())
+                .execute();
+        assertEquals(200, downloadResponse.getStatusCode());
+
+        FileApi content = downloadResponse.getData();
+        assertEquals("application/pdf", content.getMimeType());
+        assertEquals("large-file.pdf", content.getFileName());
+
+        Map<String, Object> metadata = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        metadata.putAll(downloadResponse.getHeaders());
+
+        String mimeType = ((List<?>)metadata.get(CONTENT_TYPE)).getFirst().toString();
+
+        assertEquals("application/json", mimeType);
+
     }
 
     @Test

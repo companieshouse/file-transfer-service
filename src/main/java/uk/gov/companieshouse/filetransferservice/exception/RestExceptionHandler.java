@@ -43,23 +43,10 @@ public class RestExceptionHandler {
 
     @ExceptionHandler({InvalidMimeTypeException.class})
     public ResponseEntity<ApiErrorResponse> handleInvalidMimeType(InvalidMimeTypeException e) {
-        logger.error("File was uploaded with an invalid mime type", e);
+        logger.error("File was uploaded with an invalid requested/ detected mime type", e);
         return ErrorResponseBuilder
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .withError("Invalid MIME type",
-                        "file",
-                        "body_parameter",
-                        "validation"
-                )
-                .build();
-    }
-
-    @ExceptionHandler({InvalidFileTypeException.class})
-    public ResponseEntity<ApiErrorResponse> handleInvalidFileType(InvalidFileTypeException e) {
-        logger.error("File was uploaded with an invalid file type", e);
-        return ErrorResponseBuilder
-                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .withError("Invalid file type",
                         "file",
                         "body_parameter",
                         "validation"

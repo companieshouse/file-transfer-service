@@ -22,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
-import uk.gov.companieshouse.filetransferservice.exception.InvalidFileTypeException;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.exception.MismatchFileExtensionException;
 import uk.gov.companieshouse.filetransferservice.service.identity.FileTypeIdentityService;
@@ -112,8 +111,8 @@ class MimeTypeValidatorTest {
     public static Stream<Arguments> getMultipartFileInvalidCases() {
         return Stream.of(
                 Arguments.of("text/plain", "file.pdf", "application/pdf", MismatchFileExtensionException.class),
-                Arguments.of("text/plain", "file.txt", null, InvalidFileTypeException.class),
-                Arguments.of("text/plain", "file.txt", "video/mp4", InvalidFileTypeException.class)
+                Arguments.of("text/plain", "file.txt", null, InvalidMimeTypeException.class),
+                Arguments.of("text/plain", "file.txt", "video/mp4", InvalidMimeTypeException.class)
         );
     }
 
