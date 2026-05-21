@@ -101,4 +101,52 @@ class RestExceptionHandlerTest {
         assertThat(response.getStatusCode(), is(HttpStatusCode.valueOf(HttpStatus.PAYLOAD_TOO_LARGE.value())));
         assertThat(response.getBody(), nullValue());
     }
+
+    @Test
+    void testHandleMismatchingContentTypeException() {
+        ResponseEntity<ApiErrorResponse> response = underTest.handleMismatchingContentTypeException(
+                new MismatchingContentTypeException("text/plain", "text/html"));
+
+        ApiError apiError = new ApiError("Mismatching file type",
+                "file",
+                "body_parameter",
+                "validation"
+        );
+
+        assertThat(response.getStatusCode(), is(HttpStatusCode.valueOf(HttpStatus.NOT_ACCEPTABLE.value())));
+        assertThat(response.getBody(), notNullValue());
+        assertThat(response.getBody().getErrors(), is(List.of(apiError)));
+    }
+
+    @Test
+    void testHandleMismatchFileExtensionException() {
+        ResponseEntity<ApiErrorResponse> response = underTest.handleMismatchFileExtensionException(
+                new MismatchFileExtensionException("ext mismatch"));
+
+        ApiError apiError = new ApiError("Mismatching file extension",
+                "file",
+                "body_parameter",
+                "validation"
+        );
+
+        assertThat(response.getStatusCode(), is(HttpStatusCode.valueOf(HttpStatus.NOT_ACCEPTABLE.value())));
+        assertThat(response.getBody(), notNullValue());
+        assertThat(response.getBody().getErrors(), is(List.of(apiError)));
+    }
+
+    @Test
+    void testHandleMimeTypeException() {
+        ResponseEntity<ApiErrorResponse> response = underTest.handleMimeTypeException(
+                new org.apache.tika.mime.MimeTypeException("bad mime"));
+
+        ApiError apiError = new ApiError("Invalid MIME type",
+                "file",
+                "body_parameter",
+                "validation"
+        );
+
+        assertThat(response.getStatusCode(), is(HttpStatusCode.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value())));
+        assertThat(response.getBody(), notNullValue());
+        assertThat(response.getBody().getErrors(), is(List.of(apiError)));
+    }
 }
