@@ -89,6 +89,9 @@ public class MimeTypeValidator {
     }
 
     private String getFileExtension(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            throw new InvalidMimeTypeException("File name is missing or blank");
+        }
         int lastDotIndex = fileName.lastIndexOf('.');
         if (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1) {
             throw new InvalidMimeTypeException("File name does not have a valid extension: " + fileName);

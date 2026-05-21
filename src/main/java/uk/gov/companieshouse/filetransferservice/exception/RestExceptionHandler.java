@@ -19,6 +19,10 @@ import uk.gov.companieshouse.logging.Logger;
 @ControllerAdvice
 public class RestExceptionHandler {
 
+    private static final String VALIDATION = "validation";
+
+    private static final String BODY_PARAMETER = "body_parameter";
+
     public static final String FILE_ID_KEY = "fileId";
 
     private final Logger logger;
@@ -48,8 +52,8 @@ public class RestExceptionHandler {
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .withError("Invalid MIME type",
                         "file",
-                        "body_parameter",
-                        "validation"
+                        BODY_PARAMETER,
+                        VALIDATION
                 )
                 .build();
     }
@@ -61,8 +65,8 @@ public class RestExceptionHandler {
                 .status(HttpStatus.NOT_ACCEPTABLE)
                 .withError("Mismatching file type",
                         "file",
-                        "body_parameter",
-                        "validation"
+                        BODY_PARAMETER,
+                        VALIDATION
                 )
                 .build();
     }
@@ -74,8 +78,8 @@ public class RestExceptionHandler {
                 .status(HttpStatus.NOT_ACCEPTABLE)
                 .withError("Mismatching file extension",
                         "file",
-                        "body_parameter",
-                        "validation"
+                        BODY_PARAMETER,
+                        VALIDATION
                 )
                 .build();
     }
@@ -87,8 +91,8 @@ public class RestExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .withError("Invalid MIME type",
                         "file",
-                        "body_parameter",
-                        "validation"
+                        BODY_PARAMETER,
+                        VALIDATION
                 )
                 .build();
     }
@@ -136,7 +140,7 @@ public class RestExceptionHandler {
      * @return a {@code ResponseEntity} with an HTTP status code of {@link HttpStatus#PAYLOAD_TOO_LARGE}
      */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<?> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
         Map<String, Object> loggedVars = new HashMap<>();
         loggedVars.put("maxFileSize", e.getMaxUploadSize());
         logger.error("Uploaded file was too large", e, loggedVars);

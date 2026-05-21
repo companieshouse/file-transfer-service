@@ -122,7 +122,7 @@ class FileTransferControllerIT {
             headers.add("ERIC-Identity-Type", "key");
             headers.add("ERIC-Authorised-Key-Roles", "*");
 
-            MockHttpServletResponse uploadResult = mockMvc.perform(multipart("%s/".formatted(SERVICE_PATH))
+            mockMvc.perform(multipart("%s/".formatted(SERVICE_PATH))
                     .file(file)
                     .headers(headers)
                     .contentType(MediaType.MULTIPART_FORM_DATA))
