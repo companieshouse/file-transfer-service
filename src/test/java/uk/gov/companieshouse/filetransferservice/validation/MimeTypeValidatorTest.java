@@ -172,7 +172,7 @@ class MimeTypeValidatorTest {
     @ParameterizedTest(name = "{index} {0} {1}")
     @MethodSource("getDisallowedMimeTypesAndValidFileNames")
     @DisplayName("deprecated Given a FileApi with a in-valid mime type, when validated by the validator, then no exception should be thrown")
-    void testDeprecatedDisallowedMimeTypePassesValidation(String mimeType, String fileName) throws InvalidMimeTypeException, IOException, MimeTypeException {
+    void testDeprecatedDisallowedMimeTypePassesValidation(String mimeType, String fileName) throws InvalidMimeTypeException, IOException {
         // Create a mock FileApi object with the given mime type
         FileApi file = createMockFileApi(mimeType, fileName);
 
