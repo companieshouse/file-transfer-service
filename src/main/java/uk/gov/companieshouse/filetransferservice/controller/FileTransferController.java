@@ -65,10 +65,12 @@ public class FileTransferController {
     }
 
     /**
+     * @deprecated New clients should use the upload endpoint which accepts multipart/form-data instead of a JSON payload.
+     * 
      * Uploads the specified data (JSON payload) to the file transfer service. The uploaded file must be of a valid
      * MIME type and this end-point is only available for legacy clients. This endpoint is deprecated and only used for
      * earlier version of the private-api-sdk-java which did not originally support multipart/form-data.
-     *
+     * 
      * @param file the data to upload, represented as a JSON payload
      * @return a ResponseEntity containing the ID of the uploaded file or an error message
      * @throws InvalidMimeTypeException if the MIME type of the uploaded file is unsupported

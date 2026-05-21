@@ -8,7 +8,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.apache.tika.Tika;
-import org.apache.tika.mime.MimeTypeException;
 
 import uk.gov.companieshouse.logging.Logger;
 import org.springframework.mock.web.MockMultipartFile;

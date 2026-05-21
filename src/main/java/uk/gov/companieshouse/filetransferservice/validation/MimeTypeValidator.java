@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.tika.mime.MimeTypeException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -60,7 +59,7 @@ public class MimeTypeValidator {
             "application/x-zip-compressed"
     );
 
-    public void validate(final FileApi file) throws InvalidMimeTypeException, MismatchingContentTypeException, IOException, MimeTypeException {
+    public void validate(final FileApi file) throws InvalidMimeTypeException, MismatchingContentTypeException, IOException {
         final String mimeType = file.getMimeType();
         final String detectedMimeType = fileTypeIdentityService.detectMimeType(file.getBody());
         final String fileExtension = getFileExtension(file.getFileName());
@@ -74,7 +73,7 @@ public class MimeTypeValidator {
         validate(mimeType, detectedMimeType, fileExtension);
     }
     
-    public void validate(final MultipartFile file) throws IOException, InvalidMimeTypeException, MismatchingContentTypeException, MimeTypeException {
+    public void validate(final MultipartFile file) throws IOException, InvalidMimeTypeException, MismatchingContentTypeException {
         final String mimeType = file.getContentType();
         final String detectedMimeType = fileTypeIdentityService.detectMimeType(file);
         final String fileExtension = getFileExtension(file.getOriginalFilename());
@@ -99,7 +98,7 @@ public class MimeTypeValidator {
         return fileName.substring(lastDotIndex);
     }
     
-    private void validate(final String mimeType, final String detectedMimeType, final String fileExtension) throws InvalidMimeTypeException, MismatchingContentTypeException, MimeTypeException {
+    private void validate(final String mimeType, final String detectedMimeType, final String fileExtension) throws InvalidMimeTypeException, MismatchingContentTypeException {
         
         final String normalizedMimeType = mimeType != null ? mimeType.toLowerCase() : null;
         final String normalizedDetectedMimeType = detectedMimeType != null ? detectedMimeType.toLowerCase() : null;
