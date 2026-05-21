@@ -155,7 +155,7 @@ public class FileTransferController {
     }
 
     /**
-     * @deprecated New clients should use the /{fileId}/download endpoint which returns a stream instead.
+     * @deprecated New clients should use the /{fileId}/downloadbinary endpoint which returns a stream instead.
      */
     @GetMapping(path = "/{fileId}/downloadbinary")
     @Deprecated(since = "0.2.16", forRemoval = true)
