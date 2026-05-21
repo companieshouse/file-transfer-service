@@ -8,16 +8,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.apache.tika.Tika;
+import org.apache.tika.mime.MimeTypeException;
 
 import uk.gov.companieshouse.logging.Logger;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.List;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,4 +77,29 @@ class FileTypeIdentityServiceTest {
         assertEquals("text/plain", detected);
         verify(tika).detect(any(InputStream.class));
     }
+
+        @Test
+    @DisplayName("Known MIME returns extensions (application/pdf)")
+    void knownMimeReturnsExtensions() {
+        List<String> exts = service.getAllowedExtensions("application/pdf");
+        assertNotNull(exts);
+        assertTrue(exts.contains(".pdf"), "Expected .pdf in allowed extensions");
+    }
+
+    @Test
+    @DisplayName("Null or blank MIME returns empty list")
+    void nullOrBlankReturnsEmpty() {
+        assertTrue(service.getAllowedExtensions(null).isEmpty());
+        assertTrue(service.getAllowedExtensions("").isEmpty());
+        assertTrue(service.getAllowedExtensions("   ").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Unknown/invalid MIME returns empty list (no exception)")
+    void unknownMimeReturnsEmpty() {
+        List<String> exts = service.getAllowedExtensions("invalid/mime");
+        assertNotNull(exts);
+        assertTrue(exts.isEmpty());
+    }
+
 }

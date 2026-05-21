@@ -46,17 +46,23 @@ public class FileTypeIdentityService {
     }
 
     /**
-     * Check whether the detected mime type matches the mime type implied by the file extension.
-     * Returns true if no meaningful extension-derived mime type can be determined.
-     * @throws MimeTypeException 
+     * Returns a list of allowed file extensions for a given detected mime type. 
+     * If the detected mime type is null, blank, or unknown, an empty list is returned.
+     * @param detectedMime the detected mime type for a file
+     * @return a list of allowed file extensions for the given detected mime type, or an empty list if the detected mime type is null, blank, or unknown
      */
-    public List<String> getAllowedExtensions(final String detectedMime) throws MimeTypeException {
+    public List<String> getAllowedExtensions(final String detectedMime) {
         if (detectedMime == null || detectedMime.isBlank()) {
             return List.of();
         }
 
-        final MimeType mimeType = MimeTypes.getDefaultMimeTypes().forName(detectedMime);
-        final List<String> exts = mimeType.getExtensions();
-        return exts == null ? List.of() : List.copyOf(exts);
+        try {
+            final MimeType mimeType = MimeTypes.getDefaultMimeTypes().forName(detectedMime);
+            final List<String> exts = mimeType.getExtensions();
+            return exts == null ? List.of() : List.copyOf(exts);
+        } catch (MimeTypeException e) {
+            logger.error("Error retrieving allowed extensions for mime type: " + detectedMime, e);
+            return List.of();
+        }
     }
 }
