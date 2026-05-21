@@ -131,6 +131,9 @@ public class FileTransferController {
         return ResponseEntity.ok(fileDetails);
     }
 
+    /**
+     * @deprecated New clients should use the /{fileId}/download endpoint which returns a stream instead.
+     */
     @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> downloadAsJson(
@@ -150,6 +153,9 @@ public class FileTransferController {
         return ResponseEntity.ok(fileApi);
     }
 
+    /**
+     * @deprecated New clients should use the /{fileId}/download endpoint which returns a stream instead.
+     */
     @GetMapping(path = "/{fileId}/downloadbinary")
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId,

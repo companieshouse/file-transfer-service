@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
+import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
 import uk.gov.companieshouse.filetransferservice.exception.InvalidMimeTypeException;
 import uk.gov.companieshouse.filetransferservice.exception.MismatchFileExtensionException;
 import uk.gov.companieshouse.filetransferservice.service.identity.FileTypeIdentityService;
@@ -120,6 +121,14 @@ class MimeTypeValidatorTest {
         return new org.springframework.mock.web.MockMultipartFile("file", fileName, mimeType, "file content".getBytes());
     }
 
+    private static FileApi createMockFileApi(final String mimeType, final String fileName) {
+        FileApi file = new FileApi();
+        file.setFileName(fileName);
+        file.setMimeType(mimeType);
+        file.setBody("file content".getBytes());
+        return file;
+    }
+
     @ParameterizedTest(name = "{index} {0} {1}")
     @MethodSource("getAllowedMimeTypesAndValidFileNames")
     @DisplayName("Given a MultipartFile with a valid mime type, when validated by the validator, then no exception should be thrown")
@@ -134,6 +143,20 @@ class MimeTypeValidatorTest {
     }
 
     @ParameterizedTest(name = "{index} {0} {1}")
+    @MethodSource("getAllowedMimeTypesAndValidFileNames")
+    @DisplayName("deprecated Given a FileApi with a valid mime type, when validated by the validator, then no exception should be thrown")
+    void testDeprecatedAllowedMimeTypePassesValidation(String mimeType, String fileName) throws InvalidMimeTypeException, IOException, MimeTypeException {
+        // Create a mock FileApi object with the given mime type
+        FileApi file = createMockFileApi(mimeType, fileName);
+
+        when(fileTypeIdentityService.getAllowedExtensions(mimeType)).thenReturn(List.of("." + fileName.substring(fileName.lastIndexOf('.') + 1)));
+        when(fileTypeIdentityService.detectMimeType(any(byte[].class))).thenReturn(mimeType);
+        when(fileTypeIdentityService.getAllowedExtensions(mimeType)).thenReturn(List.of("." + fileName.substring(fileName.lastIndexOf('.') + 1)));
+
+        validator.validate(file);
+    }
+
+    @ParameterizedTest(name = "{index} {0} {1}")
     @MethodSource("getDisallowedMimeTypesAndValidFileNames")
     @DisplayName("Given a MultipartFile with an in-valid mime type, when validated by the validator, an exception should be thrown")
     void testDisallowedMimeTypeThrowsException(String mimeType, String fileName) throws IOException {
@@ -141,6 +164,19 @@ class MimeTypeValidatorTest {
         MultipartFile file = createMockMultipartFile(mimeType, fileName);
 
         when(fileTypeIdentityService.detectMimeType(any(MultipartFile.class))).thenReturn(mimeType);
+
+        // Verify that an exception is thrown when the validator is used to validate the file
+        assertThrows(InvalidMimeTypeException.class, () -> validator.validate(file));
+    }
+
+    @ParameterizedTest(name = "{index} {0} {1}")
+    @MethodSource("getDisallowedMimeTypesAndValidFileNames")
+    @DisplayName("deprecated Given a FileApi with a in-valid mime type, when validated by the validator, then no exception should be thrown")
+    void testDeprecatedDisallowedMimeTypePassesValidation(String mimeType, String fileName) throws InvalidMimeTypeException, IOException, MimeTypeException {
+        // Create a mock FileApi object with the given mime type
+        FileApi file = createMockFileApi(mimeType, fileName);
+
+        when(fileTypeIdentityService.detectMimeType(any(byte[].class))).thenReturn(mimeType);
 
         // Verify that an exception is thrown when the validator is used to validate the file
         assertThrows(InvalidMimeTypeException.class, () -> validator.validate(file));
