@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.apache.tika.mime.MimeTypeException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -132,7 +131,7 @@ class MimeTypeValidatorTest {
     @ParameterizedTest(name = "{index} {0} {1}")
     @MethodSource("getAllowedMimeTypesAndValidFileNames")
     @DisplayName("Given a MultipartFile with a valid mime type, when validated by the validator, then no exception should be thrown")
-    void testAllowedMimeTypePassesValidation(String mimeType, String fileName) throws InvalidMimeTypeException, IOException, MimeTypeException {
+    void testAllowedMimeTypePassesValidation(String mimeType, String fileName) throws InvalidMimeTypeException, IOException {
         // Create a mock MultipartFile object with the given mime type
         MultipartFile file = createMockMultipartFile(mimeType, fileName);
 
@@ -145,7 +144,7 @@ class MimeTypeValidatorTest {
     @ParameterizedTest(name = "{index} {0} {1}")
     @MethodSource("getAllowedMimeTypesAndValidFileNames")
     @DisplayName("deprecated Given a FileApi with a valid mime type, when validated by the validator, then no exception should be thrown")
-    void testDeprecatedAllowedMimeTypePassesValidation(String mimeType, String fileName) throws InvalidMimeTypeException, IOException, MimeTypeException {
+    void testDeprecatedAllowedMimeTypePassesValidation(String mimeType, String fileName) throws InvalidMimeTypeException, IOException {
         // Create a mock FileApi object with the given mime type
         FileApi file = createMockFileApi(mimeType, fileName);
 

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.tika.mime.MimeTypeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -77,19 +76,6 @@ public class RestExceptionHandler {
         return ErrorResponseBuilder
                 .status(HttpStatus.NOT_ACCEPTABLE)
                 .withError("Mismatching file extension",
-                        "file",
-                        BODY_PARAMETER,
-                        VALIDATION
-                )
-                .build();
-    }
-
-    @ExceptionHandler({MimeTypeException.class})
-    public ResponseEntity<ApiErrorResponse> handleMimeTypeException(MimeTypeException e) {
-        logger.error("Error processing MIME type", e);
-        return ErrorResponseBuilder
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .withError("Invalid MIME type",
                         "file",
                         BODY_PARAMETER,
                         VALIDATION

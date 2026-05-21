@@ -17,7 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Optional;
 
-import org.apache.tika.mime.MimeTypeException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,7 +72,7 @@ class FileTransferControllerTest {
     @Test
     @DisplayName("Test deprecated uploading a FileAPI model with allowed MIME type")
     @Deprecated
-    void testDeprecatedUploadFileWithAllowedMimeType() throws IOException, InvalidMimeTypeException, MimeTypeException {
+    void testDeprecatedUploadFileWithAllowedMimeType() throws IOException, InvalidMimeTypeException {
         FileApi fileApi = new FileApi();
         fileApi.setFileName("test.txt");
         fileApi.setMimeType("text/plain");
@@ -93,7 +92,7 @@ class FileTransferControllerTest {
 
     @Test
     @DisplayName("Test uploading a file with allowed MIME type")
-    void testUploadFileWithAllowedMimeType() throws IOException, InvalidMimeTypeException, MimeTypeException {
+    void testUploadFileWithAllowedMimeType() throws IOException, InvalidMimeTypeException {
         MultipartFile mockFile = new MockMultipartFile("test.pdf",
                 "test.pdf",
                 "application/pdf",
@@ -111,7 +110,7 @@ class FileTransferControllerTest {
 
     @Test
     @DisplayName("Test uploading a file with unsupported MIME type")
-    void testUploadFileWithUnsupportedMimeType() throws InvalidMimeTypeException, MimeTypeException, IOException {
+    void testUploadFileWithUnsupportedMimeType() throws InvalidMimeTypeException, IOException {
         MultipartFile mockFile = new MockMultipartFile("file",
                 "test.txt",
                 "invalid",
