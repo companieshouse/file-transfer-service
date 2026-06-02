@@ -8,7 +8,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -36,6 +35,7 @@ import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
 import uk.gov.companieshouse.filetransferservice.service.storage.FileStorageStrategy;
+import uk.gov.companieshouse.filetransferservice.validation.FileUploadValidator;
 import uk.gov.companieshouse.filetransferservice.validation.MimeTypeValidator;
 import uk.gov.companieshouse.logging.Logger;
 
@@ -48,28 +48,29 @@ public class FileTransferController {
     private final FileStorageStrategy fileStorageStrategy;
     private final MultipartFileToFileUploadApiConverter fileUploadConverter;
     private final MimeTypeValidator mimeTypeValidator;
+    private final FileUploadValidator fileUploadValidator;
     private final Logger logger;
     private final boolean antiVirusCheckingEnabled;
 
     public FileTransferController(FileStorageStrategy fileStorageStrategy,
             MultipartFileToFileUploadApiConverter fileUploadConverter,
             MimeTypeValidator mimeTypeValidator,
+            FileUploadValidator fileUploadValidator,
             Logger logger,
             @Value("${antivirus.checking.enabled:true}") boolean antiVirusCheckEnabled) {
         this.fileStorageStrategy = fileStorageStrategy;
         this.fileUploadConverter = fileUploadConverter;
         this.mimeTypeValidator = mimeTypeValidator;
+        this.fileUploadValidator = fileUploadValidator;
         this.logger = logger;
         this.antiVirusCheckingEnabled = antiVirusCheckEnabled;
     }
 
     /**
-     * @deprecated New clients should use the upload endpoint which accepts multipart/form-data instead of a JSON payload.
-     * 
      * Uploads the specified data (JSON payload) to the file transfer service. The uploaded file must be of a valid
      * MIME type and this end-point is only available for legacy clients. This endpoint is deprecated and only used for
      * earlier version of the private-api-sdk-java which did not originally support multipart/form-data.
-     * 
+     *
      * @param file the data to upload, represented as a JSON payload
      * @return a ResponseEntity containing the ID of the uploaded file or an error message
      * @throws InvalidMimeTypeException if the MIME type of the uploaded file is unsupported
@@ -81,7 +82,7 @@ public class FileTransferController {
             throws InvalidMimeTypeException, IOException {
         logger.trace("upload(json) method called.");
 
-        mimeTypeValidator.validate(file);
+        mimeTypeValidator.validate(file.getMimeType());
 
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(file.getBody())) {
             FileUploadApi fileUploadApi = new FileUploadApi(file.getFileName(),
@@ -107,7 +108,8 @@ public class FileTransferController {
             throws InvalidMimeTypeException, IOException {
         logger.trace("upload(file) method called.");
 
-        mimeTypeValidator.validate(uploadedFile);
+        mimeTypeValidator.validate(uploadedFile.getContentType());
+        fileUploadValidator.validate(uploadedFile);
 
         FileUploadApi file = fileUploadConverter.convert(uploadedFile);
         String fileId = fileStorageStrategy.save(file);
@@ -132,9 +134,6 @@ public class FileTransferController {
         return ResponseEntity.ok(fileDetails);
     }
 
-    /**
-     * @deprecated New clients should use the (non-deprecated) /{fileId}/download endpoint which returns a stream instead.
-     */
     @GetMapping(path = "/{fileId}/download", produces = APPLICATION_JSON_VALUE)
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<uk.gov.companieshouse.filetransferservice.model.legacy.FileApi> downloadAsJson(
@@ -154,9 +153,6 @@ public class FileTransferController {
         return ResponseEntity.ok(fileApi);
     }
 
-    /**
-     * @deprecated New clients should use the (non-deprecated) /{fileId}/download endpoint which returns a stream instead.
-     */
     @GetMapping(path = "/{fileId}/downloadbinary")
     @Deprecated(since = "0.2.16", forRemoval = true)
     public ResponseEntity<byte[]> downloadAsBinary(@PathVariable String fileId,

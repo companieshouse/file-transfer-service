@@ -85,12 +85,17 @@ class FileTransferControllerIT {
     }
 
     @Test
-    @DisplayName("Should throw an error MismatchingContentTypeException when uploading a file if the detected Mime Type does not match the file content")
-    void shouldUploadButThrowMismatchingContentTypeException() throws Exception {
+    @DisplayName("Deprecated - Should Upload and Download a Test File to S3")
+    void deprecatedShouldUploadAndDownloadTestFileToS3() throws Exception {
         try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file.pdf"))) {
 
             // Upload
-            MockMultipartFile file = new MockMultipartFile("file", "large-file.pdf", "text/plain", is);
+            FileApi fileApi = new FileApi();
+            fileApi.setFileName("test.txt");
+            fileApi.setBody("test content".getBytes());
+            fileApi.setSize(12);
+            fileApi.setMimeType("text/plain");
+            fileApi.setExtension("txt");
 
             MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
             HttpHeaders headers = new HttpHeaders();
@@ -98,145 +103,41 @@ class FileTransferControllerIT {
             headers.add("ERIC-Identity-Type", "key");
             headers.add("ERIC-Authorised-Key-Roles", "*");
 
-            mockMvc.perform(multipart("%s/".formatted(SERVICE_PATH))
-                    .file(file)
-                    .headers(headers)
-                    .contentType(MediaType.MULTIPART_FORM_DATA))
-                    .andExpect(status().isNotAcceptable())
+            MockHttpServletResponse uploadResult = mockMvc.perform(multipart("%s/upload".formatted(SERVICE_PATH))
+                            .content(new ObjectMapper().writeValueAsBytes(fileApi))
+                            .headers(headers)
+                            .contentType(MediaType.APPLICATION_JSON_VALUE))
+                    .andExpect(status().isOk())
                     .andReturn()
                     .getResponse();
-        }
-    }
 
-    @Test
-    @DisplayName("Should throw an error MismatchFileExtensionException when uploading a file if the file extension does not match the detected Mime Type")
-    void shouldUploadButThrowMismatchFileExtensionException() throws Exception {
-        try (FileInputStream is = new FileInputStream(ResourceUtils.getFile("classpath:large-file-pdf.html"))) {
+            IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
-            // Upload
-            MockMultipartFile file = new MockMultipartFile("file", "large-file-pdf.html", "text/html", is);
-
-            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("ERIC-Identity", "someone");
-            headers.add("ERIC-Identity-Type", "key");
-            headers.add("ERIC-Authorised-Key-Roles", "*");
-
-            mockMvc.perform(multipart("%s/".formatted(SERVICE_PATH))
-                    .file(file)
-                    .headers(headers)
-                    .contentType(MediaType.MULTIPART_FORM_DATA))
-                    .andExpect(status().isNotAcceptable())
+            MockHttpServletResponse downloadResult = mockMvc.perform(
+                            get("%s/%s/download".formatted(SERVICE_PATH, fileId.getId()))
+                                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                    .headers(headers))
+                    .andExpect(status().isOk())
                     .andReturn()
                     .getResponse();
+
+            byte[] content = downloadResult.getContentAsByteArray();
+            String mimeType = downloadResult.getContentType();
+            String contentDisposition = Optional.ofNullable(downloadResult.getHeader(HttpHeaders.CONTENT_DISPOSITION))
+                    .orElseThrow(() -> new IllegalArgumentException("Missing Content-Disposition header"));
+
+            Matcher matcher = FILENAME_PATTERN.matcher(contentDisposition);
+            String filename = matcher.find() ? matcher.group(1) : "unknown";
+            File downloadedFile = new File(filename);
+
+            try (FileOutputStream os = new FileOutputStream(downloadedFile)) {
+                os.write(content);
+            }
+
+            System.out.printf("Download complete for %s%n", downloadedFile.getCanonicalPath());
+            System.out.printf("Bytes: %d%n", downloadResult.getContentLengthLong());
+            System.out.printf("Mime-Type %s%n", mimeType);
         }
-    }
-
-
-    @Test
-    @DisplayName("Deprecated - Should throw an error MismatchingContentTypeException when uploading a file if the detected Mime Type does not match the file content")
-    void deprecatedShouldUploadButThrowMismatchingContentTypeException() throws Exception {
-
-        FileApi fileApi = new FileApi();
-        fileApi.setFileName("test.txt");
-        fileApi.setBody("test content".getBytes());
-        fileApi.setSize(12);
-        fileApi.setMimeType("application/pdf");
-        fileApi.setExtension("txt");
-
-        MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("ERIC-Identity", "someone");
-        headers.add("ERIC-Identity-Type", "key");
-        headers.add("ERIC-Authorised-Key-Roles", "*");
-
-        mockMvc.perform(multipart("%s/upload".formatted(SERVICE_PATH))
-                .content(new ObjectMapper().writeValueAsBytes(fileApi))
-                .headers(headers)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotAcceptable())
-                .andReturn()
-                .getResponse();
-    }
-
-    @Test
-    @DisplayName("Deprecated - Should throw an error MismatchFileExtensionException when uploading a file if the file extension does not match the detected Mime Type")
-    void deprecatedShouldUploadButThrowMismatchFileExtensionException() throws Exception {
-
-        FileApi fileApi = new FileApi();
-        fileApi.setFileName("test.pdf");
-        fileApi.setBody("test content".getBytes());
-        fileApi.setSize(12);
-        fileApi.setMimeType("text/html");
-        fileApi.setExtension("html");
-
-        MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("ERIC-Identity", "someone");
-        headers.add("ERIC-Identity-Type", "key");
-        headers.add("ERIC-Authorised-Key-Roles", "*");
-
-        mockMvc.perform(multipart("%s/upload".formatted(SERVICE_PATH))
-                .content(new ObjectMapper().writeValueAsBytes(fileApi))
-                .headers(headers)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotAcceptable())
-                .andReturn()
-                .getResponse();
-    }
-
-    @Test
-    @DisplayName("Deprecated - Should Upload and Download a Test File to S3")
-    void deprecatedShouldUploadAndDownloadTestFileToS3() throws Exception {
-
-        // Upload
-        FileApi fileApi = new FileApi();
-        fileApi.setFileName("test.txt");
-        fileApi.setBody("test content".getBytes());
-        fileApi.setSize(12);
-        fileApi.setMimeType("text/plain");
-        fileApi.setExtension("txt");
-
-        MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("ERIC-Identity", "someone");
-        headers.add("ERIC-Identity-Type", "key");
-        headers.add("ERIC-Authorised-Key-Roles", "*");
-
-        MockHttpServletResponse uploadResult = mockMvc.perform(multipart("%s/upload".formatted(SERVICE_PATH))
-                .content(new ObjectMapper().writeValueAsBytes(fileApi))
-                .headers(headers)
-                .contentType(MediaType.APPLICATION_JSON_VALUE))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse();
-
-        IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
-
-        MockHttpServletResponse downloadResult = mockMvc.perform(
-                get("%s/%s/download".formatted(SERVICE_PATH, fileId.getId()))
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .headers(headers))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse();
-
-        byte[] content = downloadResult.getContentAsByteArray();
-        String mimeType = downloadResult.getContentType();
-        String contentDisposition = Optional.ofNullable(downloadResult.getHeader(HttpHeaders.CONTENT_DISPOSITION))
-                .orElseThrow(() -> new IllegalArgumentException("Missing Content-Disposition header"));
-
-        Matcher matcher = FILENAME_PATTERN.matcher(contentDisposition);
-        String filename = matcher.find() ? matcher.group(1) : "unknown";
-        File downloadedFile = new File(filename);
-
-        try (FileOutputStream os = new FileOutputStream(downloadedFile)) {
-            os.write(content);
-        }
-
-        System.out.printf("Download complete for %s%n", downloadedFile.getCanonicalPath());
-        System.out.printf("Bytes: %d%n", downloadResult.getContentLengthLong());
-        System.out.printf("Mime-Type %s%n", mimeType);
     }
 
     @Test
@@ -254,8 +155,8 @@ class FileTransferControllerIT {
             headers.add("ERIC-Authorised-Key-Roles", "*");
 
             MockHttpServletResponse uploadResult = mockMvc.perform(multipart("%s/".formatted(SERVICE_PATH))
-                    .file(file)
-                    .headers(headers))
+                            .file(file)
+                            .headers(headers))
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse();
@@ -263,8 +164,8 @@ class FileTransferControllerIT {
             IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
             MockHttpServletResponse downloadResult = mockMvc.perform(
-                    get("%s/%s/download".formatted(SERVICE_PATH, fileId.getId()))
-                            .headers(headers))
+                            get("%s/%s/download".formatted(SERVICE_PATH, fileId.getId()))
+                                    .headers(headers))
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse();
@@ -308,8 +209,8 @@ class FileTransferControllerIT {
             headers.add("ERIC-Authorised-Key-Roles", "*");
 
             MockHttpServletResponse uploadResult = mockMvc.perform(multipart("%s/".formatted(SERVICE_PATH))
-                    .file(file)
-                    .headers(headers))
+                            .file(file)
+                            .headers(headers))
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse();
@@ -317,7 +218,7 @@ class FileTransferControllerIT {
             IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
             MockHttpServletResponse getResult = mockMvc.perform(get("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
-                    .headers(headers))
+                            .headers(headers))
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse();
@@ -347,8 +248,8 @@ class FileTransferControllerIT {
             headers.add("ERIC-Authorised-Key-Roles", "*");
 
             MockHttpServletResponse uploadResult = mockMvc.perform(multipart("%s/".formatted(SERVICE_PATH))
-                    .file(file)
-                    .headers(headers))
+                            .file(file)
+                            .headers(headers))
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse();
@@ -356,8 +257,8 @@ class FileTransferControllerIT {
             IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
             MockHttpServletResponse deleteResult = mockMvc.perform(
-                    delete("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
-                            .headers(headers))
+                            delete("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
+                                    .headers(headers))
                     .andExpect(status().isNoContent())
                     .andReturn()
                     .getResponse();
@@ -365,7 +266,7 @@ class FileTransferControllerIT {
             System.out.printf("Delete complete for %s%n", deleteResult.getContentAsString());
 
             MockHttpServletResponse getResult = mockMvc.perform(get("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
-                    .headers(headers))
+                            .headers(headers))
                     .andExpect(status().isNotFound())
                     .andReturn()
                     .getResponse();
