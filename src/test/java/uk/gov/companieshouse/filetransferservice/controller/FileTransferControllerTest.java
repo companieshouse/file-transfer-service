@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
@@ -16,7 +17,6 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Optional;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,6 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 import uk.gov.companieshouse.api.filetransfer.AvStatus;
 import uk.gov.companieshouse.api.filetransfer.FileDetailsApi;
@@ -42,6 +43,7 @@ import uk.gov.companieshouse.filetransferservice.model.FileDownloadApi;
 import uk.gov.companieshouse.filetransferservice.model.FileUploadApi;
 import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
 import uk.gov.companieshouse.filetransferservice.service.storage.FileStorageStrategy;
+import uk.gov.companieshouse.filetransferservice.validation.FileUploadValidator;
 import uk.gov.companieshouse.filetransferservice.validation.MimeTypeValidator;
 import uk.gov.companieshouse.logging.Logger;
 
@@ -57,6 +59,8 @@ class FileTransferControllerTest {
     @Mock
     private MimeTypeValidator mimeTypeValidator;
 
+    @Mock
+    private FileUploadValidator fileUploadValidator;
 
     @Mock
     private Logger logger;
@@ -66,7 +70,7 @@ class FileTransferControllerTest {
     @BeforeEach
     void beforeEach() {
         fileTransferController = new FileTransferController(
-                fileStorageStrategy, converter, mimeTypeValidator, logger, true);
+                fileStorageStrategy, converter, mimeTypeValidator, fileUploadValidator, logger, true);
     }
 
     @Test
@@ -110,16 +114,32 @@ class FileTransferControllerTest {
 
     @Test
     @DisplayName("Test uploading a file with unsupported MIME type")
-    void testUploadFileWithUnsupportedMimeType() throws InvalidMimeTypeException, IOException {
+    void testUploadFileWithUnsupportedMimeType() throws InvalidMimeTypeException {
+        doThrow(new InvalidMimeTypeException("invalid")).when(mimeTypeValidator).validate(anyString());
+
         MultipartFile mockFile = new MockMultipartFile("file",
                 "test.txt",
                 "invalid",
                 "test".getBytes());
-        doThrow(new InvalidMimeTypeException("invalid")).when(mimeTypeValidator).validate(mockFile);
-
-        
 
         assertThrows(InvalidMimeTypeException.class, () -> fileTransferController.upload(mockFile));
+    }
+
+    @Test
+    @DisplayName("Test uploading a file with IOException")
+    void testUploadEmptyFileWithIOException() throws InvalidMimeTypeException, IOException {
+        MultipartFile mockFile = new MockMultipartFile("file.pdf",
+                "test.txt",
+                "application/pdf",
+                "".getBytes());
+
+        doThrow(new IOException("Empty file!")).when(fileUploadValidator).validate(mockFile);
+
+        IOException expectedException = assertThrows(IOException.class, () -> fileTransferController.upload(mockFile));
+
+        verify(fileUploadValidator, times(1)).validate(mockFile);
+
+        assertEquals("Empty file!", expectedException.getMessage());
     }
 
     @Test
