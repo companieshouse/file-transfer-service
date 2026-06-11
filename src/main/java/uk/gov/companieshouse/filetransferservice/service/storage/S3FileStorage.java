@@ -139,10 +139,15 @@ public class S3FileStorage implements FileStorageStrategy {
 
             logger.info(format("Retrieved and decoded file metadata from S3: %s", metadata));
 
+            String contentType = metadata.get(CONTENT_TYPE);
+            if (contentType == null || contentType.isBlank()) {
+                contentType = objectResponse.contentType();
+            }
+
             FileDetailsApi fileDetailsApi = new FileDetailsApi(fileId,
                     avCreatedOn,
                     avStatus,
-                    metadata.get(CONTENT_TYPE),
+                    contentType,
                     objectResponse.contentLength(),
                     metadata.get(FILENAME_METADATA_KEY),
                     objectResponse.lastModified().toString(),
