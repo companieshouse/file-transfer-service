@@ -3,6 +3,7 @@ package uk.gov.companieshouse.filetransferservice.service.storage;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -192,6 +193,44 @@ class S3FileStorageTest {
         assertTrue(actual.isEmpty());
         verify(amazonFileTransfer).getFileObject(anyString());
         verify(amazonFileTransfer).getFileTags(anyString());
+    }
+
+    @Test
+    @DisplayName("Test success Get File Details when metadata contains content type")
+    void testGetFileDetailsSuccessWhenMetadataMissingContentType() {
+        GetObjectResponse.Builder objectResponseBuilder = createTestS3ObjectWithNullTags();
+        objectResponseBuilder.metadata(Map.of("Content-Type", "image/jpeg"));
+        objectResponseBuilder.contentType("application/octet-stream");
+
+        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(Optional.of(
+                new ResponseInputStream<>(objectResponseBuilder.build(), mockInputStream)
+        ));
+
+        Optional<FileDetailsApi> actual = underTest.getFileDetails(TEST_FILE_NAME);
+
+        assertTrue(actual.isPresent());
+        assertNotNull(actual.get().getContentType());
+        assertEquals("image/jpeg", actual.get().getContentType());
+        verify(amazonFileTransfer).getFileObject(anyString());
+    }
+
+    @Test
+    @DisplayName("Test success Get File Details when metadata missing content type and S3 has content type")
+    void testGetFileDetailsSuccessWhenMetadataContentTypeMissingAndS3ContentTypePresent() {
+        GetObjectResponse.Builder objectResponseBuilder = createTestS3ObjectWithNullTags();
+        objectResponseBuilder.metadata(null);
+        objectResponseBuilder.contentType("image/jpeg");
+
+        when(amazonFileTransfer.getFileObject(anyString())).thenReturn(Optional.of(
+                new ResponseInputStream<>(objectResponseBuilder.build(), mockInputStream)
+        ));
+
+        Optional<FileDetailsApi> actual = underTest.getFileDetails(TEST_FILE_NAME);
+
+        assertTrue(actual.isPresent());
+        assertNotNull(actual.get().getContentType());
+        assertEquals("image/jpeg", actual.get().getContentType());
+        verify(amazonFileTransfer).getFileObject(anyString());
     }
 
     @Test
