@@ -150,12 +150,6 @@ variable "file_transfer_create_ecs" {
   default     = true
 }
 
-variable "secure_file_transfer_create_ecs" {
-  type        = bool
-  description = "The count for secure instance of file-transfer-service"
-  default     = true
-}
-
 variable "file_transfer_kms_alias" {
   type        = string
   description = "The kms alias for encryption."
@@ -165,29 +159,5 @@ variable "file_transfer_kms_alias" {
 variable "file_transfer_bucket" {
   type        = string
   description = "The s3 bucket to store object."
-  default     = ""
-}
-
-variable "file_transfer_bucket_secure" {
-  type        = string
-  description = "The s3 bucket to store object for secure instance."
-  default     = ""
-}
-
-variable "file_transfer_kms_alias_secure" {
-  type        = string
-  description = "The kms alias for encryption for secure instance."
-  default     = ""
-}
-
-variable "protect_regime" {
-  type        = bool
-  description = "Whether the deployment is in a protect regime environment."
-  default     = false
-}
-
-variable "protect_account" {
-  type        = string
-  description = "The AWS account name for protect regime."
   default     = ""
 }

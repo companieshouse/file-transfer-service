@@ -19,7 +19,6 @@
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_ecs-service"></a> [ecs-service](#module\_ecs-service) | git@github.com:companieshouse/terraform-modules//aws/ecs/ecs-service | 1.0.296 |
-| <a name="module_ecs-service-secure"></a> [ecs-service-secure](#module\_ecs-service-secure) | git@github.com:companieshouse/terraform-modules//aws/ecs/ecs-service | 1.0.296 |
 | <a name="module_secrets"></a> [secrets](#module\_secrets) | git@github.com:companieshouse/terraform-modules//aws/ecs/secrets | 1.0.296 |
 
 ## Resources
@@ -27,28 +26,18 @@
 | Name | Type |
 |------|------|
 | [aws_iam_policy.task_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_policy.task_policy_secure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.task_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.task_role_secure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy_attachment.task_role_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.task_role_secure_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_kms_grant.file_transfer_encryption_key_grant](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_grant) | resource |
-| [aws_kms_grant.file_transfer_encryption_key_grant_secure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_grant) | resource |
 | [aws_ecs_cluster.ecs_cluster](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecs_cluster) | data source |
 | [aws_iam_policy_document.file_transfer_ecs_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.file_transfer_secure_ecs_execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.task_assume](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.task_assume_secure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_role.ecs_cluster_iam_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_role) | data source |
 | [aws_kms_alias.file_transfer_encryption_key_alias](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/kms_alias) | data source |
-| [aws_kms_alias.file_transfer_encryption_key_alias_secure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/kms_alias) | data source |
 | [aws_kms_key.kms_key](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/kms_key) | data source |
 | [aws_lb.service_lb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lb) | data source |
-| [aws_lb.service_lb_secure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lb) | data source |
 | [aws_lb_listener.service_lb_listener](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lb_listener) | data source |
-| [aws_lb_listener.service_lb_listener_secure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lb_listener) | data source |
 | [aws_s3_bucket.file_transfer_bucket](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/s3_bucket) | data source |
-| [aws_s3_bucket.file_transfer_bucket_secure](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/s3_bucket) | data source |
 | [aws_ssm_parameter.global_secret](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
 | [aws_ssm_parameter.secret](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
 | [aws_ssm_parameters_by_path.global_secrets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameters_by_path) | data source |
@@ -73,21 +62,16 @@
 | <a name="input_eric_memory"></a> [eric\_memory](#input\_eric\_memory) | The required memory for eric | `number` | `512` | no |
 | <a name="input_eric_version"></a> [eric\_version](#input\_eric\_version) | The version of the eric container to run. | `string` | n/a | yes |
 | <a name="input_file_transfer_bucket"></a> [file\_transfer\_bucket](#input\_file\_transfer\_bucket) | The s3 bucket to store object. | `string` | `""` | no |
-| <a name="input_file_transfer_bucket_secure"></a> [file\_transfer\_bucket\_secure](#input\_file\_transfer\_bucket\_secure) | The s3 bucket to store object for secure instance. | `string` | `""` | no |
 | <a name="input_file_transfer_create_ecs"></a> [file\_transfer\_create\_ecs](#input\_file\_transfer\_create\_ecs) | The count for  instance of file-transfer-service. | `bool` | `true` | no |
 | <a name="input_file_transfer_kms_alias"></a> [file\_transfer\_kms\_alias](#input\_file\_transfer\_kms\_alias) | The kms alias for encryption. | `string` | `""` | no |
-| <a name="input_file_transfer_kms_alias_secure"></a> [file\_transfer\_kms\_alias\_secure](#input\_file\_transfer\_kms\_alias\_secure) | The kms alias for encryption for secure instance. | `string` | `""` | no |
 | <a name="input_file_transfer_service_version"></a> [file\_transfer\_service\_version](#input\_file\_transfer\_service\_version) | The version of the file transfer web container to run. | `string` | n/a | yes |
 | <a name="input_hashicorp_vault_password"></a> [hashicorp\_vault\_password](#input\_hashicorp\_vault\_password) | The password used when retrieving configuration from Hashicorp Vault | `string` | n/a | yes |
 | <a name="input_hashicorp_vault_username"></a> [hashicorp\_vault\_username](#input\_hashicorp\_vault\_username) | The username used when retrieving configuration from Hashicorp Vault | `string` | n/a | yes |
 | <a name="input_max_task_count"></a> [max\_task\_count](#input\_max\_task\_count) | The maximum number of tasks for this service. | `number` | `3` | no |
 | <a name="input_min_task_count"></a> [min\_task\_count](#input\_min\_task\_count) | The minimum number of tasks for this service. | `number` | `1` | no |
 | <a name="input_multilb_cloudwatch_alarms_enabled"></a> [multilb\_cloudwatch\_alarms\_enabled](#input\_multilb\_cloudwatch\_alarms\_enabled) | Whether to create a standard set of cloudwatch alarms for the service in multilb setup.  Requires an SNS topic to have already been created for the stack. | `bool` | `true` | no |
-| <a name="input_protect_account"></a> [protect\_account](#input\_protect\_account) | The AWS account name for protect regime. | `string` | `""` | no |
-| <a name="input_protect_regime"></a> [protect\_regime](#input\_protect\_regime) | Whether the deployment is in a protect regime environment. | `bool` | `false` | no |
 | <a name="input_required_cpus"></a> [required\_cpus](#input\_required\_cpus) | The required cpu resource for this service. 1024 here is 1 vCPU | `number` | `256` | no |
 | <a name="input_required_memory"></a> [required\_memory](#input\_required\_memory) | The required memory for this service | `number` | `512` | no |
-| <a name="input_secure_file_transfer_create_ecs"></a> [secure\_file\_transfer\_create\_ecs](#input\_secure\_file\_transfer\_create\_ecs) | The count for secure instance of file-transfer-service | `bool` | `true` | no |
 | <a name="input_service_autoscale_enabled"></a> [service\_autoscale\_enabled](#input\_service\_autoscale\_enabled) | Whether to enable service autoscaling, including scheduled autoscaling | `bool` | `true` | no |
 | <a name="input_service_autoscale_target_value_cpu"></a> [service\_autoscale\_target\_value\_cpu](#input\_service\_autoscale\_target\_value\_cpu) | Target CPU percentage for the ECS Service to autoscale on | `number` | `50` | no |
 | <a name="input_service_scaledown_schedule"></a> [service\_scaledown\_schedule](#input\_service\_scaledown\_schedule) | The schedule to use when scaling down the number of tasks to zero. | `string` | `""` | no |
