@@ -49,8 +49,6 @@
 
         <!--sonar configuration-->
         <sonar.token>${CODE_ANALYSIS_TOKEN}</sonar.token>
-        <sonar.login/>
-        <sonar.password/>
         <sonar.projectKey>uk.gov.companieshouse:file-transfer-service</sonar.projectKey>
         <sonar.projectName>file-transfer-service</sonar.projectName>
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
