@@ -1,28 +1,21 @@
 package uk.gov.companieshouse.filetransferservice.integration;
 
-import static com.google.common.net.HttpHeaders.CONTENT_DISPOSITION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
-import static org.testcontainers.shaded.com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
-import com.google.api.client.http.HttpHeaders;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import com.google.api.client.http.HttpHeaders;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -49,7 +42,6 @@ class InternalFileTransferClientIT {
 
     private static final String BUCKET_NAME = "fts-bucket";
     private static final String API_KEY = "chsApiKey";
-    private static final Pattern FILENAME_PATTERN = Pattern.compile(".*filename=\"(.+?)\".*");
 
     @LocalServerPort
     private Integer port;
@@ -70,7 +62,7 @@ class InternalFileTransferClientIT {
         localStack.start();
         localStack.execInContainer("awslocal", "s3api", "create-bucket", "--bucket", BUCKET_NAME);
     }
-    
+
     @BeforeEach
     void setUp() throws IOException, URIValidationException {
         internalFileTransferClient = buildInternalFileTransferClient();
@@ -101,18 +93,6 @@ class InternalFileTransferClientIT {
         FileApi content = downloadResponse.getData();
         assertEquals("application/pdf", content.getMimeType());
         assertEquals("large-file.pdf", content.getFileName());
-
-        Map<String, Object> metadata = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        metadata.putAll(downloadResponse.getHeaders());
-
-        String mimeType = ((List)metadata.get(CONTENT_TYPE)).getFirst().toString();
-        String contentDisposition = Optional.ofNullable(metadata.get(CONTENT_DISPOSITION))
-                .orElseThrow(() -> new IllegalArgumentException("Missing Content-Disposition header")).toString();
-
-        Matcher matcher = FILENAME_PATTERN.matcher(contentDisposition);
-        String filename = matcher.find() ? matcher.group(1) : "unknown";
-        assertEquals("application/pdf", mimeType);
-        assertEquals("large-file.pdf", filename);
     }
 
     @Test

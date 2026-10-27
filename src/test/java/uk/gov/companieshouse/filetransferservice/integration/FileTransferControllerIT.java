@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -14,12 +13,14 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -35,6 +36,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
+import tools.jackson.databind.json.JsonMapper;
 import uk.gov.companieshouse.api.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.config.TestContainersConfiguration;
 import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
@@ -62,7 +64,7 @@ class FileTransferControllerIT {
     private WebApplicationContext webApplicationContext;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     @BeforeAll
     static void beforeAll() throws IOException, InterruptedException {
@@ -111,7 +113,7 @@ class FileTransferControllerIT {
                     .andReturn()
                     .getResponse();
 
-            IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
+            IdApi fileId = jsonMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
             MockHttpServletResponse downloadResult = mockMvc.perform(
                             get("%s/%s/download".formatted(SERVICE_PATH, fileId.getId()))
@@ -161,7 +163,7 @@ class FileTransferControllerIT {
                     .andReturn()
                     .getResponse();
 
-            IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
+            IdApi fileId = jsonMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
             MockHttpServletResponse downloadResult = mockMvc.perform(
                             get("%s/%s/download".formatted(SERVICE_PATH, fileId.getId()))
@@ -215,7 +217,7 @@ class FileTransferControllerIT {
                     .andReturn()
                     .getResponse();
 
-            IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
+            IdApi fileId = jsonMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
             MockHttpServletResponse getResult = mockMvc.perform(get("%s/%s".formatted(SERVICE_PATH, fileId.getId()))
                             .headers(headers))
@@ -254,7 +256,7 @@ class FileTransferControllerIT {
                     .andReturn()
                     .getResponse();
 
-            IdApi fileId = objectMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
+            IdApi fileId = jsonMapper.readValue(uploadResult.getContentAsString(), IdApi.class);
 
             MockHttpServletResponse deleteResult = mockMvc.perform(
                             delete("%s/%s".formatted(SERVICE_PATH, fileId.getId()))

@@ -94,11 +94,11 @@ public class RestExceptionHandler {
      * @return a {@code ResponseEntity} with an HTTP status code of {@link HttpStatus#PAYLOAD_TOO_LARGE}
      */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<?> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
         Map<String, Object> loggedVars = new HashMap<>();
         loggedVars.put("maxFileSize", e.getMaxUploadSize());
         logger.error("Uploaded file was too large", e, loggedVars);
-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build();
     }
 
 }
