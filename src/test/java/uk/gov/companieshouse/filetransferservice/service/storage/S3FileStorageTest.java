@@ -2,7 +2,7 @@ package uk.gov.companieshouse.filetransferservice.service.storage;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -88,7 +88,8 @@ class S3FileStorageTest {
     void testSdkClientExceptionThrownFromFileSaveFailure() {
         doThrow(SdkClientException.class).when(amazonFileTransfer).uploadFile(anyString(), anyMap(), any(InputStream.class));
 
-        assertThrows(SdkClientException.class, () -> underTest.save(createTestFileUploadApi()));
+        FileUploadApi testFileUploadApi = createTestFileUploadApi();
+        assertThrows(SdkClientException.class, () -> underTest.save(testFileUploadApi));
     }
 
     @Test

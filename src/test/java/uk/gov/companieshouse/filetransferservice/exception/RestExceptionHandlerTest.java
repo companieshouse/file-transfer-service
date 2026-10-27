@@ -98,7 +98,7 @@ class RestExceptionHandlerTest {
         ResponseEntity<?> response = underTest.handleMaxUploadSizeExceededException(
                 new MaxUploadSizeExceededException(1000L));
 
-        assertThat(response.getStatusCode(), is(HttpStatusCode.valueOf(HttpStatus.PAYLOAD_TOO_LARGE.value())));
+        assertThat(response.getStatusCode(), is(HttpStatusCode.valueOf(HttpStatus.CONTENT_TOO_LARGE.value())));
         assertThat(response.getBody(), nullValue());
     }
 }
