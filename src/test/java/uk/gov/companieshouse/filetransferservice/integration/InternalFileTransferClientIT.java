@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
@@ -34,10 +34,10 @@ import uk.gov.companieshouse.api.handler.filetransfer.InternalFileTransferClient
 import uk.gov.companieshouse.api.model.ApiResponse;
 import uk.gov.companieshouse.filetransferservice.config.TestContainersConfiguration;
 
+@ActiveProfiles("test")
 @Import(TestContainersConfiguration.class)
 @TestPropertySource(properties = "filetransfer.bypass_av_check:true")
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@AutoConfigureMockMvc
 class InternalFileTransferClientIT {
 
     private static final String BUCKET_NAME = "fts-bucket";

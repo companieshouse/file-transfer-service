@@ -1,5 +1,15 @@
 package uk.gov.companieshouse.filetransferservice.integration;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -15,7 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.matching.StringValuePattern;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,31 +38,41 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.ResourceUtils;
-import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
+import org.wiremock.spring.ConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
 import tools.jackson.databind.json.JsonMapper;
 import uk.gov.companieshouse.api.filetransfer.IdApi;
 import uk.gov.companieshouse.filetransferservice.config.TestContainersConfiguration;
 import uk.gov.companieshouse.filetransferservice.model.legacy.FileApi;
 
+@ActiveProfiles("test")
 @Import(TestContainersConfiguration.class)
+@EnableWireMock(
+        @ConfigureWireMock(extensions = {OpenTelemetryWireMockExtension.class}))
 @TestPropertySource(properties = "filetransfer.bypass_av_check:true")
-@SpringBootTest
+@SpringBootTest(
+        properties = "logging.level.root=ERROR",
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 class FileTransferControllerIT {
 
     private static final String SERVICE_PATH = "/file-transfer-service";
 
     private static final String BUCKET_NAME = "fts-bucket";
-    private static final Pattern FILENAME_PATTERN = Pattern.compile(".*filename=\"(.+?)\".*");
+    private static final Pattern FILENAME_PATTERN = Pattern.compile("filename=\"([^\"]+)\"");
+
+    private static final String SERVICE_NAME_JSON_PATH = "$..resource.attributes[?(@.key =~ /service.name/)].value.stringValue";
+    private static final String SPAN_NAME_WITH_ATTRIBUTE_JSON_PATH_FORMAT = "$..spans[?(@.name == '%s')].attributes[?(@.key == '%s')].value.stringValue";
+    private static final String LOG_SEVERITY_JSON_PATH_FORMAT = "$..logRecords[?(@.severityText =~ /%s/)].body.stringValue";
 
     @Container
     private static final LocalStackContainer localStack = new LocalStackContainer(
@@ -61,7 +83,7 @@ class FileTransferControllerIT {
             .withEnv("AWS_SECRET_ACCESS_KEY", "noop");
 
     @Autowired
-    private WebApplicationContext webApplicationContext;
+    private MockMvc mockMvc;
 
     @Autowired
     private JsonMapper jsonMapper;
@@ -70,6 +92,12 @@ class FileTransferControllerIT {
     static void beforeAll() throws IOException, InterruptedException {
         localStack.start();
         localStack.execInContainer("awslocal", "s3api", "create-bucket", "--bucket", BUCKET_NAME);
+    }
+
+    @BeforeEach
+    void setUp() {
+        stubFor(post("/v1/logs").willReturn(ok()));
+        stubFor(post("/v1/traces").willReturn(ok()));
     }
 
     @DynamicPropertySource
@@ -84,6 +112,13 @@ class FileTransferControllerIT {
         registry.add("aws.bucketName", () -> BUCKET_NAME);
 
         registry.add("antivirus.checking.enabled", () -> Boolean.FALSE);
+
+        registry.add("management.tracing.sampling.probability", () -> 1.0);
+        registry.add("management.opentelemetry.enabled", () -> true);
+        registry.add("management.opentelemetry.logging.export.max-batch-size", () -> 10);
+        registry.add("management.opentelemetry.logging.export.otlp.endpoint", () -> "${wiremock.server.baseUrl}/v1/logs");
+        registry.add("management.opentelemetry.tracing.export.max-batch-size", () -> 10);
+        registry.add("management.opentelemetry.tracing.export.otlp.endpoint", () -> "${wiremock.server.baseUrl}/v1/traces");
     }
 
     @Test
@@ -99,7 +134,6 @@ class FileTransferControllerIT {
             fileApi.setMimeType("text/plain");
             fileApi.setExtension("txt");
 
-            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
             HttpHeaders headers = new HttpHeaders();
             headers.add("ERIC-Identity", "someone");
             headers.add("ERIC-Identity-Type", "key");
@@ -150,7 +184,6 @@ class FileTransferControllerIT {
             // Upload
             MockMultipartFile file = new MockMultipartFile("file", "large-file.pdf", "application/pdf", is);
 
-            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
             HttpHeaders headers = new HttpHeaders();
             headers.add("ERIC-Identity", "someone");
             headers.add("ERIC-Identity-Type", "key");
@@ -188,6 +221,14 @@ class FileTransferControllerIT {
             System.out.printf("Download complete for %s%n", downloadedFile.getCanonicalPath());
             System.out.printf("Bytes: %d%n", downloadResult.getContentLengthLong());
             System.out.printf("Mime-Type %s%n", mimeType);
+            thenOpenTelemetryRequestShouldBeExported(
+                    "/v1/logs",
+                    LOG_SEVERITY_JSON_PATH_FORMAT.formatted("TRACE"),
+                    containing("download(fileId=%s, bypassAv=false) method called.".formatted(fileId.getId())));
+
+            thenOpenTelemetryRequestShouldBeExported("/v1/traces",
+                    SPAN_NAME_WITH_ATTRIBUTE_JSON_PATH_FORMAT.formatted("http post /file-transfer-service/", "http.url"),
+                    containing("/file-transfer-service/"));
         }
     }
 
@@ -202,8 +243,6 @@ class FileTransferControllerIT {
                     "large-file.pdf",
                     "application/pdf",
                     is.readAllBytes());
-
-            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 
             HttpHeaders headers = new HttpHeaders();
             headers.add("ERIC-Identity", "someone");
@@ -242,8 +281,6 @@ class FileTransferControllerIT {
                     "application/pdf",
                     is.readAllBytes());
 
-            MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-
             HttpHeaders headers = new HttpHeaders();
             headers.add("ERIC-Identity", "someone");
             headers.add("ERIC-Identity-Type", "key");
@@ -276,5 +313,14 @@ class FileTransferControllerIT {
             System.out.printf("Get complete for %s%n", fileId.getId());
             System.out.printf("> Response: %s%n", getResult.getContentAsString());
         }
+    }
+
+    private void thenOpenTelemetryRequestShouldBeExported(String path,
+                                                          String requestJsonPath,
+                                                          StringValuePattern valuePattern) {
+        await().untilAsserted(() -> verify(postRequestedFor(urlMatching(path))
+                .withHeader("Content-Type", equalTo("application/x-protobuf"))
+                .withRequestBody(matchingJsonPath(SERVICE_NAME_JSON_PATH, equalTo("file-transfer-service")))
+                .withRequestBody(matchingJsonPath(requestJsonPath, valuePattern))));
     }
 }
