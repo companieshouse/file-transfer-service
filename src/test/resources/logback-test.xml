@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="ConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="uk.gov.companieshouse.logging.layout.logback.LogbackStructuredLoggerLayout">
+                <pretty>1</pretty>
+            </layout>
+        </encoder>
+    </appender>
+
+    <appender name="OpenTelemetry"
+              class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
+        <captureExperimentalAttributes>true</captureExperimentalAttributes>
+        <captureKeyValuePairAttributes>true</captureKeyValuePairAttributes>
+        <captureMdcAttributes>*</captureMdcAttributes>
+    </appender>
+
+    <logger name="uk.gov" additivity="false" level="${LOGLEVEL:-trace}">
+        <appender-ref ref="ConsoleAppender"/>
+    </logger>
+
+    <root level="${LOGLEVEL_THIRDPARTY:-info}">
+        <appender-ref ref="ConsoleAppender"/>
+    </root>
+
+    <logger name="uk.gov" additivity="false" level="${LOGLEVEL:-trace}">
+        <appender-ref ref="OpenTelemetry"/>
+    </logger>
+    <root level="${LOGLEVEL_THIRDPARTY:-info}">
+        <appender-ref ref="OpenTelemetry"/>
+    </root>
+
+</configuration>
