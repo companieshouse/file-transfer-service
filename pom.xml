@@ -86,11 +86,11 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- Temporary managed dependency, Force all netty artifacts to 4.2.15.Final update once software.amazon.awssdk:s3 > 2.46.5 has newer versions of netty -->
+            <!-- Temporary managed dependency, Force all netty artifacts to 4.2.19.Final update once software.amazon.awssdk:s3 > 2.46.5 has newer versions of netty -->
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.2.15.Final</version>
+                <version>4.2.19.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
