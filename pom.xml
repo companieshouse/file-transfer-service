@@ -39,8 +39,6 @@
         <skip.unit.tests>false</skip.unit.tests>
 
         <!-- internal -->
-        <opentelemetry-instrumentation-bom.version>2.27.0</opentelemetry-instrumentation-bom.version>
-        <opentelemetry-logback-appender.version>2.31.1-alpha</opentelemetry-logback-appender.version>
         <software.amazon.awssdk-s3.version>2.46.5</software.amazon.awssdk-s3.version>
         <private-api-sdk-java.version>4.0.444</private-api-sdk-java.version>
 
@@ -74,13 +72,6 @@
                 <groupId>uk.gov.companieshouse</groupId>
                 <artifactId>ch-test-bom</artifactId>
                 <version>${ch-boms.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry.instrumentation</groupId>
-                <artifactId>opentelemetry-instrumentation-bom</artifactId>
-                <version>${opentelemetry-instrumentation-bom.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -135,7 +126,6 @@
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-logback-appender-1.0</artifactId>
-            <version>${opentelemetry-logback-appender.version}</version>
         </dependency>
         <dependency>
             <groupId>uk.gov.companieshouse</groupId>
