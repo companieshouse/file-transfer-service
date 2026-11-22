@@ -115,6 +115,7 @@ class FileTransferControllerIT {
 
         registry.add("management.tracing.sampling.probability", () -> 1.0);
         registry.add("management.opentelemetry.enabled", () -> true);
+        registry.add("management.opentelemetry.resource-attributes.service.name", () -> "file-transfer-service");
         registry.add("management.opentelemetry.logging.export.max-batch-size", () -> 10);
         registry.add("management.opentelemetry.logging.export.otlp.endpoint", () -> "${wiremock.server.baseUrl}/v1/logs");
         registry.add("management.opentelemetry.tracing.export.max-batch-size", () -> 10);
